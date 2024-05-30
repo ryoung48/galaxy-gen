@@ -3,7 +3,6 @@ import { Box, Grid } from '@mui/material'
 import { ReactNode } from 'react'
 
 import { VIEW } from '../../context'
-import { STYLES } from '../styles'
 import { Heraldry } from '../heraldry'
 import { HERALDRY } from '../heraldry/common'
 import { CodexTitle } from './title'
@@ -12,15 +11,12 @@ import { SOLAR_SYSTEM } from '../../model/system'
 
 const classes = {
   panel: css`
-    background-color: ${STYLES.map};
-    border: double rgba(255, 255, 255, 0.4);
     overflow-y: auto;
     overscroll-behavior-y: contain;
     scroll-snap-type: y proximity;
-    height: 800px;
   `,
   content: css`
-    font-size: 14px;
+    font-size: 12px;
   `
 }
 

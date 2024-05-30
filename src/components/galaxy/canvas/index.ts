@@ -34,5 +34,10 @@ export const CANVAS = {
     zoomRef = zoom().scaleExtent([1, 4000]).on('zoom', onZoom)
     const selection = select(node)
     selection.call(zoomRef)
+  },
+  init: (node: Element) => {
+    const selection = select(node)
+    zoomRef.scaleTo(selection, 1.5)
+    zoomRef.translateTo(selection, node.clientWidth * 0.44, node.clientHeight * 0.95)
   }
 }

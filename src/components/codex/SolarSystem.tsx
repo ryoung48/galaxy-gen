@@ -1,12 +1,12 @@
-import { VIEW } from '../context'
-import { TEXT } from '../model/utilities/text'
-import { StyledText } from './common/StyledText'
-import { CodexPage } from './common/CodexPage'
 import { Grid } from '@mui/material'
-import { SOLAR_SYSTEM } from '../model/system'
-import { STYLES } from './styles'
-import { STAR } from '../model/system/stars'
-import { SATELLITE } from '../model/system/satellites'
+import { VIEW } from '../../context'
+import { SOLAR_SYSTEM } from '../../model/system'
+import { SATELLITE } from '../../model/system/satellites'
+import { STAR } from '../../model/system/stars'
+import { TEXT } from '../../model/utilities/text'
+import { CodexPage } from '../common/CodexPage'
+import { StyledText } from '../common/StyledText'
+import { STYLES } from '../styles'
 
 const SolarSystemView = () => {
   const { state } = VIEW.context()

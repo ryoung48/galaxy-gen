@@ -293,13 +293,13 @@ const homeworld: WeightedDistribution<SolarSystemTemplate> = [
     w: 20,
     v: {
       type: 'unary',
-      asteroidBelts: [{ distance: 50 }],
+      asteroidBelts: [{ distance: 40 }],
       objects: [
         base.star,
         {
           type: 'asteroid',
           count: { min: 1, max: 3 },
-          orbit: { distance: 0, angle: { min: 40, max: 100 }, offset: 50 }
+          orbit: { distance: 0, angle: { min: 40, max: 100 }, offset: 40 }
         },
         {
           uninhabitable: true,
@@ -377,24 +377,24 @@ const homeworld: WeightedDistribution<SolarSystemTemplate> = [
     w: 10,
     v: {
       type: 'unary',
-      asteroidBelts: [{ distance: 85 }],
+      asteroidBelts: [{ distance: 65 }],
       objects: [
         base.star,
         {
           uninhabitable: true,
           count: { min: 1, max: 1 },
-          orbit: { ...base.orbit, offset: 40 },
+          orbit: { ...base.orbit, offset: 25 },
           moons: { ...base.moon, uninhabitable: true }
         },
         {
           type: 'asteroid',
           count: { min: 1, max: 2 },
-          orbit: { distance: 0, angle: { min: 40, max: 110 }, offset: 25 }
+          orbit: { distance: 0, angle: { min: 40, max: 110 }, offset: 20 }
         },
         {
           uninhabitable: true,
           count: { min: 1, max: 1 },
-          orbit: { ...base.orbit, offset: 0 },
+          orbit: { ...base.orbit, offset: -5 },
           moons: { ...base.moon, uninhabitable: true }
         },
         {
@@ -522,12 +522,12 @@ const homeworld: WeightedDistribution<SolarSystemTemplate> = [
         {
           type: 'star',
           count: { min: 1, max: 1 },
-          orbit: { distance: 30, angle: { min: 180, max: 180 } }
+          orbit: { distance: 20, angle: { min: 180, max: 180 } }
         },
         {
           uninhabitable: true,
-          count: { min: 1, max: 3 },
-          orbit: { ...base.orbit, distance: 15, offset: 35 }
+          count: { min: 1, max: 1 },
+          orbit: { ...base.orbit, distance: 15, offset: 25 }
         },
         {
           type: 'habitable',

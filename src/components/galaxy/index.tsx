@@ -1,11 +1,11 @@
-import { RefObject, useEffect, useRef, useState } from 'react'
+import { Fragment, RefObject, useEffect, useRef, useState } from 'react'
 import { CONSTANTS } from '../../model/constants'
 import { STAR } from '../../model/system/stars'
 import { STYLES } from '../styles'
 import { SOLAR_SYSTEM } from '../../model/system'
 import { GALAXY } from '../../model/galaxy'
 import { CANVAS } from './canvas'
-import { pointer } from 'd3'
+import { pointer, scaleLinear } from 'd3'
 import jdenticon from 'jdenticon/standalone'
 import { HERALDRY } from '../heraldry/common'
 import { VIEW } from '../../context'
@@ -15,6 +15,8 @@ import { SolarSystem } from '../../model/system/types'
 import { MATH } from '../../model/utilities/math'
 import { DICE } from '../../model/utilities/dice'
 import { ORBITAL_DEPOSITS } from '../../model/system/resources'
+import { Grid } from '@mui/material'
+import Codex from '../codex'
 
 const paint = (
   canvasRef: RefObject<HTMLCanvasElement>,
@@ -25,8 +27,8 @@ const paint = (
   const systems = GALAXY.worlds()
   const local = transform.scale > 15
   const canvas = canvasRef.current!
-  canvas.width = CONSTANTS.W
-  canvas.height = CONSTANTS.H
+  canvas.width = canvas.clientWidth
+  canvas.height = canvas.clientHeight
   const ctx = canvas.getContext('2d')!
   ctx.clearRect(0, 0, CONSTANTS.W, CONSTANTS.H)
   ctx.translate(transform.dx, transform.dy)
@@ -323,44 +325,65 @@ const GalaxyMap = () => {
         })
       }
     })
+    CANVAS.init(node)
   }, [])
   useEffect(() => {
     paint(canvasRef, selected, transform, system)
   }, [selected, transform, system])
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        backgroundColor: STYLES.map,
-        border: 'double rgba(255, 255, 255, 0.4)',
-        width: CONSTANTS.W,
-        height: CONSTANTS.H
-      }}
-      onMouseMove={event => {
-        const [clientX, clientY] = pointer(event)
-        const nx = (clientX - transform.dx) / transform.scale
-        const ny = (clientY - transform.dy) / transform.scale
-        setCursor({ x: nx, y: ny })
-      }}
-      onClick={() => {
-        const point = window.galaxy.diagram.delaunay.find(cursor.x, cursor.y)
-        const solar = window.galaxy.systems[point]
-        if (!solar.edge) {
-          const planetScale = transform.scale > 150
-          const objects = SOLAR_SYSTEM.objects(solar)
-            .map(obj => [obj, ...(obj.tag === 'satellite' ? SATELLITE.moons(obj) : [])])
-            .flat()
-          const closest = MATH.findClosest(cursor, objects)
-          const { type, id } =
-            selected.type === 'nation'
-              ? { type: 'nation' as const, id: solar.nation }
-              : solar.idx !== system?.idx || !planetScale
-              ? { type: 'system' as const, id: point }
-              : { type: closest.tag, id: closest.idx }
-          dispatch({ type: 'transition', payload: { type, id } })
-        }
-      }}
-    ></canvas>
+    <Fragment>
+      <div>
+        <Grid
+          container
+          sx={{
+            zIndex: 2,
+            position: 'absolute',
+            top: CONSTANTS.H * 0.05,
+            left: CONSTANTS.W * 0.77,
+            fontSize: 20,
+            backgroundColor: `rgba(255, 255, 255, 0.85)`,
+            width: 600,
+            padding: 1,
+            opacity: scaleLinear().domain([1.5, 5]).range([0, 1]).clamp(true)(transform.scale)
+          }}
+        >
+          <Codex></Codex>
+        </Grid>
+      </div>
+      <canvas
+        ref={canvasRef}
+        style={{
+          backgroundColor: STYLES.map,
+          border: 'double rgba(255, 255, 255, 0.4)',
+          width: '100%',
+          height: 850
+        }}
+        onMouseMove={event => {
+          const [clientX, clientY] = pointer(event)
+          const nx = (clientX - transform.dx) / transform.scale
+          const ny = (clientY - transform.dy) / transform.scale
+          setCursor({ x: nx, y: ny })
+        }}
+        onClick={() => {
+          const point = window.galaxy.diagram.delaunay.find(cursor.x, cursor.y)
+          const solar = window.galaxy.systems[point]
+          if (!solar.edge) {
+            const planetScale = transform.scale > 150
+            const objects = SOLAR_SYSTEM.objects(solar)
+              .map(obj => [obj, ...(obj.tag === 'satellite' ? SATELLITE.moons(obj) : [])])
+              .flat()
+            const closest = MATH.findClosest(cursor, objects)
+            const { type, id } =
+              selected.type === 'nation'
+                ? { type: 'nation' as const, id: solar.nation }
+                : solar.idx !== system?.idx || !planetScale
+                ? { type: 'system' as const, id: point }
+                : { type: closest.tag, id: closest.idx }
+            dispatch({ type: 'transition', payload: { type, id } })
+          }
+        }}
+      ></canvas>
+    </Fragment>
   )
 }
 

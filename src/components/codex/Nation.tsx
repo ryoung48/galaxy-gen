@@ -1,9 +1,9 @@
-import { VIEW } from '../context'
-import { CodexPage } from './common/CodexPage'
 import { Grid } from '@mui/material'
-import { StyledText } from './common/StyledText'
-import { NATION } from '../model/nations'
-import { TEXT } from '../model/utilities/text'
+import { VIEW } from '../../context'
+import { NATION } from '../../model/nations'
+import { TEXT } from '../../model/utilities/text'
+import { CodexPage } from '../common/CodexPage'
+import { StyledText } from '../common/StyledText'
 
 const NationView = () => {
   const { state } = VIEW.context()

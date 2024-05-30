@@ -1,7 +1,7 @@
 export const CONSTANTS = {
   // canvas constants
-  W: 800,
-  H: 800,
+  W: 1600,
+  H: 1600,
   SOLAR_SYSTEM_MOD: 0.005,
   // physics constants
   G: 6.6743e-11, // Gravitational constant
