@@ -1,22 +1,21 @@
 import { css } from '@emotion/css'
 import { VIEW } from '../../context'
-import { ViewState } from '../../context/types'
 import { CSSProperties } from 'react'
 import { LazyTippy } from './LazyTippy'
-import { STYLES } from '../styles'
+import { COLORS } from '../../theme/colors'
 
 const linkStyles = css`
   a {
     color: black;
     border-bottom: 1px solid black;
     &:hover {
-      color: ${STYLES.accent} !important;
-      border-bottom: 1px dotted ${STYLES.accent} !important;
+      color: ${COLORS.accent} !important;
+      border-bottom: 1px dotted ${COLORS.accent} !important;
     }
   }
 `
 
-const tags = ['system', 'nation', 'star', 'satellite'] as const
+const tags = ['system', 'nation', 'star', 'orbit'] as const
 
 export function StyledText(props: { text: string; color?: string }) {
   const { dispatch } = VIEW.context()
@@ -27,10 +26,21 @@ export function StyledText(props: { text: string; color?: string }) {
       {text.split(/@(.+?)@/g).map((text, j) => {
         if (text.match(/.+|.+|.+/)) {
           const [label, i, cat, tooltip, color, italics, bold, underline] = text.split('##')
-          const tag = cat as ViewState['selected']['type']
+          const tag = cat as (typeof tags)[number]
           const idx = parseInt(i)
           const onClick = tags.includes(tag)
-            ? () => dispatch({ type: 'transition', payload: { type: tag, id: idx } })
+            ? () =>
+                dispatch({
+                  type: 'transition',
+                  payload:
+                    tag === 'nation'
+                      ? window.galaxy.nations[idx]
+                      : tag === 'system'
+                      ? window.galaxy.systems[idx]
+                      : tag === 'star'
+                      ? window.galaxy.stars[idx]
+                      : window.galaxy.orbits[idx]
+                })
             : false
           const textColor = color !== '' ? color : baseColor
           const underlineColor = underline || textColor

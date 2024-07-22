@@ -2,15 +2,15 @@ import { css } from '@emotion/css'
 import { Box, Grid } from '@mui/material'
 
 import { CodexTitleProps } from './types'
-import { STYLES } from '../../styles'
+import { COLORS } from '../../../theme/colors'
 
 const classes = {
   title: css`
-    font-size: 40px;
+    font-size: 30px;
   `,
   subtitle: css`
     font-size: 12px;
-    color: ${STYLES.subtitle};
+    color: ${COLORS.subtitle};
     padding-top: 3px;
   `
 }

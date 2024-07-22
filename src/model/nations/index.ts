@@ -123,7 +123,6 @@ export const NATION = {
         lang: nation.language,
         key: 'solar system'
       })
-      SOLAR_SYSTEM.populate(system)
     })
   },
   systems: (nation: Nation) => nation.systems.map(idx => window.galaxy.systems[idx])

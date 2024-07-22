@@ -1,52 +1,61 @@
-import { Resource } from '../resources/types'
+import { Orbit } from '../orbits/types'
 
 export interface Star {
   idx: number
   tag: 'star'
-  seed: string
+  name: string
   system: number
-  mass: number // Mass in solar masses
-  radius: number // Radius in solar radii
-  luminosity: number // Luminosity in solar luminosities
-  temperature: number // Surface temperature in Kelvin
-  size: number
-  orbit: { angle: number; distance: number }
-  resources: { type: Resource; amount: number }[]
-  type:
-    | 'o star'
-    | 'b star'
-    | 'a star'
-    | 'f star'
-    | 'g star'
-    | 'k star'
-    | 'm star'
-    | 'l star'
-    | 't star'
-    | 'm red giant'
-    | 'black hole'
-    | 'neutron star'
-    | 'pulsar'
-  x: number
-  y: number
-  _name?: string
+  parent?: number
+  zone?: Orbit['zone'] | 'distant'
+  angle: number
+  distance: number
+  age: number
+  base: BaseClassKey
+  class:
+    | 'O'
+    | 'B'
+    | 'M-Ib'
+    | 'A-V'
+    | 'F-IV'
+    | 'K-III'
+    | 'F-V'
+    | 'G-IV'
+    | 'M-III'
+    | 'G-V'
+    | 'K-IV'
+    | 'K-V'
+    | 'M-V'
+    | 'M-Ve'
+    | 'L'
+    | 'D'
+  mass: number
+  radius: number
+  temperature: number
+  luminosity: number
+  orbits: (Orbit | Star)[]
+  // display
+  r: number
+  fullR?: number
 }
 
-export type StarTemplates = Record<
-  Star['type'],
-  {
-    mass: number[] // Mass in solar masses
-    radius: number[] // Radius in solar radii
-    luminosity: number[] // Luminosity in solar luminosities
-    temperature: number[] // Surface temperature in Kelvin
-    color: string
-    weight: number // Spawn chance
-    habitability: number
-    size: { min: number; max: number }
-  }
->
+export type BaseClassKey = 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'L' | 'D'
+
+export type BaseClass = {
+  type: (params: { age: number; companions: number }) => Star['class']
+}
+
+export type SpectralClass = {
+  mass: number[]
+  radius: number[]
+  temperature: number[]
+  luminosity: number[]
+  color: string
+}
 
 export type StarSpawnParams = {
   system: number
-  type: Star['type']
-  orbit: Star['orbit']
+  parent?: Star
+  distance?: number
+  angle?: number
+  zone?: Star['zone']
 }

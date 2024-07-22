@@ -1,5 +1,6 @@
 import { NATION } from '../nations'
 import { SOLAR_SYSTEM } from '../system'
+import { ORBIT } from '../system/orbits'
 import { DICE } from '../utilities/dice'
 import { MATH } from '../utilities/math'
 import { MINIMUM_SPANNING_TREE } from '../utilities/mst'
@@ -7,8 +8,7 @@ import { VORONOI } from '../utilities/voronoi'
 import { Galaxy, GalaxySpawnParams } from './types'
 
 export const GALAXY = {
-  spawn: ({ radius, dimensions, size }: GalaxySpawnParams): Galaxy => {
-    const seed = DICE.id(1)
+  spawn: ({ radius, dimensions, size, seed }: GalaxySpawnParams): Galaxy => {
     DICE.spawn(seed)
     const { height, width } = dimensions
     // Generate stars surrounding the empty galactic core
@@ -40,7 +40,17 @@ export const GALAXY = {
     finalPoints.forEach(point => {
       point.n = point.n.filter(n => !finalPoints[n].edge)
     })
-
+    window.galaxy = {
+      seed,
+      systems: [],
+      mst: [],
+      diagram,
+      radius,
+      uniqueNames: {},
+      nations: [],
+      stars: [],
+      orbits: []
+    }
     const systems = finalPoints.map(SOLAR_SYSTEM.spawn)
     const mst = MINIMUM_SPANNING_TREE.build(
       finalPoints.filter(p => !p.edge).reduce((acc, p) => ({ ...acc, [p.idx]: p }), {})
@@ -49,18 +59,10 @@ export const GALAXY = {
       systems[x.idx].lanes.push(y.idx)
       systems[y.idx].lanes.push(x.idx)
     })
-    window.galaxy = {
-      seed,
-      systems,
-      mst,
-      diagram,
-      radius,
-      uniqueNames: {},
-      nations: [],
-      stars: [],
-      satellites: []
-    }
+    window.galaxy.systems = systems
+    window.galaxy.mst = mst
     NATION.spawn()
+    ORBIT.colors.set()
     return window.galaxy
   },
   worlds: () => window.galaxy.systems.filter(p => !p.edge)

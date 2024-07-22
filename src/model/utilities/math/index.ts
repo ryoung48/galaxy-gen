@@ -17,6 +17,7 @@ export const MATH = {
     const total = map.reduce((sum, { w }) => sum + w, 0)
     return map.map(({ w, v }) => ({ v, w: total === 0 ? 0 : (w / total) * qty }))
   },
+  clamp: (x: number, min: number, max: number) => Math.min(Math.max(x, min), max),
   extractHue: (hslString: string): number | null => {
     // Use a regular expression to match the hue, saturation, and lightness values
     const regex = /hsl\((\d+),\s*(\d+)%?,\s*(\d+)%?\)/

@@ -1,16 +1,13 @@
 import { Grid } from '@mui/material'
-import { VIEW } from '../../context'
 import { SOLAR_SYSTEM } from '../../model/system'
-import { SATELLITE } from '../../model/system/satellites'
-import { STAR } from '../../model/system/stars'
 import { TEXT } from '../../model/utilities/text'
 import { CodexPage } from '../common/CodexPage'
 import { StyledText } from '../common/StyledText'
-import { STYLES } from '../styles'
+import { COLORS } from '../../theme/colors'
+import { SolarSystem } from '../../model/system/types'
 
-const SolarSystemView = () => {
-  const { state } = VIEW.context()
-  const system = window.galaxy.systems[state.selected.id]
+const SolarSystemView = (props: { system: SolarSystem }) => {
+  const system = props.system
   return (
     <CodexPage
       title={system.name}
@@ -18,7 +15,7 @@ const SolarSystemView = () => {
         <StyledText
           text={`Solar System (#${system.idx ?? ''}), ${TEXT.decorate({
             link: SOLAR_SYSTEM.nation(system),
-            color: STYLES.subtitle
+            color: COLORS.subtitle
           })}`}
         ></StyledText>
       }
@@ -38,7 +35,7 @@ const SolarSystemView = () => {
             </span>
           </Grid>
           <Grid item xs={12}>
-            <span>
+            {/* <span>
               <b>Celestial Bodies: </b>{' '}
               <StyledText
                 text={SOLAR_SYSTEM.objects(system)
@@ -56,7 +53,7 @@ const SolarSystemView = () => {
                   )
                   .join(', ')}
               ></StyledText>
-            </span>
+            </span> */}
           </Grid>
         </Grid>
       }

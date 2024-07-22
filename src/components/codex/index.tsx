@@ -1,6 +1,6 @@
 import { VIEW } from '../../context'
 import NationView from './Nation'
-import SatelliteView from './Satellite'
+import OrbitView from './Orbit'
 import SolarSystemView from './SolarSystem'
 import StarView from './Star'
 
@@ -8,10 +8,10 @@ export default function Codex() {
   const { state } = VIEW.context()
   return (
     <div>
-      {state.selected.type === 'system' && <SolarSystemView />}
-      {state.selected.type === 'nation' && <NationView />}
-      {state.selected.type === 'star' && <StarView />}
-      {state.selected.type === 'satellite' && <SatelliteView />}
+      {state.selected?.tag === 'system' && <SolarSystemView system={state.selected} />}
+      {state.selected?.tag === 'nation' && <NationView nation={state.selected} />}
+      {state.selected?.tag === 'star' && <StarView star={state.selected} />}
+      {state.selected?.tag === 'orbit' && <OrbitView orbit={state.selected} />}
     </div>
   )
 }

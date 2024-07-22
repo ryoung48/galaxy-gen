@@ -1,13 +1,12 @@
 import { Grid } from '@mui/material'
-import { VIEW } from '../../context'
 import { NATION } from '../../model/nations'
 import { TEXT } from '../../model/utilities/text'
 import { CodexPage } from '../common/CodexPage'
 import { StyledText } from '../common/StyledText'
+import { Nation } from '../../model/nations/types'
 
-const NationView = () => {
-  const { state } = VIEW.context()
-  const nation = window.galaxy.nations[state.selected.id]
+const NationView = (props: { nation: Nation }) => {
+  const nation = props.nation
   return (
     <CodexPage
       title={nation.name}

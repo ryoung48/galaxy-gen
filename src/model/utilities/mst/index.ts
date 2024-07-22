@@ -1,10 +1,10 @@
 import PriorityQueue from 'js-priority-queue'
-import { Point, Edge } from './types'
+import { MSTPoint, Edge } from './types'
 import { ARRAY } from '../arrays'
 
 export const MINIMUM_SPANNING_TREE = {
-  build: (points: Record<number, Point>): Edge[] => {
-    const visited = new Set<Point>()
+  build: (points: Record<number, MSTPoint>): Edge[] => {
+    const visited = new Set<MSTPoint>()
     const edges: Edge[] = []
     const distances = new Map<Edge, number>()
     const priorityQueue = new PriorityQueue({

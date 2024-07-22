@@ -24,9 +24,7 @@ export function CodexPage(props: { content: ReactNode } & CodexTitleProps) {
   const { title, subtitle, content } = props
   const { state } = VIEW.context()
   const nation =
-    state.selected.type === 'nation'
-      ? window.galaxy.nations[state.selected.id]
-      : SOLAR_SYSTEM.nation(VIEW.system(state)!)
+    state.selected?.tag === 'nation' ? state.selected : SOLAR_SYSTEM.nation(VIEW.system(state)!)
   return (
     <Box className={classes.panel}>
       <Grid container p={3} justifyContent='space-between'>

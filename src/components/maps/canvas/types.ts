@@ -1,4 +1,7 @@
 import { ZoomTransform } from 'd3'
+import { ViewState } from '../../../context/types'
+import { SolarSystem } from '../../../model/system/types'
+import { MapModes } from '../types'
 
 export type ZoomParams = { node: Element; onZoom: (event: { transform: ZoomTransform }) => void }
 
@@ -26,4 +29,11 @@ export type DrawTextParams = {
   text: string
   color?: string
   size: number
+}
+
+export type PaintGalaxyParams = {
+  ctx: CanvasRenderingContext2D
+  selected: ViewState['selected']
+  solarSystem?: SolarSystem
+  mapMode: MapModes
 }

@@ -1,5 +1,12 @@
 import { ZoomBehavior, select, zoom } from 'd3'
 import { DrawCircleParams, DrawLineParams, DrawTextParams, ZoomParams } from './types'
+import { Star } from '../../../model/system/stars/types'
+import { MATH } from '../../../model/utilities/math'
+import { Orbit } from '../../../model/system/orbits/types'
+import { Point } from '../../../model/utilities/math/types'
+import { CONSTANTS } from '../../../model/constants'
+import { ORBIT } from '../../../model/system/orbits'
+import { STAR } from '../../../model/system/stars'
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -15,6 +22,16 @@ export const CANVAS = {
     ctx.fillStyle = fill
     ctx.fill()
     if (width > 0) ctx.stroke()
+  },
+  coordinates: (orbit: Orbit | Star): Point => {
+    const system = window.galaxy.systems[orbit.system]
+    const parent = orbit.tag === 'star' ? STAR.parent(orbit) : ORBIT.parent(orbit)
+    const center = parent ? CANVAS.coordinates(parent) : system
+    return MATH.angles.cartesian({
+      radius: orbit.distance * CONSTANTS.SOLAR_SYSTEM_MOD,
+      deg: orbit.angle,
+      center
+    })
   },
   line: ({ ctx, x1, y1, x2, y2, color, width }: DrawLineParams) => {
     ctx.lineWidth = width

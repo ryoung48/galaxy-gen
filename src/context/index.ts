@@ -1,12 +1,12 @@
 import { createContext, Dispatch, useContext } from 'react'
 
 import { ViewActions, ViewState } from './types'
-import { STAR } from '../model/system/stars'
-import { SATELLITE } from '../model/system/satellites'
+import { GALAXY } from '../model/galaxy'
+import { DICE } from '../model/utilities/dice'
 
 const init: ViewState = {
   id: '',
-  selected: { type: 'system', id: 0 }
+  selected: null
 }
 
 export const ViewContext = createContext(
@@ -22,6 +22,10 @@ export const VIEW = {
   init,
   reducer: (state: ViewState, action: ViewActions): ViewState => {
     switch (action.type) {
+      case 'init': {
+        const start = DICE.swap(window.galaxy.seed, () => window.dice.choice(GALAXY.worlds()))
+        return { id: action.payload.id, selected: start }
+      }
       case 'transition': {
         const updated = { ...state, selected: action.payload }
         return updated
@@ -29,13 +33,8 @@ export const VIEW = {
     }
   },
   system: ({ selected }: ViewState) => {
-    if (selected.type === 'system') return window.galaxy.systems[selected.id]
-    else if (selected.type === 'star') {
-      const star = window.galaxy.stars[selected.id]
-      return STAR.system(star)
-    } else if (selected.type === 'satellite') {
-      const satellite = window.galaxy.satellites[selected.id]
-      return SATELLITE.system(satellite)
-    }
+    if (selected?.tag === 'system') return selected
+    if (selected?.tag === 'star') return window.galaxy.systems[selected.system]
+    if (selected?.tag === 'orbit') return window.galaxy.systems[selected.system]
   }
 }

@@ -1,37 +1,35 @@
 import 'tippy.js/dist/tippy.css'
 import 'tippy.js/animations/scale.css'
 
-import { Box, Grid } from '@mui/material'
-import GalaxyMap from './components/galaxy'
-import { GALAXY } from './model/galaxy'
-import { CONSTANTS } from './model/constants'
-import { useReducer } from 'react'
+import { Container, Grid, ThemeProvider } from '@mui/material'
+import GalaxyMap from './components/maps'
+import { useReducer, useState } from 'react'
 import { VIEW, ViewContext } from './context'
-import { DICE } from './model/utilities/dice'
-
-window.galaxy = GALAXY.spawn({
-  radius: { min: 100, max: 300 },
-  dimensions: { width: CONSTANTS.W, height: CONSTANTS.H },
-  size: 2000
-})
+import { Landing } from './components/Landing'
+import sciFiTheme from './theme'
+import { Header } from './components/Header'
+import { Footer } from './components/Footer'
+import { StatisticsView } from './components/statistics'
 
 function App() {
-  const start = DICE.swap(window.galaxy.seed, () => window.dice.choice(GALAXY.worlds()))
-  const [state, dispatch] = useReducer(VIEW.reducer, {
-    ...VIEW.init,
-    id: window.galaxy.seed,
-    selected: { type: 'system', id: start.idx }
-  })
+  const [state, dispatch] = useReducer(VIEW.reducer, { ...VIEW.init })
+  const [stats, toggleStats] = useState(false)
   return (
-    <ViewContext.Provider value={{ state, dispatch }}>
-      <Box>
-        <Grid container p={5} justifyContent='space-around'>
-          <Grid item xs={12}>
-            <GalaxyMap></GalaxyMap>
+    <ThemeProvider theme={sciFiTheme}>
+      <ViewContext.Provider value={{ state, dispatch }}>
+        <Header stats={stats} toggleStats={toggleStats}></Header>
+        <Container maxWidth={false} sx={{ height: '100vh', padding: 0 }}>
+          <Grid container justifyContent='space-around'>
+            <Grid item p={0} xs={12}>
+              {state.id && !stats && <GalaxyMap></GalaxyMap>}
+              {state.id && stats && <StatisticsView></StatisticsView>}
+              {!state.id && <Landing></Landing>}
+            </Grid>
           </Grid>
-        </Grid>
-      </Box>
-    </ViewContext.Provider>
+        </Container>
+        <Footer></Footer>
+      </ViewContext.Provider>
+    </ThemeProvider>
   )
 }
 

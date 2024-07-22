@@ -1,8 +1,8 @@
-export type Point = {
+export type MSTPoint = {
   x: number
   y: number
   n: number[]
   idx: number
 }
 
-export type Edge = [Point, Point]
+export type Edge = [MSTPoint, MSTPoint]
