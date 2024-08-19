@@ -32,14 +32,33 @@ export interface Orbit {
   distance: number
   zone: 'epistellar' | 'inner' | 'outer'
   group: 'asteroid belt' | 'dwarf' | 'terrestrial' | 'helian' | 'jovian'
-  type: 'asteroid belt' | DwarfType | TerrestrialType | HelianType | JovianType
+  type: 'asteroid belt' | 'asteroid' | DwarfType | TerrestrialType | HelianType | JovianType
   subtype?: string
   size: number // 0-9; A=10; B-E=11-14; G=15
-  atmosphere: number // 0-9; A-D=10-13; G=14
-  hydrosphere: number // 0-9; A=10; B=11; F=12; G=13
-  biosphere: number // 0-9; A=10; B=11; C=12; D=13
+  atmosphere: number
+  hydrosphere: number
+  biosphere: {
+    type:
+      | 'sterile'
+      | 'microbial'
+      | 'human-miscible'
+      | 'immiscible'
+      | 'hybrid'
+      | 'engineered'
+      | 'remnant'
+    score: number
+  }
   chemistry?: 'water' | 'ammonia' | 'methane' | 'sulfur' | 'chlorine'
-  desirability: number
+  temperature: 'burning' | 'hot' | 'temperate' | 'cold' | 'frozen' | `variable (${'hot' | 'cold'})`
+  habitation: 'none' | 'abandoned' | 'outpost' | 'colony' | 'homeworld'
+  population: number
+  government: number
+  law: number
+  industry: number
+  habitability: {
+    score: number
+    class: 'inhospitable' | 'harsh' | 'marginal' | 'comfortable' | 'paradise'
+  }
   orbits: Orbit[]
   rings?: 'minor' | 'complex'
   // display
@@ -54,6 +73,8 @@ export type OrbitSpawnParams = {
   group?: Orbit['group']
   angle: number
   distance: number
+  deviation: number
+  homeworld?: boolean
 }
 
 export type OrbitGroupDetails = {
@@ -64,7 +85,7 @@ export type OrbitGroupDetails = {
 export type OrbitTypeDetails = {
   description: string
   color: string
-  roll: (_params: { star: Star; zone: Orbit['zone'] }) => {
+  roll: (_params: { star: Star; zone: Orbit['zone']; temperature: Orbit['temperature'] }) => {
     size: number
     atmosphere: number
     hydrosphere: number
@@ -77,8 +98,10 @@ export type OrbitTypeDetails = {
 export type OrbitDesirabilityParams = {
   star: Star
   zone: Orbit['zone']
-  group: Orbit['group']
+  type: Orbit['type']
+  asteroid: boolean
   hydrosphere: number
   atmosphere: number
+  temperature: Orbit['temperature']
   size: number
 }

@@ -17,23 +17,44 @@ export const SYSTEM_MAP = {
       const radius = object.distance
       const parent = object.tag === 'star' ? STAR.parent(object) : ORBIT.parent(object)
       const center = CANVAS.coordinates(parent ?? object)
+      const zone = object.zone
       CANVAS.circle({
         ctx,
         ...center,
         radius: radius * mod,
         fill: 'transparent',
-        border: { color: 'lightgray', width: mod * 0.25 }
+        border: {
+          color:
+            zone === 'outer'
+              ? 'lightblue'
+              : zone === 'inner'
+              ? 'yellow'
+              : zone === 'epistellar'
+              ? 'orange'
+              : 'lightgray',
+          width: mod * 0.25
+        }
       })
     })
     objects.forEach(object => {
       const center = CANVAS.coordinates(object)
+      if (object.system === 128) {
+        console.log()
+      }
       if (object.tag === 'star') {
         const star = object
         CANVAS.circle({
           ctx,
           ...center,
           radius: star.r * mod,
-          fill: mapMode === 'biosphere' ? METRICS.biosphere.color(0) : STAR.color(star),
+          fill:
+            mapMode === 'desirability'
+              ? METRICS.desirability.color(-10)
+              : mapMode === 'biosphere'
+              ? METRICS.biosphere.color(0)
+              : mapMode === 'population'
+              ? METRICS.population.color(0)
+              : STAR.color(star),
           border: { color: 'black', width: mod }
         })
         CANVAS.text({
@@ -44,7 +65,7 @@ export const SYSTEM_MAP = {
           size: 0.05
         })
       } else {
-        if (object.group === 'asteroid belt') {
+        if (object.type === 'asteroid belt') {
           const parent = ORBIT.parent(object)
           const center = CANVAS.coordinates(parent ?? object)
           DICE.swap(solarSystem.seed, () => {
@@ -72,8 +93,12 @@ export const SYSTEM_MAP = {
             y: center.y,
             radius: orbit.r * mod,
             fill:
-              mapMode === 'biosphere'
-                ? METRICS.biosphere.color(orbit.biosphere)
+              mapMode === 'desirability'
+                ? METRICS.desirability.color(orbit.habitability.score)
+                : mapMode === 'biosphere'
+                ? METRICS.biosphere.color(orbit.biosphere.score)
+                : mapMode === 'population'
+                ? METRICS.population.color(orbit.population)
                 : ORBIT.colors.get()[orbit.type],
             border: { color: 'black', width: mod * 0.5 }
           })

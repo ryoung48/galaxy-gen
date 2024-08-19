@@ -1,0 +1,198 @@
+below is a table of science fiction hostiles from stars without number separated into three colums: hostile type, leadership, and special traits
+Here is the table of science fiction hostiles from Stars Without Number, written in tabular format:
+
+| Hostile Type                 | Leadership                           | Special Traits                                                    |
+|------------------------------|--------------------------------------|------------------------------------------------------------------|
+| Swarming Alien Vermin        | Hive Queen or Huge Symbiote          | Can creep anywhere, flying, acidic mandibles, cyclic swarming     |
+| Alien Pack Hunters           | Alpha Hunter or Mated Pair           | Perfect camouflage, poisonous bite, telepathic, taboo animal      |
+| Dangerous Escaped Xenolife   | Cunning Alpha Survivor               | From very alien world, psionic capabilities, human intellect      |
+| Impoverished Street Gang     | Cynical Dealmaker Boss               | Locals fear and obey them, they've trapped their territory        |
+| Ethnic Supremacists          | “Pure-Blooded” Ruling Family         | Unofficial state backing, law enforcement ties, mad grudges       |
+| Violent Religious Zealots    | Prophet, Priest, or Heretic          | Suicidal courage, strange taboos, respected by co-religionists    |
+| Dangerous Isolationists      | Clan Elder, Venerated Guru           | Esoteric philosophy, entrenched defenses, tacit official tolerance|
+| Quarrelsome Squatters        | Grizzled Boss, “Family” Elder        | Claim to have the true deed, tolerated nest of social outcasts    |
+| Scholars of the Forbidden    | Maltech Scientist, Cult Leader       | Unholy abominations, unearthed horrors, maltech gear              |
+| Organized Crime Gang         | Businesslike Gang Boss               | Bribed law enforcement, street gang footsoldiers, vice ties       |
+| Roving Bandit Pack           | Brutal Bandit Chieftain              | Blend with normal travelers, demobbed impoverished soldiers       |
+| Rebel Cell                   | Zealous Revolutionary Leader         | Extremist politics are popular, grudge for a governmental sin     |
+| Terrorist Group              | Cold-Blooded Ideologue               | False flag for another group, popular with many natives           |
+| Rogue Government Agency      | Deniable Official                    | Only seems to be rogue, has milspec gear, has mission to do        |
+| Jaded Decadents              | Wealthy, Nihilistic Youth            | Have a trademark vice, semi-official protection, trade in sin     |
+| Sapient Alien Natives        | Bitter Alien Chieftain               | Masquerade as humans, have human allies, exiles in this place     |
+| Rival Far Trader’s Thugs     | Ruthless Offworlder Factor           | Ties with local government, secret deals with corrupt locals      |
+| Elite Mercenary Troops       | Amoral Professional Warrior          | Unofficial military branch, favor a specific weapon or tactic     |
+| Esoteric Disciplined Mystics | Bodily-Perfect Master                | Some are psychics, they use psitech, they're gengineered          |
+| Political Thugs              | Party Official                       | Arm of the ruling party, widely-mistrusted extremists, popular    |
+| Ancient Guard Robots         | Decayed and Erratic AI               | Lethal but damaged pretech weaponry, original colonial guards     |
+| Scruffy Cut-Rate Mercs       | Substance-Addicted Captain           | They can be bought by the PCs, very economical in courage         |
+| Culturally-Permitted Thugs   | Arrogantly Confident Chief           | Their violence is socially endorsed, they hate outsiders          |
+| Militant Utopians            | Wild-Eyed Dreamer                    | Outsiders poison their “perfect society,” death to all wreckers   |
+| Offworld Agents              | Deep Black Commander                 | Trying to stay hidden, here to scout the local government         |
+| Mutant Outcasts              | Grotesquely Deformed Leader          | Shunned by society, possess unique abilities due to mutations, seek revenge |
+| Carnivorous Flora            | Lethal Animate Plant                 | Lures prey with deceptive beauty, ensnares and devours, highly toxic |
+| Apocalyptic Death Cult       | Charismatic Doomsday Prophet         | Believe in bringing about the end of the world, use suicide attacks, have hidden stockpiles |
+| Fungal colony                | Spore-emitting overlord              | Controls network of mycelium, infects and controls hosts, rapidly spreads |
+
+
+1d10 Common Actor Society Actor Official Actor Primitive Actor
+1 Tired factory worker Glittering noble Minor governmental clerk Brutal war chief
+2 Clueless office drone Official’s favorite mistress Military intelligence agent Slave captured in war
+3 Ordinary beat cop Famous local artist Confused customs inspector Keeper of lost tech
+4 Curious scientific researcher Banker owed money by all City law enforcement chief Feral psychic madman
+5 Petty street thief Local poet-laureate Ruling party political theorist Hard-bitten caravan master
+6 Reluctant prostitute Important native priest State church official Trainer of war beasts
+7 Luckless burglar Rich, notorious degenerate Tax inspector Barbaric nobleman
+8 Underground artist Crusading society matron Mid-ranking military officer Missionary from other world
+9 Naive political partisan Noveau-riche upstart Bureau research scientist Mistreated native peasant
+10 Weary street clinic doctor Alien or foreign ambassador Government-paid mole Fearsome tribal priest
+
+
+below is a table of conflicts to create adventures in SWN (lets call this group A):
+1d12 1d8 One Side of the Conflict... 1d10 Things Important to the Conflict
+
+below is a table of social conflicts and related important things
+
+Social
+1-3
+1 Gave up a Thing but wants it back now 1 A hand in marriage
+2 Has already caused a Thing to a rival's chagrin 2 Inclusion in a powerful social group
+3 Is owed a Thing by a recalcitrant other side 3 An official position
+4 Lost a Thing and wants revenge on the takers 4 Family social preeminence over peers
+5 Wants to defend a Thing against an enemy 5 Acknowledgement of some worthy deed
+6 Wants to create a Thing despite hostile rivals 6 Right to an inherited social rank
+7 Wants to ruin and destroy a Thing 7 Liberty from certain customary duties
+8 Wants to take or claim a Thing 8 Acknowledged guilt of a crime
+9 Right to live in a place
+10 Control of the local government
+
+how might you expand this table?
+
+Economic
+4-6
+1 Has discovered a Thing and wants to keep it from foe 1 Buried pretech relics
+2 A Thing they have is tainted by dangerous maltech 2 Cache of advanced weaponry
+3 They're doing reckless, foolish deeds for a Thing 3 Grand or ritually-important building
+4 A Thing was stolen from them by a rival 4 Large inheritance
+5 Their rightful ownership of a Thing is doubted by a foe 5 Number of slaves, serfs, or clients
+6 They fight among their own kin over the Thing 6 Plot of land
+7 A Thing is being sought by corrupt officials or nobles 7 Precious goods or cache of local credits
+8 A Thing was lost long ago but its whereabouts surface 8 Profit from a risky mercantile effort
+
+9 Profitable business
+10 Rich mine or resource extraction site
+
+Military
+7-9
+1 A Thing's military forces have crushed the local forces 1 "Taxmen" from neighboring clan or state
+2 A Thing demands tribute or will kill hostages 2 Bandit raiding band
+3 A Thing threatens to depose the local ruler 3 Deniable military raiders
+4 A rival is secretly backing a Thing 4 Brutal raiders who kidnap others for troops
+5 A Thing is flexing recently-gained power 5 Heavily-armed religious zealots
+6 Two rivals bid for the support of a Thing 6 Local rebels against authority
+7 A Thing is destroying a trusted ally 7 Mercenary band turned raider
+8 A Thing has been smashed and the survivors run wild 8 Ferocious, man-eating local wildlife
+9 Vicious bully and his minions
+10 Warriors of a tyrannical ruler
+
+Religious
+10-12
+
+1 Violent zealots have focused on a Thing 1 Bones of a holy person
+2 A Thing has split the religion into factions 2 Book of holy rituals
+3 A Thing is denounced by a violent demagogue 3 Dominant community religion
+4 Mistrusted strangers have brought a Thing 4 Expulsion of "heretical" priests
+5 Documents surface leading to a Thing 5 Local religious persecution
+6 A young priest flees those who would hide a Thing 6 Miraculous pretech device-cum-idol
+7 The local laity have become obsessed with a Thing 7 Relic of a great holy person
+8 A Thing has been stolen or caused by foes 8 Psychic activity within the religion
+9 Temple hierarchy dominance
+10 Troublemaking missionaries
+
+
+Here are more conflict types written in a slightly different format (lets call this group B)
+
+Conflict Type d10 Overall Situation d10 Specific Focus
+1 Money 1-2 Money is owed to a ruthless creditor 1-2 Organized crime wants it
+3-4 Money was stolen from someone 3-4 Corrupt officials want it
+5-6 A sudden profit opportunity arises 5-6 A sympathetic NPC needs it
+7-8 There’s a hidden stash of wealth 7-8 The PCs are owed it
+9-0 Money is offered from an evil source 9-0 It will disappear very soon
+2 Revenge 1-2 Someone was murdered 1-2 It was wholly justified
+3-4 Someone was stripped of rank 3-4 The wrong person is targeted
+5-6 Someone lost all their wealth 5-6 The reaction is excessive
+7-8 Someone lost someone’s love 7-8 The PCs are somehow blamed
+9-0 Someone was framed for a crime 9-0 Both sides were wronged
+3 Power 1-2 An influential political leader 1-2 They’ve betrayed their own
+3-4 A stern community elder 3-4 Someone’s gunning for them
+5-6 A ruling patriarch of a large family 5-6 They made a terrible choice
+7-8 A star expert in a particular industry 7-8 They usurped their position
+9-0 A criminal boss or outcast leader 9-0 They’re oppressing their own
+4 Natural Danger 1-2 A cyclical planetary phenomenon 1-2 Anti-helpful bureaucrats
+3-4 A sudden natural disaster 3-4 Religious zealots panic
+5-6 Sudden loss of vital infrastructure 5-6 Bandits and looters strike
+7-8 Catastrophe from outside meddling 7-8 The government hushes it up
+9-0 Formerly-unknown planetary peril 9-0 There’s money in exploiting it
+5 Religion 1-2 Sects that hate each other bitterly 1-2 Charismatic new leader
+3-4 Zealot reformers forcing new things 3-4 Mandatory state religion
+5-6 Radical traditionalists fighting back 5-6 Heavy foreign influence
+7-8 Ethnic religious divisions 7-8 Religious purging underway
+9-0 Corrupt and decadent institutions 9-0 Fighting for holy ground
+6 Ideology 1-2 A universally-despised fringe group 1-2 Terrorist attack
+3-4 Terrorists with widespread support 3-4 Street rioting
+5-6 A political party’s goon squads 5-6 Police state crackdown
+7-8 Dead-end former regime supporters 7-8 Forced expulsions
+9-0 Ruthless ascendant political group 9-0 Territory under hostile rule
+7 Ethnicity 1-2 A traditionally subordinate group 1-2 Forced immigration
+3-4 An ethnic group from offworld 3-4 Official ethnic ghettos
+5-6 A dominant caste or ethnicity 5-6 Rigid separation of groups
+7-8 An alien or transhuman group 7-8 Group statuses have changed
+9-0 Two groups that hate each other 9-0 Rising ethnic violence
+8 Resources 1-2 There’s a cache of illegal materials 1-2 Someone thinks they own it
+3-4 A hidden strike of rare resources 3-4 The state is looking for it
+5-6 Cargo has been abandoned as lost 5-6 It has its own protectors
+7-8 Land ownership is disputed 7-8 Rights to it were stolen
+9-0 A resource is desperately necessary 9-0 Offworlders want it badly
+
+
+build rpg quests from the following conflict table: Conflict Type d10 Overall Situation d10 Specific Focus
+1 Money 1-2 Money is owed to a ruthless creditor 1-2 Organized crime wants it
+3-4 Money was stolen from someone 3-4 Corrupt officials want it
+5-6 A sudden profit opportunity arises 5-6 A sympathetic NPC needs it
+7-8 There’s a hidden stash of wealth 7-8 The PCs are owed it
+9-0 Money is offered from an evil source 9-0 It will disappear very soon
+2 Revenge 1-2 Someone was murdered 1-2 It was wholly justified
+3-4 Someone was stripped of rank 3-4 The wrong person is targeted
+5-6 Someone lost all their wealth 5-6 The reaction is excessive
+7-8 Someone lost someone’s love 7-8 The PCs are somehow blamed
+9-0 Someone was framed for a crime 9-0 Both sides were wronged
+
+each quest description must start with a verb
+
+explain the differences between group A and group B
+
+world generation:
+
+size: tiny|small|medium|large|huge
+atmosphere: vacuum|thin|inert|breathable mix|thick|invasive|corrosive|insidious
+climate: burning|warm|temperate|cold|frozen|variable (hot|cold)
+hydrosphere: desert|dry|wet|continental|oceanic
+biosphere: sterile|microbial|human-miscible|immiscible|hybrid|engineered|remnant
+population: abandoned|outpost|colony|frontier|homeworld
+technology: neolithic|medieval|industrial|early stellar|high stellar|imperium
+resources: minerals|agriculture|exotic gas|rare crystals|volatile motes|industry|robotics|genetics|shipyards|artistic|academic|pilgrimage
+features: alien ruins|vast subterranean caverns|enormous mountain ranges|floating islands|savage weather|tidal locked|terraformed
+
+government: autocratic|republic|oligarchic|confederation|fragmented
+bureaucracy: hereditary|appointed|elected|eunuch|meritocratic
+religion: moralist|pluralist|secular|atheist
+restrictions: light (heavy weapons|narcotics|maltech)|heavy (weapons|specialized tools|foreigners)|extreme (extensive monitoring|free speech curtailed)
+wealth: starving|struggling|impoverished|middling|secure|prosperous|affluent|wealthy|lavish|opulent
+economy: laissez faire|interventionism|state capitalism|planned economy
+outposts: corporate|military|research|religious|settlers|prison
+demographics: colonized|nomadic|refugees|mutants|alien
+conflict: civil war|cold war|holy war|revolutionaries|warlords|sectarians|battleground
+psionics: academy|fear|worship
+space: deep-space station|asteroid base|remote moon base|ancient orbital ruin|research base|asteroid belt
+
+disasters: seismic|volcanic|pirates|plague|meteor showers
+factions: military|aristocrats|peasants|clergy|industrialists|intelligentsia|criminals

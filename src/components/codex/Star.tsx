@@ -13,7 +13,9 @@ const StarView = (props: { star: Star }) => {
       title={STAR.name(star)}
       subtitle={
         <StyledText
-          text={`Star (${star.class}), ${TEXT.decorate({
+          text={`Star (${star.class.spectral}${star.class.subtype}-${
+            star.class.luminosity
+          }), ${TEXT.decorate({
             link: window.galaxy.systems[star.system],
             color: COLORS.subtitle
           })}`}
@@ -28,7 +30,7 @@ const StarView = (props: { star: Star }) => {
             <b>Mass: </b> {star.mass.toFixed(2)}
           </Grid>
           <Grid item xs={12}>
-            <b>Radius: </b> {star.radius.toFixed(2)} ({star.r})
+            <b>Diameter: </b> {star.diameter.toFixed(2)} ({star.r})
           </Grid>
           <Grid item xs={12}>
             <b>Luminosity: </b> {star.luminosity.toFixed(2)}

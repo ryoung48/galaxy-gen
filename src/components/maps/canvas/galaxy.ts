@@ -33,12 +33,20 @@ export const GALAXY_MAP = {
       ctx.strokeStyle = `rgba(0, 0, 0, 0.3)`
       ctx.lineWidth = 0.5
       const orbits = SOLAR_SYSTEM.orbits(system)
-      const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere)))
+      const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere.score)))
+      const population = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.population)))
+      const desirability = Math.max(
+        ...orbits.map(o => (o.tag === 'star' ? -4 : o.habitability.score))
+      )
       ctx.fillStyle =
-        mapMode === 'biosphere'
+        mapMode === 'desirability'
+          ? METRICS.desirability.color(desirability)
+          : mapMode === 'biosphere'
           ? METRICS.biosphere.color(biosphere)
           : mapMode === 'orbits'
           ? METRICS.orbits.color(orbits.length - 1)
+          : mapMode === 'population'
+          ? METRICS.population.color(population)
           : nation.flag.color.replace('%)', `%, ${opacity})`)
       const path = new Path2D(window.galaxy.diagram.renderCell(system.idx))
       ctx.fill(path)

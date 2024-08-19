@@ -6,6 +6,7 @@ import { Nation } from './types'
 import { SOLAR_SYSTEM } from '../system'
 import { GALAXY } from '../galaxy'
 import { MATH } from '../utilities/math'
+import { STAR } from '../system/stars'
 
 const spawn = (origin: number) => {
   const language = LANGUAGE.spawn()
@@ -119,6 +120,7 @@ export const NATION = {
     })
     GALAXY.worlds().forEach(system => {
       const nation = SOLAR_SYSTEM.nation(system)
+      system.star = STAR.spawn({ system: system.idx, homeworld: system.homeworld })
       system.name = LANGUAGE.word.unique({
         lang: nation.language,
         key: 'solar system'

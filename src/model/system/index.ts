@@ -12,7 +12,22 @@ export const SOLAR_SYSTEM = {
     return {
       ...params,
       tag: 'system',
-      star: STAR.spawn({ system: params.idx }),
+      star: {
+        idx: -1,
+        tag: 'star',
+        name: '',
+        system: -1,
+        age: 0,
+        distance: 0,
+        angle: 0,
+        class: { spectral: 'G', luminosity: 'V', subtype: 3 },
+        mass: 0,
+        temperature: 0,
+        diameter: 0,
+        luminosity: 0,
+        orbits: [],
+        r: 40
+      },
       seed: window.dice.generateId(),
       lanes: [] as number[],
       name: '',

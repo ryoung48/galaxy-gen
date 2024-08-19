@@ -26,9 +26,11 @@ export const CANVAS = {
   coordinates: (orbit: Orbit | Star): Point => {
     const system = window.galaxy.systems[orbit.system]
     const parent = orbit.tag === 'star' ? STAR.parent(orbit) : ORBIT.parent(orbit)
-    const center = parent ? CANVAS.coordinates(parent) : system
+    const beltParent =
+      parent?.tag === 'orbit' && parent.type === 'asteroid belt' ? ORBIT.parent(parent) : undefined
+    const center = parent ? CANVAS.coordinates(beltParent ?? parent) : system
     return MATH.angles.cartesian({
-      radius: orbit.distance * CONSTANTS.SOLAR_SYSTEM_MOD,
+      radius: (beltParent ? parent.distance : orbit.distance) * CONSTANTS.SOLAR_SYSTEM_MOD,
       deg: orbit.angle,
       center
     })

@@ -1,8 +1,10 @@
+import { GALAXY } from '../../model/galaxy'
 import { SOLAR_SYSTEM } from '../../model/system'
 import CustomLineChart from './line'
 
 export const SystemSizes = () => {
-  const starFreq = window.galaxy.systems.reduce((dict: Record<number, number>, system) => {
+  const worlds = GALAXY.worlds()
+  const starFreq = worlds.reduce((dict: Record<number, number>, system) => {
     const orbits = SOLAR_SYSTEM.orbits(system)
     if (!dict[orbits.length]) dict[orbits.length] = 0
     dict[orbits.length] += 1

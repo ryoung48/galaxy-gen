@@ -62,8 +62,12 @@ export const LEGEND = {
     const items =
       mode === 'biosphere'
         ? METRICS.biosphere.legend()
+        : mode === 'desirability'
+        ? METRICS.desirability.legend()
         : mode === 'orbits'
         ? METRICS.orbits.legend()
+        : mode === 'population'
+        ? METRICS.population.legend()
         : []
     drawLegend({
       ctx,

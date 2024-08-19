@@ -2,7 +2,9 @@ import { CustomPieChart } from './pie'
 import { ORBIT } from '../../model/system/orbits'
 
 export const MoonFrequency = () => {
-  const moons = window.galaxy.orbits.filter(orbit => orbit.parent.type !== 'star')
+  const moons = window.galaxy.orbits.filter(
+    orbit => orbit.parent.type !== 'star' && orbit.type !== 'asteroid'
+  )
   const total = moons.length
   const orbitFreq = moons.reduce((dict: Record<string, number>, orbit) => {
     if (!dict[orbit.type]) dict[orbit.type] = 0

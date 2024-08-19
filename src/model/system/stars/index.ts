@@ -1,208 +1,94 @@
-import { range } from 'd3'
-import { MATH } from '../../utilities/math'
+import { range, scaleLinear } from 'd3'
 import { ORBIT } from '../orbits'
-import { BaseClass, BaseClassKey, SpectralClass, Star, StarSpawnParams } from './types'
+import { Star, StarSpawnParams } from './types'
 import { LANGUAGE } from '../../languages'
-
-const base: Record<BaseClassKey, BaseClass> = {
-  O: {
-    type: ({ age }) => (age < 2 ? 'O' : age < 3 ? 'B' : 'M-Ib')
-  },
-  B: {
-    type: ({ age }) => (age < 2 ? 'O' : age < 3 ? 'B' : 'M-Ib')
-  },
-  A: {
-    type: ({ age }) =>
-      age <= 2
-        ? 'A-V'
-        : age === 3
-        ? window.dice.weightedChoice([
-            {
-              v: 'F-IV',
-              w: 2
-            },
-            {
-              v: 'K-III',
-              w: 1
-            },
-            {
-              v: 'D',
-              w: 2
-            }
-          ])
-        : 'D'
-  },
-  F: {
-    type: ({ age }) =>
-      age <= 5
-        ? 'F-V'
-        : age === 6
-        ? window.dice.weightedChoice([
-            {
-              v: 'G-IV',
-              w: 4
-            },
-            {
-              v: 'M-III',
-              w: 2
-            }
-          ])
-        : 'D'
-  },
-  G: {
-    type: ({ age }) =>
-      age <= 11
-        ? 'G-V'
-        : age <= 13
-        ? window.dice.weightedChoice([
-            {
-              v: 'K-IV',
-              w: 3
-            },
-            {
-              v: 'M-III',
-              w: 3
-            }
-          ])
-        : 'D'
-  },
-  K: {
-    type: () => 'K-V'
-  },
-  M: {
-    type: ({ companions }) => {
-      const roll = window.dice.roll(2, 6) + companions ? 2 : 0
-      return roll <= 9 ? 'M-V' : roll <= 12 ? 'M-Ve' : 'L'
-    }
-  },
-  L: {
-    type: () => 'L'
-  },
-  D: {
-    type: () => 'D'
-  }
-}
-
-const classes: Record<Star['class'], SpectralClass> = {
-  O: {
-    mass: [16, 90],
-    radius: [6.6, 20],
-    luminosity: [30_000, 1_000_000],
-    temperature: [30_000, 60_000],
-    color: 'blue'
-  },
-  B: {
-    mass: [2.1, 16],
-    radius: [1.8, 6.5],
-    luminosity: [25, 30_000],
-    temperature: [10_000, 30_000],
-    color: '#aabfff'
-  },
-  'M-Ib': {
-    mass: [8, 25],
-    radius: [200, 500],
-    luminosity: [25, 30_000],
-    temperature: [3_000, 4_000],
-    color: 'red'
-  },
-  'A-V': {
-    mass: [1.4, 2.1],
-    radius: [1.4, 1.8],
-    luminosity: [5, 25],
-    temperature: [3_000, 4_000],
-    color: '#cad7ff'
-  },
-  'F-IV': {
-    mass: [1.2, 1.6],
-    radius: [1.5, 3],
-    luminosity: [4, 25],
-    temperature: [6_000, 7_500],
-    color: '#F8F7FF'
-  },
-  'K-III': {
-    mass: [0.8, 4],
-    radius: [10, 30],
-    luminosity: [50, 300],
-    temperature: [3_500, 5_000],
-    color: '#FFCC99'
-  },
-  'F-V': {
-    mass: [1.04, 1.4],
-    radius: [1.15, 1.4],
-    luminosity: [1.5, 5],
-    temperature: [6_000, 7_500],
-    color: '#f8f7ff'
-  },
-  'G-IV': {
-    mass: [1, 2],
-    radius: [2, 6],
-    luminosity: [10, 50],
-    temperature: [5_000, 6_000],
-    color: '#FFFFCC'
-  },
-  'M-III': {
-    mass: [0.8, 3],
-    radius: [20, 100],
-    luminosity: [100, 1000],
-    temperature: [3_000, 4_000],
-    color: '#FF6347'
-  },
-  'G-V': {
-    mass: [0.8, 1.04],
-    radius: [0.96, 1.15],
-    luminosity: [0.6, 1.5],
-    temperature: [5_200, 6_000],
-    color: '#fff4ea'
-  },
-  'K-IV': {
-    mass: [0.8, 1.5],
-    radius: [2, 5],
-    luminosity: [6, 20],
-    temperature: [4_000, 5_300],
-    color: '#FFA500'
-  },
-  'K-V': {
-    mass: [0.45, 0.8],
-    radius: [0.7, 0.96],
-    luminosity: [0.08, 0.6],
-    temperature: [3_700, 5_200],
-    color: '#ffd2a1'
-  },
-  'M-V': {
-    mass: [0.08, 0.45],
-    radius: [0.1, 0.7],
-    luminosity: [0.00001, 0.08],
-    temperature: [2_400, 3_700],
-    color: '#ffcc6f'
-  },
-  'M-Ve': {
-    mass: [0.08, 0.6],
-    radius: [0.1, 0.7],
-    luminosity: [0.00001, 0.1],
-    temperature: [2_400, 3_700],
-    color: '#FF4500'
-  },
-  L: {
-    mass: [0.06, 0.08],
-    radius: [0.09, 0.1],
-    luminosity: [0.000001, 0.00001],
-    temperature: [1_300, 2_500],
-    color: '#ffcc6f'
-  },
-  D: {
-    mass: [0.5, 1.4],
-    radius: [0.008, 0.02],
-    luminosity: [0.0001, 0.01],
-    temperature: [5_000, 30_000],
-    color: 'white'
-  }
-}
 
 const incrementAngle = () => window.dice.randint(90, 270)
 
+const spectralAttributes: Record<Star['class']['spectral'], { color: string; range: number[] }> = {
+  O: { color: '#7cc6ff', range: [0, 2] },
+  B: { color: '#d8eeff', range: [2, 4] },
+  A: { color: '#ffffff', range: [4, 6] },
+  F: { color: '#fffcd3', range: [6, 8] },
+  G: { color: '#fff772', range: [8, 10] },
+  K: { color: '#ffc37f', range: [10, 12] },
+  M: { color: '#ff9719', range: [12, 15] }
+}
+
+const starMass: Record<Star['class']['luminosity'], number[]> = {
+  Ia: [200, 80, 60, 30, 20, 15, 13, 12, 12, 13, 14, 18, 20, 25, 30],
+  Ib: [150, 60, 40, 25, 15, 13, 12, 10, 10, 11, 12, 13, 15, 20, 25],
+  II: [130, 40, 30, 20, 14, 11, 10, 8, 8, 10, 10, 12, 14, 16, 18],
+  III: [110, 30, 20, 10, 8, 6, 4, 3, 2.5, 2.4, 1.1, 1.5, 1.8, 2.4, 8],
+  IV: [20, 20, 20, 10, 4, 2.3, 2, 1.5, 1.7, 1.2, 1.5, 1.5, 1.5, 1.5, 1.5],
+  V: [90, 60, 18, 5, 2.2, 1.8, 1.5, 1.3, 1.1, 0.9, 0.8, 0.7, 0.5, 0.16, 0.08],
+  VI: [2, 1.5, 0.5, 0.4, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.12, 0.075]
+}
+
+const starTemp = [
+  50000, 40000, 30000, 15000, 10000, 8000, 7500, 6500, 6000, 5600, 5200, 4400, 3700, 3000, 2400
+]
+
+const starDiameter: Record<Star['class']['luminosity'], number[]> = {
+  Ia: [25, 22, 20, 60, 120, 180, 210, 280, 330, 360, 420, 600, 900, 1200, 1800],
+  Ib: [24, 20, 14, 25, 50, 75, 85, 115, 135, 150, 180, 260, 380, 600, 800],
+  II: [22, 18, 12, 14, 30, 45, 50, 66, 77, 90, 110, 160, 230, 350, 500],
+  III: [21, 15, 10, 6, 5, 5, 5, 5, 10, 15, 20, 40, 60, 100, 200],
+  IV: [8, 8, 8, 5, 4, 3, 3, 2, 3, 4, 6, 6, 6, 6, 6],
+  V: [20, 12, 7, 3.5, 2.2, 2, 1.7, 1.5, 1.1, 0.95, 0.9, 0.8, 0.7, 0.2, 0.1],
+  VI: [0.18, 0.18, 0.2, 0.5, 0.5, 0.6, 0.6, 0.8, 0.8, 0.7, 0.6, 0.5, 0.4, 0.1, 0.08]
+}
+
+const starClass = (parent?: Star, homeworld?: boolean) => {
+  const parentClass = parent?.class?.spectral
+  let spectralRoll = window.dice.roll(2, 6)
+  let luminosity: Star['class']['luminosity'] = 'V'
+  let spectral: Star['class']['spectral'] = 'G'
+  if (spectralRoll <= 3 && !homeworld) {
+    spectralRoll = window.dice.roll(2, 6) + 2
+    let lumRoll = window.dice.roll(2, 6)
+    if (lumRoll <= 5) luminosity = 'VI'
+    else if (lumRoll <= 8) luminosity = 'IV'
+    else if (lumRoll <= 10) luminosity = 'III'
+    else {
+      lumRoll = window.dice.roll(2, 6)
+      if (lumRoll <= 8) luminosity = 'III'
+      else if (lumRoll <= 10) luminosity = 'II'
+      else if (lumRoll === 11) luminosity = 'Ib'
+      else luminosity = 'Ia'
+    }
+  }
+  const subGiant = luminosity === 'IV'
+  const subDwarf = luminosity === 'VI'
+  if (spectralRoll >= 12 && homeworld) spectralRoll -= 2
+  if (spectralRoll <= 6 && subGiant) spectralRoll += 5
+  if (spectralRoll <= 6 || parentClass === 'K' || parentClass === 'M') spectral = 'M'
+  else if (spectralRoll <= 8 || parentClass === 'G') spectral = 'K'
+  else if (spectralRoll <= 10 || parentClass === 'F') spectral = 'G'
+  else if (spectralRoll <= 11 || parentClass === 'A') spectral = subDwarf ? 'G' : 'F'
+  else if (spectralRoll === 12) {
+    spectralRoll = window.dice.roll(2, 6)
+    if ((spectralRoll <= 9 || parentClass === 'B') && !subDwarf) spectral = 'A'
+    else if (spectralRoll <= 11 || subGiant || parentClass === 'O') spectral = 'B'
+    else spectral = 'O'
+  }
+  let subtype = window.dice.randint(0, 9)
+  if (spectral === 'K' && subtype > 4) subtype -= 5
+  if (spectral === 'M' && parentClass === 'M')
+    subtype = Math.max(0, (parent?.class?.subtype ?? 0) - 1)
+  return { spectral, luminosity, subtype }
+}
+
+const isGiant = (luminosityClass: Star['class']['luminosity']) =>
+  luminosityClass === 'III' ||
+  luminosityClass === 'II' ||
+  luminosityClass === 'Ib' ||
+  luminosityClass === 'Ia'
+
 export const STAR = {
-  classes,
-  color: (star: Star): string => classes[star.class].color,
+  classes: spectralAttributes,
+  color: (star: Star): string =>
+    isGiant(star.class.luminosity) ? 'red' : spectralAttributes[star.class.spectral].color,
   name: (star: Star) => {
     if (!star.name) {
       const system = window.galaxy.systems[star.system]
@@ -216,112 +102,96 @@ export const STAR = {
       .map(orbit => [orbit, ...(orbit.tag === 'star' ? STAR.orbits(orbit) : ORBIT.orbits(orbit))])
       .flat(),
   parent: (star: Star) => window.galaxy.stars[star.parent ?? -1],
-  spawn: ({ system, parent, distance, angle, zone }: StarSpawnParams): Star => {
-    let companionsCount = parent
+  spawn: ({ system, parent, distance, angle, zone, homeworld }: StarSpawnParams): Star => {
+    const classAttributes = starClass(parent, homeworld)
+    const { spectral } = classAttributes
+    const { range: r } = spectralAttributes[spectral]
+    const luminosityClass = classAttributes.luminosity
+    const domain = range(15)
+    const idx = scaleLinear([0, 9], r)(classAttributes.subtype)
+    const mass = scaleLinear(domain, starMass[luminosityClass])(idx)
+    const temperature = scaleLinear(domain, starTemp)(idx)
+    const diameter = scaleLinear(domain, starDiameter[luminosityClass])(idx)
+    const luminosity = diameter ** 2 * (temperature / 5772) ** 4
+
+    const companionsCount = parent
       ? 0
       : window.dice.weightedChoice([
           { w: 10, v: 0 },
           { w: 2, v: 1 },
           { w: 1, v: 2 }
         ])
-    const supergiants: BaseClassKey[] = ['O', 'B', 'A']
-    const bParent = parent?.base === 'B'
-    const aParent = parent?.base === 'A'
-    const fParent = parent?.base === 'F'
-    const gParent = parent?.base === 'G'
-    const kParent = parent?.base === 'K'
-    const mParent = parent?.base === 'M'
 
-    const spectralClass = window.dice.weightedChoice<BaseClassKey>([
-      { w: bParent || aParent || fParent || gParent || kParent || mParent ? 0 : 0.3, v: 'O' },
-      { w: aParent || fParent || gParent || kParent || mParent ? 0 : 0.3, v: 'B' },
-      { w: fParent || gParent || kParent || mParent ? 0 : 0.3, v: 'A' },
-      { w: gParent || kParent || mParent ? 0 : 2, v: 'F' },
-      { w: kParent || mParent ? 0 : 2, v: 'G' },
-      { w: mParent ? 0 : 2, v: 'K' },
-      { w: 5, v: 'M' },
-      { w: companionsCount > 0 ? 1 : companionsCount > 1 ? 2 : 0, v: 'L' }
-    ])
-    const supergiant = supergiants.includes(spectralClass)
-    if (spectralClass === 'L') companionsCount = 0
     const systemAge =
-      parent?.age ?? supergiant
+      parent?.age ??
+      (spectral === 'O' || spectral === 'B' || spectral === 'A'
         ? window.dice.roll(1, 2)
-        : window.dice.roll(3, 6) - 3 + (spectralClass === 'M' ? 2 : 0)
-    const luminosityClass = base[spectralClass].type({
-      age: systemAge,
-      companions: companionsCount
-    })
-    const { mass, radius, luminosity, temperature } = classes[luminosityClass]
-    const selectedMass = window.dice.uniform(...mass)
-    const selectedLumens = window.dice.uniform(...luminosity)
-    const selectedTemperature = MATH.scale({
-      domain: luminosity,
-      range: temperature,
-      v: selectedLumens
-    })
-    const selectedRadius = MATH.scale({ domain: mass, range: radius, v: selectedMass })
+        : window.dice.roll(3, 6) - 3 + (spectral === 'M' ? 2 : 0))
 
     const star: Star = {
       idx: window.galaxy.stars.length,
       tag: 'star',
       name: '',
       system,
+      age: systemAge,
       parent: parent?.idx,
       distance: distance ?? 0,
       angle: angle ?? 0,
       zone,
-      age: systemAge,
-      base: spectralClass,
-      class: luminosityClass,
-      mass: selectedMass,
-      radius: selectedRadius,
-      luminosity: selectedLumens,
-      temperature: selectedTemperature,
+      class: classAttributes,
+      mass,
+      temperature,
+      diameter,
+      luminosity,
       orbits: [],
-      r: luminosityClass === 'D' || luminosityClass === 'L' ? 25 : window.dice.randint(30, 40)
+      r: parent ? 35 : 40
     }
     if (parent) star.distance += star.r
     window.galaxy.stars.push(star)
     if (!parent || star.zone === 'distant') {
-      const dwarfStar = luminosityClass === 'L' || luminosityClass === 'D'
-      const giants = luminosityClass === 'K-III' || luminosityClass === 'M-III'
+      const giants = isGiant(luminosityClass)
       const companions = range(companionsCount).map(() =>
-        window.dice.choice<Star['zone']>(['epistellar', 'inner', 'outer', 'distant'])
+        window.dice.weightedChoice<Star['zone']>([
+          { w: giants ? 0 : 1, v: 'epistellar' },
+          { w: homeworld ? 0 : 1, v: 'inner' },
+          { w: 1, v: 'outer' },
+          { w: 1, v: 'distant' }
+        ])
       )
       const tightCompanions = companions.filter(companion => companion === 'epistellar')
       const closeCompanions = companions.filter(companion => companion === 'inner')
       const moderateCompanions = companions.filter(companion => companion === 'outer')
       const distantCompanions = companions.filter(companion => companion === 'distant')
-      const mClass = luminosityClass === 'M-V' || luminosityClass === 'M-Ve'
-      const lClass = luminosityClass === 'L'
+      const mClass = spectral === 'M'
       const epistellar =
-        dwarfStar || giants || tightCompanions.length > 0
-          ? 0
-          : window.dice.randint(0, mClass ? 1 : 2)
-      const inner =
-        closeCompanions.length > 0 ? 0 : window.dice.randint(0, lClass ? 2 : mClass ? 4 : 5)
-      const outer =
-        moderateCompanions.length > 0 ? 0 : window.dice.randint(0, mClass || lClass ? 4 : 5)
-      let impactZone = giants || star.class === 'D' ? window.dice.randint(1, 6) : 0
+        giants || tightCompanions.length > 0 ? 0 : window.dice.randint(0, mClass ? 1 : 2)
+      const inner = closeCompanions.length > 0 ? 0 : window.dice.randint(1, mClass ? 4 : 5)
+      const outer = moderateCompanions.length > 0 ? 0 : window.dice.randint(0, mClass ? 4 : 5)
       let angle = incrementAngle()
-      let distance = star.r + 5
+      let distance = star.r + 10
+      let impactZone = giants ? window.dice.randint(1, 3) : 0
       if (tightCompanions.length > 0) {
         tightCompanions.forEach(zone => {
-          const n = STAR.spawn({ system, parent: star, distance, angle, zone })
+          const n = STAR.spawn({
+            system,
+            parent: star,
+            distance,
+            angle,
+            zone
+          })
           star.orbits.push(n)
           angle += incrementAngle()
           distance = n.distance + (n.fullR ?? n.r)
         })
-        impactZone -= tightCompanions.length
       }
       range(epistellar).forEach(() => {
         const orbit = ORBIT.spawn({
           star,
           zone: 'epistellar',
-          impactZone: impactZone-- > 0,
           angle,
-          distance
+          distance,
+          impactZone: impactZone-- > 0,
+          deviation: -1.2
         })
         star.orbits.push(orbit)
         angle += incrementAngle()
@@ -329,20 +199,32 @@ export const STAR = {
       })
       if (closeCompanions.length > 0) {
         closeCompanions.forEach(zone => {
-          const n = STAR.spawn({ system, parent: star, distance, angle, zone })
+          const n = STAR.spawn({
+            system,
+            parent: star,
+            distance,
+            angle,
+            zone
+          })
           star.orbits.push(n)
           angle += incrementAngle()
           distance = n.distance + (n.fullR ?? n.r)
         })
-        impactZone -= closeCompanions.length
       }
-      range(inner).forEach(() => {
+      const deviations = range(inner)
+        .map(() => window.dice.uniform(-1.15, 1.15))
+        .slice(homeworld ? 1 : 0)
+        .concat(homeworld ? [0] : [])
+        .sort((a, b) => a - b)
+      range(inner).forEach((_, i) => {
         const orbit = ORBIT.spawn({
           star,
           zone: 'inner',
-          impactZone: impactZone-- > 0,
           angle,
-          distance
+          distance,
+          impactZone: impactZone-- > 0,
+          deviation: deviations[i],
+          homeworld: homeworld && deviations[i] === 0
         })
         star.orbits.push(orbit)
         angle += incrementAngle()
@@ -350,20 +232,26 @@ export const STAR = {
       })
       if (moderateCompanions.length > 0) {
         moderateCompanions.forEach(zone => {
-          const n = STAR.spawn({ system, parent: star, distance, angle, zone })
+          const n = STAR.spawn({
+            system,
+            parent: star,
+            distance,
+            angle,
+            zone
+          })
           star.orbits.push(n)
           angle += incrementAngle()
           distance = n.distance + (n.fullR ?? n.r)
         })
-        impactZone -= moderateCompanions.length
       }
       range(outer).forEach(() => {
         const orbit = ORBIT.spawn({
           star,
           zone: 'outer',
-          impactZone: impactZone-- > 0,
           angle,
-          distance
+          distance,
+          impactZone: impactZone-- > 0,
+          deviation: 1.2
         })
         star.orbits.push(orbit)
         angle += incrementAngle()

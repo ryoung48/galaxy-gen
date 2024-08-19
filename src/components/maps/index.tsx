@@ -101,12 +101,12 @@ const GalaxyMap = () => {
           zIndex: 2,
           position: 'absolute',
           top: CONSTANTS.H * 0.54,
-          left: CONSTANTS.W * 0.95,
+          left: CONSTANTS.W * 0.8,
           background: 'white',
           borderRadius: 0
         }}
       >
-        {['nations', 'biosphere', 'orbits'].map(label => (
+        {['nations', 'biosphere', 'orbits', 'desirability', 'population'].map(label => (
           <ToggleButton key={label} value={label}>
             {label}
           </ToggleButton>
@@ -130,7 +130,9 @@ const GalaxyMap = () => {
           const point = window.galaxy.diagram.delaunay.find(cursor.x, cursor.y)
           const solar = window.galaxy.systems[point]
           if (!solar.edge) {
-            const objects = SOLAR_SYSTEM.orbits(system ?? solar)
+            const objects = SOLAR_SYSTEM.orbits(system ?? solar).filter(
+              obj => obj.tag !== 'orbit' || obj.type !== 'asteroid belt'
+            )
             const closest = MATH.findClosest(
               cursor,
               objects.map((obj, i) => ({ ...CANVAS.coordinates(obj), i }))
