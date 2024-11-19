@@ -33,11 +33,11 @@ export const GALAXY_MAP = {
       ctx.strokeStyle = `rgba(0, 0, 0, 0.3)`
       ctx.lineWidth = 0.5
       const orbits = SOLAR_SYSTEM.orbits(system)
-      const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere.score)))
-      const population = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.population)))
-      const desirability = Math.max(
-        ...orbits.map(o => (o.tag === 'star' ? -4 : o.habitability.score))
+      const biosphere = Math.max(
+        ...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere.complexity))
       )
+      const population = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.population)))
+      const desirability = Math.max(...orbits.map(o => (o.tag === 'star' ? -4 : o.habitability)))
       ctx.fillStyle =
         mapMode === 'desirability'
           ? METRICS.desirability.color(desirability)

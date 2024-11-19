@@ -7,9 +7,10 @@ export const StarFrequency = () => {
   const total = worlds.length
   const starFreq = worlds.reduce(
     (dict: Record<string, { color: string; count: number; label: string }>, system) => {
-      const { spectral, luminosity } = system.star.class
-      const code = `${spectral}-${luminosity}`
-      if (!dict[code]) dict[code] = { count: 0, color: STAR.classes[spectral].color, label: code }
+      const { spectralClass, luminosityClass } = system.star
+      const code = `${spectralClass}-${luminosityClass}`
+      if (!dict[code])
+        dict[code] = { count: 0, color: STAR.classes[spectralClass].color, label: code }
       dict[code].count += 1
       return dict
     },

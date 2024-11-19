@@ -1,6 +1,18 @@
 import { Orbit } from '../orbits/types'
 
-export interface Star {
+interface StarAttributes {
+  spectralClass: 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M'
+  luminosityClass: 'Ia' | 'Ib' | 'II' | 'III' | 'IV' | 'V' | 'VI'
+  subtype: number
+  mass: number
+  temperature: number
+  diameter: number
+  luminosity: number
+  age: number
+  eccentricity: number
+}
+
+export interface Star extends StarAttributes {
   idx: number
   tag: 'star'
   name: string
@@ -9,16 +21,8 @@ export interface Star {
   zone?: Orbit['zone'] | 'distant'
   angle: number
   distance: number
-  class: {
-    spectral: 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M'
-    luminosity: 'Ia' | 'Ib' | 'II' | 'III' | 'IV' | 'V' | 'VI'
-    subtype: number
-  }
-  age: number
-  mass: number
-  diameter: number
-  temperature: number
-  luminosity: number
+  period: number
+  au: number
   orbits: (Orbit | Star)[]
   // display
   r: number
@@ -31,5 +35,14 @@ export type StarSpawnParams = {
   distance?: number
   angle?: number
   zone?: Star['zone']
+  attributes?: StarAttributes
+  deviation?: number
   homeworld?: boolean
+}
+
+export type StarCompanionTemplate = {
+  type: 'star'
+  deviation: number
+  zone: Star['zone']
+  attributes: StarAttributes
 }

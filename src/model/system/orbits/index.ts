@@ -1,688 +1,34 @@
-import { range, scaleLinear } from 'd3'
+import { scaleLinear } from 'd3'
 import { MATH } from '../../utilities/math'
 import {
   Orbit,
   OrbitDesirabilityParams,
-  OrbitTypeDetails,
   OrbitSpawnParams,
-  OrbitGroupDetails
+  OrbitFinalizeParams,
+  EccentricityParams,
+  BiosphereParams
 } from './types'
 import { LANGUAGE } from '../../languages'
 import { DICE } from '../../utilities/dice'
+import { ORBIT_CLASSIFICATION } from './classification'
+import { ORBIT_GROUPS } from './groups'
 
-function getRareDwarfType() {
-  const randomRoll = window.dice.roll(1, 6)
-  if (randomRoll <= 4) return 'hebean'
-  return 'geo-tidal'
-}
-
-function getOuterRareDwarfType() {
-  const randomRoll = window.dice.roll(1, 6)
-  if (randomRoll <= 3) return 'hebean'
-  if (randomRoll <= 5) return 'geo-cyclic'
-  return 'geo-tidal'
-}
-
-const groups: Record<Orbit['group'], OrbitGroupDetails> = {
-  'asteroid belt': {
-    type: ({ parent }) => (parent ? 'asteroid' : 'asteroid belt'),
-    orbits: () => {
-      const roll = window.dice.roll(1, 6)
-      return ['asteroid belt' as Orbit['group']].concat(roll <= 4 ? [] : ['dwarf'])
-    }
-  },
-  dwarf: {
-    type: ({ zone, impactZone, parent }) => {
-      if (impactZone) return 'stygian'
-      let roll = window.dice.roll(1, 6)
-      switch (zone) {
-        case 'epistellar': {
-          if (parent?.group === 'asteroid belt') roll -= 2
-          if (roll <= 3) return 'rockball'
-          if (roll <= 5) return 'meltball'
-          return getRareDwarfType()
-        }
-        case 'inner': {
-          if (parent?.group === 'asteroid belt') roll -= 2
-          if (parent?.group === 'helian') roll += 1
-          if (parent?.group === 'jovian') roll += 2
-          if (roll <= 4) return 'rockball'
-          if (roll <= 5) return 'geo-cyclic'
-          if (roll === 7) return 'meltball'
-          return getRareDwarfType()
-        }
-        case 'outer': {
-          if (parent?.group === 'asteroid belt') roll -= 1
-          if (parent?.group === 'helian') roll += 1
-          if (parent?.group === 'jovian') roll += 2
-          if (roll <= 3) return 'snowball'
-          if (roll <= 6) return 'rockball'
-          if (roll === 7) return 'meltball'
-          return getOuterRareDwarfType()
-        }
-      }
-    },
-    orbits: () => {
-      const roll = window.dice.roll(1, 6)
-      return roll <= 5 ? [] : ['dwarf']
-    }
-  },
-  terrestrial: {
-    type: ({ zone, impactZone, parent }) => {
-      if (impactZone) return 'acheronian'
-      switch (zone) {
-        case 'epistellar': {
-          const roll = window.dice.roll(1, 6)
-          if (roll <= 4) return 'jani-lithic'
-          if (roll === 5 && !parent) return 'vesperian'
-          return 'telluric'
-        }
-        case 'inner': {
-          const roll = window.dice.roll(2, 6)
-          if (roll <= 4) return 'telluric'
-          if (roll <= 6) return 'arid'
-          if (roll <= 8) return 'oceanic'
-          if (roll <= 10) return 'tectonic'
-          return 'telluric'
-        }
-        case 'outer': {
-          let roll = window.dice.roll(1, 6)
-          if (parent && parent?.group !== 'asteroid belt') roll += 2
-          if (roll <= 4) return 'arid'
-          if (roll <= 6) return 'tectonic'
-          return 'oceanic'
-        }
-      }
-    },
-    orbits: () => {
-      const roll = window.dice.roll(1, 6)
-      return roll <= 4
-        ? []
-        : roll === 5
-        ? ['dwarf']
-        : range(window.dice.roll(1, 3)).map(() => 'dwarf')
-    }
-  },
-  helian: {
-    type: ({ zone, impactZone }) => {
-      if (impactZone) return 'asphodelian'
-      const roll = window.dice.roll(1, 6)
-      switch (zone) {
-        case 'epistellar':
-          if (roll <= 5) return 'helian'
-          return 'asphodelian'
-        case 'inner':
-          if (roll <= 4) return 'helian'
-          return 'panthalassic'
-        case 'outer':
-          return 'helian'
-      }
-    },
-    orbits: () => {
-      const satellites = Math.max(0, window.dice.roll(1, 6) - 3)
-      const roll = satellites > 0 ? window.dice.roll(1, 6) : 0
-      return roll <= 5
-        ? range(satellites).map(() => 'dwarf' as Orbit['group'])
-        : range(satellites - 1)
-            .map(() => 'dwarf' as Orbit['group'])
-            .concat(['terrestrial'])
-    }
-  },
-  jovian: {
-    type: ({ zone, impactZone }) => {
-      if (impactZone) return 'chthonian'
-      const roll = window.dice.roll(1, 6)
-      switch (zone) {
-        case 'epistellar':
-          if (roll <= 5) return 'jovian'
-          return 'chthonian'
-        case 'inner':
-          return 'jovian'
-        case 'outer':
-          return 'jovian'
-      }
-    },
-    orbits: () => {
-      const satellites = window.dice.roll(1, 6)
-      const roll = window.dice.roll(1, 6)
-      return roll <= 5
-        ? range(satellites).map(() => 'dwarf' as Orbit['group'])
-        : range(satellites - 1)
-            .map(() => 'dwarf' as Orbit['group'])
-            .concat([(window.dice.roll(1, 6) <= 5 ? 'terrestrial' : 'helian') as Orbit['group']])
-    }
-  }
-}
-
-const biosphereRoll = (min: number, max: number, temp: Orbit['temperature']) => {
-  let bio = window.dice.weightedChoice(range(min, max + 1).map((v, i) => ({ v, w: max - min - i })))
-  if (temp === 'temperate') bio += 2
-  if (temp === 'cold') bio -= 2
-  if (temp === 'variable (cold)' || temp === 'variable (hot)') bio -= 3
-  if (temp === 'burning' || temp === 'frozen') bio -= 6
-  return bio
-}
-
-const details: Record<Orbit['type'], OrbitTypeDetails> = {
-  acheronian: {
-    color: '#848484',
-    description:
-      "These are worlds that were directly affected by their primary's transition from the main sequence; the atmosphere and oceans have been boiled away, leaving a scorched, dead planet.",
-    roll: () => {
-      const size = window.dice.randint(1, 6) + 4
-      return { size, atmosphere: 1, hydrosphere: 0, biosphere: 0 }
-    }
-  },
-  arid: {
-    color: '#DEB887',
-    description:
-      'These are worlds with limited amounts of surface liquid, that maintain an equilibrium with the help of their tectonic activity and their biosphere.',
-    roll: ({ star, zone, temperature }) => {
-      const size = window.dice.roll(1, 6) + 4
-      const hydrosphere = window.dice.randint(1, 3)
-      let chemMod = 0
-      if (star.class.spectral === 'K') chemMod += 2
-      if (star.class.spectral === 'M') chemMod += 4
-      if (zone === 'outer') chemMod += 2
-      const chemRoll = window.dice.roll(1, 6) + chemMod
-      const chemistry = chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
-      const ageMod = chemistry === 'water' ? 0 : chemistry === 'ammonia' ? 1 : 3
-      const biosphere =
-        star.age >= 4 + ageMod
-          ? biosphereRoll(2, 13, temperature)
-          : star.age >= window.dice.roll(1, 3) + ageMod
-          ? biosphereRoll(0, 3, temperature)
-          : 0
-      const atmosphere =
-        biosphere >= 3 && chemistry === 'water'
-          ? MATH.clamp(window.dice.roll(2, 6) - 7 + size, 2, 9)
-          : window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-      return {
-        size,
-        atmosphere,
-        hydrosphere,
-        biosphere,
-        chemistry,
-        subtype:
-          chemistry === 'water' ? 'darwinian' : chemistry === 'ammonia' ? 'saganian' : 'asimovian'
-      }
-    }
-  },
-  asphodelian: {
-    color: '#778899',
-    description:
-      "These are worlds that were directly affected by their primary's transition from the main sequence; their atmosphere has been boiled away, leaving the surface exposed.",
-    roll: () => {
-      const size = window.dice.randint(1, 6) + 9
-      return { size, atmosphere: 1, hydrosphere: 0, biosphere: 0 }
-    }
-  },
-  'asteroid belt': {
-    color: '#808080',
-    description:
-      'These are bodies too small to sustain hydrostatic equilibrium; nearly all asteroids and comets are small bodies.',
-    roll: () => {
-      return { size: -1, atmosphere: 0, hydrosphere: 0, biosphere: 0 }
-    }
-  },
-  asteroid: {
-    color: '#808080',
-    description:
-      'These are bodies too small to sustain hydrostatic equilibrium; nearly all asteroids and comets are small bodies.',
-    roll: () => {
-      return { size: 0, atmosphere: 0, hydrosphere: 0, biosphere: 0 }
-    }
-  },
-  chthonian: {
-    color: '#A52A2A',
-    description:
-      "These are worlds that were directly affected by their primary's transition from the main sequence, or that have simply spent too long in a tight epistellar orbit; their atmospheres have been stripped away.",
-    roll: () => {
-      return { size: 15, atmosphere: 1, hydrosphere: 0, biosphere: 0 }
-    }
-  },
-  'geo-cyclic': {
-    color: '#782fe0',
-    description:
-      'These are worlds with little liquid, that move through a slow geological cycle of a gradual build-up, a short wet and clement period, and a long decline.',
-    roll: ({ star, zone, temperature }) => {
-      const size = window.dice.roll(1, 6) - 1
-      const atmosphereRoll = Math.max(window.dice.roll(1, 6), 1)
-      const atmosphere =
-        atmosphereRoll > 3
-          ? window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-          : 1
-      const hydrosphere = Math.max(
-        0,
-        window.dice.roll(2, 6) + size - 7 - (atmosphere === 1 ? 4 : 0)
-      )
-      const chemRoll = window.dice.roll(1, 6) + (zone === 'outer' ? 2 : 0)
-      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
-      const ageMod = chemistry === 'water' ? 0 : chemistry === 'ammonia' ? 1 : 3
-      const biosphere =
-        star.age >= 4 + ageMod && atmosphere !== 1
-          ? biosphereRoll(1, 6, temperature) + size - 2
-          : star.age >= window.dice.roll(1, 3) + ageMod
-          ? atmosphere === 1
-            ? biosphereRoll(1, 6, temperature) - 4
-            : biosphereRoll(0, 3, temperature)
-          : 0
-      return {
-        size,
-        atmosphere,
-        hydrosphere,
-        biosphere,
-        chemistry,
-        subtype:
-          chemistry === 'water' ? 'arean' : chemistry === 'ammonia' ? 'utgardian' : 'titanian'
-      }
-    }
-  },
-  'geo-tidal': {
-    color: '#4682B4',
-    description:
-      'These are worlds that, through tidal-flexing, have a geological cycle similar to plate tectonics, that supports surface liquid and atmosphere.',
-    roll: ({ star, zone, temperature }) => {
-      const size = window.dice.roll(1, 6) - 1
-      const hydrosphere = window.dice.roll(2, 3) - 2
-      let chemMod = 0
-      if (zone === 'epistellar') chemMod -= 2
-      if (zone === 'outer') chemMod += 2
-      const chemRoll = window.dice.roll(1, 6) + chemMod
-      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
-      const ageMod = chemistry === 'water' ? 0 : chemistry === 'ammonia' ? 1 : 3
-      const biosphere =
-        star.age >= 4 + ageMod
-          ? biosphereRoll(2, 13, temperature)
-          : star.age >= window.dice.roll(1, 3) + ageMod
-          ? biosphereRoll(0, 3, temperature)
-          : 0
-      const atmosphere =
-        biosphere >= 3 && chemistry === 'water'
-          ? MATH.clamp(window.dice.roll(2, 6) - 7 + size, 2, 9)
-          : window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-      return {
-        size,
-        atmosphere,
-        hydrosphere,
-        biosphere,
-        chemistry,
-        subtype: chemistry === 'water' ? 'promethean' : chemistry === 'ammonia' ? 'burian' : 'atlan'
-      }
-    }
-  },
-  hebean: {
-    color: '#bce02f',
-    description:
-      'These are highly active worlds, due to tidal flexing, but with some regions of stability; the larger ones may be able to maintain some atmosphere and surface liquid.',
-    roll: () => {
-      const size = window.dice.roll(1, 6) - 1
-      let atmosphere = Math.max(1, window.dice.roll(1, 6) + size - 6)
-      if (atmosphere >= 2) atmosphere = 10
-      const hydrosphere = MATH.clamp(window.dice.roll(2, 6) + size - 11, 0, 11)
-      return { size, atmosphere, hydrosphere, biosphere: 0 }
-    }
-  },
-  helian: {
-    color: '#FFA500',
-    description:
-      'These are typical helian or "subgiant" worlds - large enough to retain helium atmospheres.',
-    roll: () => {
-      const size = window.dice.roll(1, 6) + 9
-      const hydroRoll = window.dice.roll(1, 6)
-      const hydrosphere = hydroRoll <= 2 ? 0 : hydroRoll <= 4 ? window.dice.roll(2, 6) - 1 : 12
-      return { size, atmosphere: 13, hydrosphere, biosphere: 0 }
-    }
-  },
-  'jani-lithic': {
-    color: '#D2B48C',
-    description:
-      'These worlds, tide-locked to the primary, are rocky, dry, and geologically active.',
-    roll: () => {
-      const size = window.dice.roll(1, 6) + 4
-      const atmosphereRoll = window.dice.roll(1, 6)
-      const atmosphere =
-        atmosphereRoll <= 3
-          ? 0
-          : window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-      return { size, atmosphere, hydrosphere: 0, biosphere: 0 }
-    }
-  },
-  jovian: {
-    color: '#FFDAB9',
-    description:
-      'These are huge worlds with helium-hydrogen envelopes and compressed cores; the largest emit more heat than they absorb.',
-    roll: ({ star, zone, temperature }) => {
-      const bioRoll = window.dice.roll(1, 6)
-      const biosphere =
-        bioRoll <= 5
-          ? 0
-          : star.age >= 7
-          ? biosphereRoll(2, 10, temperature)
-          : star.age >= window.dice.roll(1, 6)
-          ? biosphereRoll(0, 3, temperature)
-          : 0
-      let chemRoll = window.dice.roll(1, 6)
-      if (zone === 'epistellar') chemRoll -= 2
-      if (zone === 'outer') chemRoll += 2
-      const chemistry = chemRoll <= 3 ? 'water' : 'ammonia'
-      const life = biosphere > 0
-      return {
-        size: 15,
-        atmosphere: 14,
-        hydrosphere: 13,
-        biosphere,
-        chemistry: life ? chemistry : undefined,
-        subtype: life ? (chemistry === 'water' ? 'brammian' : 'khonsonian') : undefined
-      }
-    }
-  },
-  meltball: {
-    color: '#FF4500',
-    description:
-      'These are dwarfs with molten or semi-molten surfaces, either from extreme tidal flexing, or extreme approach to a star.',
-    roll: () => {
-      const size = window.dice.randint(1, 6) - 1
-      return { size, atmosphere: 1, hydrosphere: 12, biosphere: 0 }
-    }
-  },
-  oceanic: {
-    color: '#1E90FF',
-    description:
-      'These are worlds with a continuous hydrological cycle and deep oceans, due to either dense greenhouse atmosphere or active plate tectonics.',
-    roll: ({ star, zone, temperature }) => {
-      const size = window.dice.roll(1, 6) + 4
-      let chemRoll = window.dice.roll(1, 6)
-      if (star.class.spectral === 'K') chemRoll += 2
-      if (star.class.spectral === 'M') chemRoll += 4
-      if (zone === 'outer') chemRoll += 2
-      const chemistry = chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
-      const ageMod = chemistry === 'water' ? 0 : chemistry === 'ammonia' ? 1 : 3
-      const biosphere =
-        star.age >= 4 + ageMod
-          ? biosphereRoll(2, 13, temperature)
-          : star.age >= window.dice.roll(1, 3) + ageMod
-          ? biosphereRoll(0, 3, temperature)
-          : 0
-      const atmosphereRoll = window.dice.roll(1, 6)
-      const atmosphere =
-        chemistry === 'water'
-          ? MATH.clamp(
-              window.dice.roll(2, 6) +
-                size -
-                6 -
-                (star.class.spectral === 'K' || star.class.luminosity === 'IV'
-                  ? 1
-                  : star.class.spectral === 'M'
-                  ? 2
-                  : 0),
-              2,
-              12
-            )
-          : atmosphereRoll === 1
-          ? 1
-          : atmosphereRoll <= 4
-          ? 10
-          : 12
-      return {
-        size,
-        atmosphere,
-        hydrosphere: 11,
-        biosphere,
-        chemistry,
-        subtype: chemistry === 'water' ? 'pelagic' : chemistry === 'ammonia' ? 'nunnic' : 'teathic'
-      }
-    }
-  },
-  panthalassic: {
-    color: '#4169E1',
-    description:
-      'These are massive worlds, aborted gas giants, largely composed of water and hydrogen.',
-    roll: ({ star, temperature }) => {
-      const size = window.dice.roll(1, 6) + 9
-      let chemRoll = window.dice.roll(1, 6)
-      if (star.class.spectral === 'K') chemRoll += 2
-      if (star.class.spectral === 'M') chemRoll += 4
-      const secondChemRoll = window.dice.roll(2, 6)
-      const chemistry =
-        chemRoll <= 6
-          ? secondChemRoll <= 8
-            ? 'water'
-            : secondChemRoll <= 11
-            ? 'sulfur'
-            : 'chlorine'
-          : 'methane'
-      const ageMod = chemRoll <= 6 ? 0 : chemRoll <= 8 ? 1 : 3
-      const biosphere =
-        star.age >= 4 + ageMod
-          ? biosphereRoll(2, 13, temperature)
-          : star.age >= window.dice.roll(1, 3) + ageMod
-          ? biosphereRoll(0, 3, temperature)
-          : 0
-      const atmosphere = Math.min(window.dice.roll(1, 6) + 8, 13)
-      return { size, atmosphere, hydrosphere: 11, biosphere, chemistry }
-    }
-  },
-  rockball: {
-    color: '#8B7D7B',
-    description:
-      'These are mostly dormant worlds, with surfaces largely unchanged since the early period of planetary formation.',
-    roll: ({ zone }) => {
-      const size = window.dice.roll(1, 6) - 1
-      let hydrosphere = window.dice.roll(2, 6) + size - 11
-      if (zone === 'epistellar') hydrosphere -= 2
-      if (zone === 'outer') hydrosphere += 2
-      return { size, atmosphere: 0, hydrosphere: MATH.clamp(hydrosphere, 0, 10), biosphere: 0 }
-    }
-  },
-  snowball: {
-    color: '#ADD8E6',
-    description:
-      'These worlds are composed of mostly ice and some rock. They may have varying degrees of activity, ranging from completely cold and still to cryo-volcanically active with extensive subsurface oceans.',
-    roll: ({ star, zone, temperature }) => {
-      const size = window.dice.roll(1, 6) - 1
-      const atmosphere = window.dice.roll(1, 6) <= 4 ? 0 : 1
-      const hydrosphere =
-        window.dice.roll(1, 6) <= 3
-          ? window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-          : Math.max(1, window.dice.roll(2, 6) - 2)
-      let chemRoll = window.dice.roll(1, 6)
-      if (zone === 'outer') chemRoll += 2
-      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
-      const ageMod = chemistry === 'water' ? 0 : chemistry === 'ammonia' ? 1 : 3
-      const subsurfaceOceans = hydrosphere < 10
-      const biosphere = subsurfaceOceans
-        ? star.age >= window.dice.roll(1, 6)
-          ? biosphereRoll(1, 6, temperature) - 3
-          : star.age >= 6 + ageMod
-          ? biosphereRoll(1, 6, temperature) + size - 2
-          : 0
-        : 0
-      return { size, atmosphere, hydrosphere, biosphere: Math.max(0, biosphere) }
-    }
-  },
-  stygian: {
-    color: '#2F4F4F',
-    description:
-      "These are worlds that were directly affected by their primary's transition from the main sequence; they are melted and blasted lumps.",
-    roll: () => {
-      return { size: window.dice.roll(1, 6) - 1, atmosphere: 0, hydrosphere: 0, biosphere: 0 }
-    }
-  },
-  tectonic: {
-    color: '#7CFC00',
-    description:
-      'These are worlds with active plate tectonics and large bodies of surface liquid, allowing for stable atmospheres and a high likelihood of life.',
-    roll: ({ star, zone, temperature }) => {
-      const size = window.dice.roll(1, 6) + 4
-      let chemRoll = window.dice.roll(1, 6)
-      if (star.class.spectral === 'K') chemRoll += 2
-      if (star.class.spectral === 'M') chemRoll += 4
-      if (zone === 'outer') chemRoll += 2
-      const secondChemRoll = window.dice.roll(2, 6)
-      const chemistry =
-        chemRoll <= 6
-          ? secondChemRoll <= 8
-            ? 'water'
-            : secondChemRoll <= 11
-            ? 'sulfur'
-            : 'chlorine'
-          : chemRoll <= 8
-          ? 'ammonia'
-          : 'methane'
-      const ageMod = chemRoll <= 6 ? 0 : chemRoll <= 8 ? 1 : 3
-      const biosphere =
-        star.age >= 4 + ageMod
-          ? biosphereRoll(2, 13, temperature)
-          : star.age >= window.dice.roll(1, 3) + ageMod
-          ? biosphereRoll(0, 3, temperature)
-          : 0
-      const suitableBio = biosphere >= 3
-      const atmosphere =
-        suitableBio && chemistry === 'water'
-          ? MATH.clamp(window.dice.roll(2, 6) + size - 7, 2, 9)
-          : window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-      const hydrosphere = window.dice.randint(4, 9)
-      return {
-        size,
-        atmosphere,
-        hydrosphere,
-        biosphere,
-        chemistry,
-        subtype:
-          chemistry === 'water'
-            ? 'gaian'
-            : chemistry === 'sulfur'
-            ? 'thio-gaian'
-            : chemistry === 'chlorine'
-            ? 'chloritic-gaian'
-            : chemistry === 'ammonia'
-            ? 'amunian'
-            : 'tartarian'
-      }
-    }
-  },
-  telluric: {
-    color: '#8B0000',
-    description:
-      'These are worlds with geo-activity but no hydrological cycle at all, leading to dense runaway-greenhouse atmospheres.',
-    roll: () => {
-      const size = window.dice.roll(1, 6) + 4
-      const hydrosphere = window.dice.roll(1, 6) >= 4 ? 0 : 12
-      return {
-        size,
-        atmosphere: 12,
-        hydrosphere,
-        biosphere: 0
-      }
-    }
-  },
-  vesperian: {
-    color: '#DAA520',
-    description:
-      'These worlds are tide-locked to their primary, but at a distance that permits surface liquid and the development of life.',
-    roll: ({ star }) => {
-      const size = window.dice.roll(1, 6) + 4
-      const chemRoll = window.dice.roll(1, 6)
-      const chemistry = chemRoll <= 11 ? 'water' : 'chlorine'
-      const biosphere =
-        star.age >= 4
-          ? biosphereRoll(1, 12, 'hot')
-          : star.age >= window.dice.roll(1, 3)
-          ? biosphereRoll(0, 3, 'hot')
-          : 0
-      const suitableBio = biosphere >= 3
-      const atmosphere =
-        suitableBio && chemistry === 'water'
-          ? MATH.clamp(window.dice.roll(2, 6) + size - 7, 2, 9)
-          : window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-      const hydrosphere = Math.max(1, window.dice.roll(2, 6) - 2)
-      return {
-        size,
-        atmosphere,
-        hydrosphere,
-        biosphere,
-        chemistry
-      }
-    }
-  }
-}
-
-const sizes: Record<string, string> = {
-  '-1': 'asteroid belt',
-  '0': '≤800 km, neg. gravity',
-  '1': '1,600 km, 0.05 G',
-  '2': '3,200 km, 0.15 G (Triton, Luna, Europa)',
-  '3': '4,800 km, 0.25 G (Mercury, Ganymede)',
-  '4': '6,400 km, 0.35 G (Mars)',
-  '5': '8,000 km, 0.45 G',
-  '6': '9,600 km, 0.70 G',
-  '7': '11,200 km, 0.9 G',
-  '8': '12,800 km, 1.0 G (Terra)',
-  '9': '14,400 km, 1.25 G',
-  '10': '≥16,000 km, ≥1.4 G',
-  '11': 'Helian sizes',
-  '12': 'Helian sizes',
-  '13': 'Helian sizes',
-  '14': 'Helian sizes',
-  '15': 'Jovian sizes'
-}
-
-const atmospheres: Record<string, string> = {
-  '0': 'Vacuum',
-  '1': 'Trace',
-  '2': 'Very Thin Tainted',
-  '3': 'Very Thin Breathable',
-  '4': 'Thin Tainted',
-  '5': 'Thin Breathable',
-  '6': 'Standard Breathable',
-  '7': 'Standard Tainted',
-  '8': 'Dense Breathable',
-  '9': 'Dense Tainted',
-  '10': 'Exotic',
-  '11': 'Corrosive',
-  '12': 'Insidious',
-  '13': 'Super-High Density',
-  '14': 'Gas Giant Envelope'
-}
-
-const hydrospheres: Record<string, string> = {
-  '0': '≤5% (Trace)',
-  '1': '≤15% (Dry / tiny ice caps)',
-  '2': '≤25% (Small seas / ice caps)',
-  '3': '≤35% (Small oceans / large ice caps)',
-  '4': '≤45% (Wet)',
-  '5': '≤55% (Large oceans)',
-  '6': '≤65%',
-  '7': '≤75% (Terra)',
-  '8': '≤85% (Water world)',
-  '9': '≤95% (No continents)',
-  '10': '≤100% (Total coverage)',
-  '11': 'Superdense (incredibly deep world oceans)',
-  '12': 'Intense Volcanism (molten surface)',
-  '13': 'Gas Giant Core'
-}
+const hydrospheres = [
+  { code: 0, range: '≤5%', description: 'arid, barren' },
+  { code: 1, range: '≤15%', description: 'dry, small seas' },
+  { code: 2, range: '≤25%', description: 'semi-arid, small oceans' },
+  { code: 3, range: '≤35%', description: 'moderate oceans' },
+  { code: 4, range: '≤45%', description: 'large oceans' },
+  { code: 5, range: '≤55%', description: 'equal land/oceans' },
+  { code: 6, range: '≤65%', description: 'ocean-dominated' },
+  { code: 7, range: '≤75%', description: 'mostly oceanic' },
+  { code: 8, range: '≤85%', description: 'ocean world' },
+  { code: 9, range: '≤95%', description: 'no continents' },
+  { code: 10, range: '≤100%', description: 'total coverage' },
+  { code: 11, description: 'Superdense (incredibly deep world oceans)' },
+  { code: 12, description: 'Intense volcanism (molten surface)' },
+  { code: 13, description: 'Gas giant core' }
+]
 
 const biospheres: Record<string, string> = {
   '0': 'Sterile',
@@ -690,15 +36,15 @@ const biospheres: Record<string, string> = {
   '2': 'Single-celled organisms',
   '3': 'Producers (atmosphere begins to transform)',
   '4': 'Multi-cellular organisms',
-  '5': 'Complex single-celled life (nucleic cells, or equivalent)',
-  '6': 'Complex multi-cellular life (microscopic animals)',
+  '5': 'Complex single-celled life',
+  '6': 'Complex multi-cellular life',
   '7': 'Small macroscopic life',
   '8': 'Large macroscopic life',
-  '9': 'Simple global ecology (life goes out of the oceans and onto land or into the air, etc.)',
+  '9': 'Simple global ecology',
   '10': 'Complex global ecology',
   '11': 'Proto-sapience',
   '12': 'Full sapience',
-  '13': 'Trans-sapience (able to deliberately alter their own evolution, minimum Tech Level C)'
+  '13': 'Trans-sapience'
 }
 
 const populations: Record<string, string> = {
@@ -745,85 +91,56 @@ const lawLevel = (law: number) => {
   return 'Extreme restrictions: extensive monitoring and limitations, free speech curtailed'
 }
 
-const industryLevel = (industry: number) => {
-  if (industry === 0) return 'No industry. Everything must be imported.'
-  if (industry <= 3) return 'Primitive. Mostly only raw materials made locally.'
-  if (industry <= 6) return 'Industrial. Local tools maintained, some produced'
-  if (industry <= 9) return 'Pre-Stellar. Production and maintenance of space technologies.'
-  if (industry <= 11) return 'Early Stellar. Support for A.I. and local starship production.'
-  if (industry <= 14) return 'Average Stellar. Support for terraforming, flying cities, clones.'
+const techLevel = (tech: number) => {
+  if (tech === 0) return 'No industry. Everything must be imported.'
+  if (tech <= 3) return 'Primitive. Mostly only raw materials made locally.'
+  if (tech <= 6) return 'Industrial. Local tools maintained, some produced'
+  if (tech <= 9) return 'Pre-Stellar. Production and maintenance of space technologies.'
+  if (tech <= 11) return 'Early Stellar. Support for A.I. and local starship production.'
+  if (tech <= 14) return 'Average Stellar. Support for terraforming, flying cities, clones.'
   return 'High Stellar. Support for highest of the high tech.'
 }
 
 const habitable = ({
-  star,
-  zone,
-  type,
   hydrosphere,
   size,
+  gravity,
   atmosphere,
   temperature,
-  asteroid
+  type
 }: OrbitDesirabilityParams) => {
-  if (type === 'asteroid belt') return 0
-  let roll = asteroid ? window.dice.roll(1, 6) - window.dice.roll(1, 6) : 0
-  // dry world
-  if (!asteroid && hydrosphere === 0) roll -= 1
-  // extreme environment
-  if (
-    !asteroid &&
-    (size >= 13 ||
-      atmosphere >= 11 ||
-      hydrosphere === 12 ||
-      temperature === 'burning' ||
-      temperature === 'frozen')
-  )
-    roll -= 2
-  // habitable world
-  if (
-    size >= 1 &&
-    size <= 11 &&
-    atmosphere >= 2 &&
-    atmosphere <= 9 &&
-    hydrosphere >= 0 &&
-    hydrosphere <= 11
-  ) {
-    // garden world
-    if (
-      size >= 5 &&
-      size <= 10 &&
-      atmosphere >= 4 &&
-      atmosphere <= 9 &&
-      hydrosphere >= 4 &&
-      hydrosphere <= 8
-    )
-      roll += 5
-    // water world
-    else if (hydrosphere >= 10) roll += 3
-    // poor world
-    else if (atmosphere <= 6 && hydrosphere <= 3) roll += 2
-    else roll += 4
-  }
-  // high gravity
-  if (size >= 10 && atmosphere < 14) roll -= 1
-  // lifebelt
-  if (zone === 'inner') {
-    if (star.class.spectral === 'M') roll += 1
-    else if (
-      star.class.spectral !== 'O' &&
-      star.class.spectral !== 'B' &&
-      star.class.luminosity !== 'Ib' &&
-      star.class.luminosity !== 'Ia' &&
-      star.class.luminosity !== 'II' &&
-      star.class.luminosity !== 'III'
-    )
-      roll += 2
-  }
-  // tiny world
-  if (!asteroid && size === 0) roll -= 1
-  // t-prime atmosphere
-  if (atmosphere === 6 || atmosphere === 8) roll += 1
-  return roll
+  let habitability = 10
+
+  if (size <= 4) habitability -= 1
+  else if (size >= 9) habitability += 1
+
+  if (atmosphere.code === 12 || atmosphere.code === 14) habitability -= 12
+  else if (atmosphere.code === 11) habitability -= 10
+  else if ([0, 1, 10].includes(atmosphere.code)) habitability -= 8
+  else if (atmosphere.code === 2 || atmosphere.subtype === 'low' || atmosphere.unusual)
+    habitability -= 4
+  else if (atmosphere.code === 3 || atmosphere.subtype === 'very dense') habitability -= 3
+  else if (atmosphere.code === 4 || atmosphere.code === 9) habitability -= 2
+  else if ([5, 7, 8].includes(atmosphere.code)) habitability -= 1
+
+  if (hydrosphere === 0) habitability -= 4
+  else if (hydrosphere <= 3) habitability -= 2
+  else if (hydrosphere === 9) habitability -= 1
+  else if (hydrosphere === 10 || hydrosphere === 11) habitability -= 2
+  else if (hydrosphere === 12) habitability -= 12
+
+  if (temperature.desc === 'burning' || temperature.desc === 'frozen') habitability -= 6
+  else if (temperature.desc === 'cold' || temperature.desc === 'hot') habitability -= 2
+
+  if (gravity <= 0.4) habitability -= 2
+  else if (gravity <= 0.7) habitability -= 1
+  else if (gravity <= 0.9) habitability += 1
+  else if (gravity <= 1.4) habitability -= 1
+  else if (gravity <= 2) habitability -= 2
+  else habitability -= 6
+
+  if (ORBIT_CLASSIFICATION[type].tidalLock) habitability -= 2
+  return habitability
 }
 
 const garden = () => {
@@ -836,31 +153,250 @@ const garden = () => {
     size,
     chemistry: 'water' as const,
     subtype: 'gaian',
-    biosphere: 13
+    biosphere: 12
   }
 }
 
 const _colors: Record<string, string> = {}
 
+const rotation = (size: number, locked?: boolean, parent?: Orbit) => {
+  if (locked) return 0
+  if (parent && parent.group !== 'asteroid belt' && window.dice.random < 0.6) return 0
+  const mod = size <= 0 || size >= 15 ? 2 : 4
+  let base = (window.dice.roll(2, 6) - 2) * mod + window.dice.roll(1, 6)
+  let rotation = base
+  while (base > 40 && window.dice.roll(1, 6) >= 5) {
+    base = (window.dice.roll(2, 6) - 2) * mod + window.dice.roll(1, 6)
+    rotation += base
+  }
+  return rotation
+}
+
+const axialTilt = (tidalLocked?: boolean) => {
+  if (tidalLocked) return (window.dice.roll(2, 6) - 2) / 10
+  const standard = window.dice.roll(2, 6)
+  if (standard <= 4) return window.dice.uniform(0.01, 0.1)
+  if (standard <= 5) return window.dice.uniform(0.2, 1.2)
+  if (standard <= 6) return window.dice.uniform(1, 6)
+  if (standard <= 7) return window.dice.uniform(7, 12)
+  if (standard <= 9) return window.dice.uniform(10, 35)
+  const extreme = window.dice.roll(1, 6)
+  if (extreme <= 2) return window.dice.uniform(20, 70) // high axial tilt
+  if (extreme <= 4) return window.dice.uniform(40, 90) // extreme axial tilt
+  if (extreme <= 5) return window.dice.uniform(91, 126) // retrograde rotation
+  return window.dice.uniform(144, 180) // extreme retrograde
+}
+
+const _temperature = scaleLinear<number, number>()
+  .domain([
+    -4.5, -4.0, -4.0, -3.5, -3.5, -3.0, -3.0, -2.5, -2.5, 2.0, -2.0, -1.5, -1.5, -1.0, -1.0, -0.5,
+    -0.5, 0.5, 0.5, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 2.5
+  ])
+  .range([
+    -250, -230, -210, -190, -180, -160, -150, -130, -120, -100, -95, -75, -65, -50, -40, 0, 5, 25,
+    35, 75, 85, 180, 200, 300, 350, 450
+  ])
+
+const finalizeTemperature = (
+  atmosphere: Orbit['atmosphere'],
+  hydrosphere: number,
+  type: Orbit['type']
+) => {
+  let roll = 0
+  if (atmosphere.subtype === 'very thin') roll -= 2
+  else if (atmosphere.subtype === 'thin') roll -= 1
+  else if (atmosphere.subtype === 'dense') roll += 1
+  else if (atmosphere.subtype === 'very dense') roll += 2
+  if ([11, 12].includes(atmosphere.code)) roll += 6
+  if (hydrosphere === 12) roll += 8
+  if (type === 'telluric') roll += 8
+  return roll * window.dice.uniform(10, 15)
+}
+
+const finalizeAtmosphere = (
+  code: number,
+  size: number,
+  deviation: number,
+  hydrosphere: number,
+  type: Orbit['type']
+): Orbit['atmosphere'] => {
+  if (code === 0) return { code, type: 'vacuum' }
+  if (code === 1) return { code, type: 'trace' }
+  if (code === 2) return { code, type: 'breathable', subtype: 'very thin', tainted: true }
+  if (code === 3) return { code, type: 'breathable', subtype: 'very thin' }
+  if (code === 4) return { code, type: 'breathable', subtype: 'thin', tainted: true }
+  if (code === 5) return { code, type: 'breathable', subtype: 'thin' }
+  if (code === 6) return { code, type: 'breathable', subtype: 'standard' }
+  if (code === 7) return { code, type: 'breathable', subtype: 'standard', tainted: true }
+  if (code === 8) return { code, type: 'breathable', subtype: 'dense' }
+  if (code === 9) return { code, type: 'breathable', subtype: 'dense', tainted: true }
+  if (code === 10) {
+    let roll = window.dice.roll(2, 6)
+    if (size <= 4) roll -= 2
+    if (deviation >= 1.5) roll -= 2
+    if (deviation <= -1.5) roll += 2
+    if (roll <= 2) return { code, type: 'exotic', subtype: 'very thin', tainted: true }
+    if (roll <= 3) return { code, type: 'exotic', subtype: 'very thin' }
+    if (roll <= 4) return { code, type: 'exotic', subtype: 'thin', tainted: true }
+    if (roll <= 5) return { code, type: 'exotic', subtype: 'thin' }
+    if (roll <= 6) return { code, type: 'exotic', subtype: 'standard', tainted: true }
+    if (roll <= 8) return { code, type: 'exotic', subtype: 'standard' }
+    if (roll <= 9) return { code, type: 'exotic', subtype: 'dense', tainted: true }
+    if (roll <= 10) return { code, type: 'exotic', subtype: 'dense' }
+    if (roll <= 11) return { code, type: 'exotic', subtype: 'very dense', tainted: true }
+    return { code, type: 'exotic', subtype: 'very dense' }
+  }
+  if (code === 11 || code === 12) {
+    const insidious = code === 12
+    const gas = insidious ? 'insidious' : 'corrosive'
+    let roll = window.dice.roll(2, 6)
+    if (size <= 4) roll -= 3
+    if (size >= 8) roll += 2
+    if (deviation >= 1.5) roll += 4
+    if (deviation <= -1.5) roll -= 2
+    if (insidious) roll += 2
+    if (type === 'telluric') roll += 4
+    if (roll <= 3) return { code, type: gas, subtype: 'very thin' }
+    if (roll <= 5) return { code, type: gas, subtype: 'thin' }
+    if (roll <= 7) return { code, type: gas, subtype: 'standard' }
+    if (roll <= 10) return { code, type: gas, subtype: 'dense' }
+    return { code, type: gas, subtype: 'very dense' }
+  }
+  if (code === 13) {
+    const panthalassic = type === 'panthalassic'
+    const subtype: Orbit['atmosphere']['subtype'] = window.dice.weightedChoice([
+      { v: 'very dense', w: 3 },
+      { v: 'low', w: panthalassic ? 0 : 1 },
+      { v: 'unusual', w: 0.5 },
+      { v: 'gas, helium', w: panthalassic ? 0 : 0.25 },
+      { v: 'gas, hydrogen', w: panthalassic ? 0 : 0.25 }
+    ])
+    return {
+      code,
+      type: 'massive',
+      subtype,
+      unusual:
+        subtype === 'unusual'
+          ? window.dice.weightedChoice([
+              { v: 'ellipsoid', w: 1 },
+              { v: 'layered', w: 1 },
+              { v: 'steam', w: panthalassic || hydrosphere < 5 ? 0 : 1 },
+              { v: 'storms', w: 1 },
+              { v: 'tides', w: hydrosphere < 5 ? 0 : 1 },
+              { v: 'seasonal', w: 1 }
+            ])
+          : undefined
+    }
+  }
+  return { code, type: 'gas giant envelope' }
+}
+
+const finalizeAtmosphereHazards = (atmosphere: Orbit['atmosphere']) => {
+  if (atmosphere.tainted) {
+    const exotic = atmosphere.type === 'exotic'
+    const subtype = atmosphere.subtype
+    const invalidOxygen =
+      (subtype && ['very thin', 'thin', 'dense', 'very dense'].includes(subtype)) || exotic
+    atmosphere.hazard = window.dice.weightedChoice([
+      { v: 'biologic', w: 2 },
+      { v: 'gas mix', w: 2 },
+      { v: 'particulates', w: 2 },
+      { v: 'sulphur compounds', w: 1 },
+      { v: 'radioactive', w: 2 },
+      { v: 'low oxygen', w: invalidOxygen ? 0 : 1 },
+      { v: 'high oxygen', w: invalidOxygen ? 0 : 1 }
+    ])
+  } else if (atmosphere.type === 'corrosive' || atmosphere.type === 'insidious') {
+    atmosphere.hazard = window.dice.weightedChoice([
+      { v: 'biologic', w: 1 },
+      { v: 'gas mix', w: 3 },
+      { v: 'radioactive', w: 2 }
+    ])
+  }
+}
+
+const calculateBiosphere = (params: BiosphereParams) => {
+  const { chemistry, star, type, atmosphere, size, temperature, hydrosphere } = params
+  let modifier = 0
+  if (chemistry === 'ammonia') modifier += 1
+  else if (chemistry === 'methane') modifier += 3
+
+  let complexity = 0
+  if (type === 'geo-cyclic') {
+    complexity =
+      star.age >= 4 + modifier && atmosphere.code === 10
+        ? window.dice.roll(1, 6) + size - 2
+        : star.age >= window.dice.roll(1, 3) + modifier
+        ? atmosphere.code === 10
+          ? window.dice.roll(1, 3)
+          : window.dice.roll(1, 6) - 4
+        : 0
+  } else if (type === 'snowball') {
+    const subsurface = hydrosphere < 10
+    complexity =
+      subsurface && star.age >= 6 + modifier
+        ? window.dice.roll(1, 6) + size - 2
+        : subsurface && star.age >= window.dice.roll(1, 6)
+        ? window.dice.roll(1, 6) - 3
+        : 0
+  } else {
+    complexity =
+      star.age >= 4 + modifier
+        ? window.dice.roll(2, 6)
+        : star.age >= window.dice.roll(1, 3) + modifier
+        ? window.dice.roll(1, 3)
+        : 0
+  }
+  if (type !== 'snowball') {
+    if (temperature === 'frozen' || temperature === 'burning') complexity -= 6
+    else if (temperature === 'cold') complexity -= 2
+  }
+
+  if (atmosphere.hazard === 'low oxygen') complexity -= 2
+  if (atmosphere.code < 4 || atmosphere.code > 9) complexity -= 2
+
+  if (atmosphere.type !== 'breathable') {
+    if (window.dice.random < 0.5) complexity -= 1
+    else complexity += 1
+  }
+
+  complexity = Math.max(atmosphere.hazard === 'biologic' ? 1 : 0, Math.min(12, complexity))
+
+  return { biomass: 0, complexity }
+}
+
 export const ORBIT = {
-  atmospheres,
   biospheres,
   populations,
   governments,
   lawLevel,
-  industryLevel,
+  techLevel,
+  hydrospheres,
+  eccentricity: ({ star, asteroidMember, tidalLocked }: EccentricityParams) => {
+    // 0 = circular
+    // 1 = unbound interstellar object
+    let roll = window.dice.roll(2, 6)
+    if (star) roll += 2
+    if (tidalLocked) roll -= 2
+    if (asteroidMember) roll += 1
+    if (roll <= 5) return 0
+    else if (roll <= 7) return window.dice.uniform(0.005, 0.03)
+    else if (roll <= 9) return window.dice.uniform(0.04, 0.09)
+    else if (roll <= 10) return window.dice.uniform(0.1, 0.35)
+    else if (roll <= 11) return window.dice.uniform(0.15, 0.65)
+    return window.dice.uniform(0.4, 0.9)
+  },
   colors: {
     set: () => {
       DICE.swap('planet', () => {
         window.galaxy.orbits.forEach(orbit => {
-          if (!_colors[orbit.type]) _colors[orbit.type] = details[orbit.type].color
+          if (!_colors[orbit.type]) _colors[orbit.type] = ORBIT_CLASSIFICATION[orbit.type].color
         })
       })
     },
     get: () => _colors
   },
-  describe: (orbit: Orbit) => details[orbit.type].description,
-  hydrospheres,
+  describe: (orbit: Orbit) => ORBIT_CLASSIFICATION[orbit.type].description,
   name: (orbit: Orbit) => {
     if (!orbit.name) {
       const system = window.galaxy.systems[orbit.system]
@@ -869,8 +405,9 @@ export const ORBIT = {
     }
     return orbit.name
   },
+  code: (orbit: Orbit) =>
+    orbit.population > 0 ? `${ORBIT.name(orbit)} (${orbit.habitation})` : ORBIT.name(orbit),
   orbits: (orbit: Orbit): Orbit[] => orbit.orbits.map(moon => [moon, ...ORBIT.orbits(moon)]).flat(),
-  sizes,
   parent: (orbit: Orbit) =>
     orbit.parent.type === 'star'
       ? window.galaxy.stars[orbit.parent.idx]
@@ -883,8 +420,9 @@ export const ORBIT = {
     parent,
     angle,
     distance,
-    deviation,
-    homeworld
+    homeworld,
+    unary,
+    deviation
   }: OrbitSpawnParams): Orbit => {
     const selected =
       group ??
@@ -897,86 +435,45 @@ export const ORBIT = {
             { v: 'helian', w: 1 },
             { v: 'jovian', w: zone === 'outer' ? 2 : 0.5 }
           ]))
-    const type = homeworld ? 'tectonic' : groups[selected].type({ zone, impactZone, parent })
-    const temperature: Orbit['temperature'] =
-      type === 'telluric' || type === 'meltball'
-        ? 'burning'
-        : type === 'vesperian'
-        ? 'variable (hot)'
-        : deviation >= 1.1
-        ? 'frozen'
-        : deviation >= 0.9
-        ? 'variable (cold)'
-        : deviation >= 0.25
-        ? 'cold'
-        : deviation >= -0.25
-        ? 'temperate'
-        : deviation >= -0.9
-        ? 'hot'
-        : deviation >= -1.1
-        ? 'variable (hot)'
-        : 'burning'
-    const detail = homeworld ? garden() : details[type].roll({ star, zone, temperature })
-    const { subtype, atmosphere, hydrosphere, chemistry, biosphere } = detail
+    const type = homeworld
+      ? 'tectonic'
+      : ORBIT_GROUPS[selected].type({ zone, impactZone, parent, star })
+    const detail = homeworld ? garden() : ORBIT_CLASSIFICATION[type].roll({ star, zone })
     let { size } = detail
+    const physique = ORBIT_GROUPS[selected].size({ star, deviation, size })
     const asteroidBelt = selected === 'asteroid belt'
     const asteroidMember = parent?.group === 'asteroid belt'
     size = asteroidMember ? size : Math.max(0, Math.min((parent?.size ?? Infinity) - 3, size))
+    const { subtype, hydrosphere, chemistry } = detail
+    const atmosphere = finalizeAtmosphere(detail.atmosphere, size, deviation, hydrosphere, type)
+    finalizeAtmosphereHazards(atmosphere)
+    const kelvin = parent?.temperature.base ?? ORBIT.temperature(deviation)
+    const finalKelvin = kelvin + finalizeTemperature(atmosphere, hydrosphere, type)
+    const temperature: Orbit['temperature'] = {
+      base: kelvin,
+      kelvin: finalKelvin,
+      desc:
+        finalKelvin <= 223
+          ? 'frozen'
+          : finalKelvin <= 273.15
+          ? 'cold'
+          : finalKelvin <= 303.15
+          ? 'temperate'
+          : finalKelvin <= 353.15
+          ? 'hot'
+          : 'burning'
+    }
+    const au = MATH.orbits.distance(kelvin, star.luminosity)
     const r = scaleLinear([-1, 0, 5, 10, 15], [0, 1, 3, 6, 10])(size)
     const finalDistance = asteroidMember ? 0 : distance + r + (asteroidBelt ? 10 : 0)
     const habitability = habitable({
-      star,
-      zone,
       type,
       hydrosphere,
       atmosphere,
       size,
       temperature,
-      asteroid: asteroidMember
+      gravity: physique.gravity
     })
-    const habitation =
-      biosphere >= 12
-        ? 'homeworld'
-        : window.dice.roll(2, 6) - 2 < habitability && habitability >= 0
-        ? 'colony'
-        : window.dice.roll(1, 6) < 4
-        ? 'outpost'
-        : 'none'
-    const homeworldPop = habitability + window.dice.roll(1, 3) - window.dice.roll(1, 3)
-    const population =
-      habitation === 'homeworld'
-        ? homeworldPop
-        : habitation === 'colony'
-        ? window.dice.randint(4, Math.max(4, homeworldPop - 1))
-        : habitation === 'outpost'
-        ? Math.max(0, Math.min(habitability + window.dice.roll(1, 3), 4))
-        : 0
-    let government = population > 0 ? population + window.dice.roll(2, 6) - 7 : 0
-    if (habitation === 'outpost') government = Math.min(6, government)
-    if (homeworld && government === 6) government = 7
-    government = Math.max(0, government)
-    const law = Math.max(0, government === 0 ? 0 : government + window.dice.roll(2, 6) - 7)
-    const industry =
-      population +
-      window.dice.roll(2, 6) -
-      7 +
-      (law >= 1 && law <= 3
-        ? 1
-        : law >= 6 && law <= 9
-        ? -1
-        : law >= 10 && law <= 12
-        ? -2
-        : law === 13
-        ? -3
-        : 0) +
-      (atmosphere <= 4 ||
-      atmosphere === 7 ||
-      atmosphere >= 9 ||
-      hydrosphere === 12 ||
-      temperature === 'burning' ||
-      temperature === 'frozen'
-        ? 1
-        : 0)
     const orbit: Orbit = {
       idx: window.galaxy.orbits.length,
       tag: 'orbit',
@@ -988,57 +485,55 @@ export const ORBIT = {
       zone,
       type,
       subtype,
+      rotation: rotation(size, ORBIT_CLASSIFICATION[type].tidalLock, parent),
+      eccentricity: asteroidBelt
+        ? 0
+        : parent && parent.group !== 'asteroid belt'
+        ? parent.eccentricity
+        : ORBIT.eccentricity({
+            tidalLocked: ORBIT_CLASSIFICATION[type].tidalLock,
+            asteroidMember: parent?.group === 'asteroid belt'
+          }),
+      axialTilt: axialTilt(ORBIT_CLASSIFICATION[type].tidalLock),
+      au,
+      period: parent ? parent.period : MATH.orbits.period(au, star.mass),
       size,
+      ...physique,
       atmosphere,
       temperature,
-      hydrosphere,
-      biosphere: {
-        type:
-          biosphere <= 0
-            ? 'sterile'
-            : biosphere <= 6
-            ? 'microbial'
-            : window.dice.weightedChoice([
-                { v: 'human-miscible', w: atmosphere === 10 ? 0 : 2 },
-                { v: 'immiscible', w: homeworld ? 0 : 2 },
-                { v: 'hybrid', w: homeworld || atmosphere === 10 ? 0 : 1 },
-                { v: 'engineered', w: homeworld ? 0 : 0.25 },
-                { v: 'remnant', w: homeworld ? 0 : 0.25 }
-              ]),
-        score: Math.min(homeworld ? 13 : 12, Math.max(0, biosphere))
-      },
+      hydrosphere: { code: hydrosphere, distribution: window.dice.roll(2, 6) - 2 },
+      biosphere: ORBIT_CLASSIFICATION[type].biosphere
+        ? calculateBiosphere({
+            atmosphere,
+            hydrosphere,
+            temperature: temperature.desc,
+            star,
+            type,
+            size
+          })
+        : { biomass: 0, complexity: 0 },
       chemistry,
-      habitability: {
-        score: habitability,
-        class:
-          habitability <= 0
-            ? 'inhospitable'
-            : habitability <= 2
-            ? 'harsh'
-            : habitability <= 4
-            ? 'marginal'
-            : habitability <= 6
-            ? 'comfortable'
-            : 'paradise'
-      },
-      habitation,
-      population,
-      government,
-      law,
-      industry,
+      habitability,
+      habitation: 'none',
+      population: 0,
+      government: 0,
+      law: 0,
+      starport: 'X',
+      tech: 0,
       orbits: [],
       r,
       parent: parent ? { type: 'orbit', idx: parent.idx } : { type: 'star', idx: star.idx }
     }
+    ORBIT_CLASSIFICATION[type].classify?.({ orbit, deviation })
     window.galaxy.orbits.push(orbit)
     if (selected === 'jovian') orbit.rings = window.dice.roll(1, 6) <= 4 ? 'minor' : 'complex'
     if (selected === 'asteroid belt') {
       console.log()
     }
     if (!parent && (orbit.size > 0 || asteroidBelt)) {
-      let subAngle = 0
+      let subAngle = window.dice.randint(90, 270)
       let distance = orbit.r + 2
-      orbit.orbits = groups[selected].orbits().map(satellite => {
+      orbit.orbits = ORBIT_GROUPS[selected].orbits().map(satellite => {
         const moon = ORBIT.spawn({
           parent: orbit,
           zone: orbit.zone,
@@ -1047,6 +542,7 @@ export const ORBIT = {
           impactZone,
           distance: distance,
           angle: subAngle,
+          unary,
           deviation
         })
         subAngle += window.dice.randint(90, 270)
@@ -1058,5 +554,121 @@ export const ORBIT = {
     }
     if (asteroidBelt) orbit.fullR = 10
     return orbit
-  }
+  },
+  finalize: ({ orbit, capital, primary, main }: OrbitFinalizeParams) => {
+    const habitability = orbit.habitability
+    const habitation =
+      orbit.biosphere.complexity >= 12
+        ? 'homeworld'
+        : (main?.population ?? Infinity) <= 1
+        ? 'none'
+        : (window.dice.roll(2, 6) - 2 < habitability && habitability >= 0) ||
+          (habitability > 3 && primary)
+        ? 'colony'
+        : window.dice.roll(1, 6) < 4 || primary
+        ? 'outpost'
+        : 'none'
+    const homeworldPop = habitability + window.dice.roll(1, 3) - window.dice.roll(1, 3)
+    let population =
+      habitation === 'homeworld'
+        ? homeworldPop
+        : habitation === 'colony'
+        ? window.dice.randint(4, Math.max(4, homeworldPop - 1))
+        : habitation === 'outpost'
+        ? Math.max(1, Math.min(habitability + window.dice.roll(1, 3), 4))
+        : 0
+    if (capital) population += 1
+    if (main) population = Math.min(main.population - 1, population)
+    let port = Math.max(
+      1,
+      window.dice.roll(2, 6) +
+        (population >= 10
+          ? 2
+          : population >= 8
+          ? 1
+          : population >= 5
+          ? 0
+          : population >= 3
+          ? -1
+          : -2)
+    )
+    if (habitation === 'none') port = 0
+    orbit.starport =
+      capital || port >= 11
+        ? 'A'
+        : port >= 9
+        ? 'B'
+        : port >= 7
+        ? 'C'
+        : port >= 5
+        ? 'D'
+        : port >= 3
+        ? 'E'
+        : 'X'
+    if (orbit.starport === 'X') population = 0
+    let government = population > 0 ? population + window.dice.roll(2, 6) - 7 : 0
+    if (habitation === 'outpost') government = Math.min(6, government)
+    if (capital && government === 6) government = 7
+    government = Math.max(0, government)
+    let industry = Math.max(
+      capital ? 15 : 0,
+      habitation === 'none'
+        ? 0
+        : window.dice.roll(1, 6) +
+            (orbit.starport === 'A'
+              ? 6
+              : orbit.starport === 'B'
+              ? 4
+              : orbit.starport === 'C'
+              ? 2
+              : 0) +
+            (orbit.size <= 1 ? 2 : orbit.size <= 4 ? 1 : 0) +
+            (orbit.atmosphere.code <= 3 || orbit.atmosphere.code >= 10 ? 1 : 0) +
+            (orbit.hydrosphere.code === 10
+              ? 2
+              : orbit.hydrosphere.code >= 9 || orbit.hydrosphere.code <= 1
+              ? 1
+              : 0) +
+            (orbit.hydrosphere.code === 10
+              ? 2
+              : orbit.hydrosphere.code >= 9 || orbit.hydrosphere.code <= 1
+              ? 1
+              : 0) +
+            (orbit.population <= 5 || orbit.population === 8
+              ? 1
+              : orbit.population === 9
+              ? 2
+              : orbit.population >= 10
+              ? 4
+              : 0) +
+            (government === 0 || government === 5
+              ? 1
+              : government === 7
+              ? 2
+              : government === 13
+              ? -2
+              : 0)
+    )
+    const minSustainable =
+      orbit.atmosphere.code === 12
+        ? 10
+        : orbit.atmosphere.code === 11
+        ? 9
+        : orbit.atmosphere.code <= 1 || orbit.atmosphere.code >= 14 || orbit.atmosphere.code === 10
+        ? 8
+        : orbit.atmosphere.code <= 3 || orbit.atmosphere.code === 13
+        ? 5
+        : orbit.atmosphere.code === 4 || orbit.atmosphere.code === 7 || orbit.atmosphere.code === 9
+        ? 3
+        : 0
+    if (main) industry = Math.min(main.tech - 1, industry)
+    industry = Math.max(minSustainable, industry)
+    const law = Math.max(0, government === 0 ? 0 : government + window.dice.roll(2, 6) - 7)
+    orbit.habitation = habitation
+    orbit.population = population
+    orbit.government = government
+    orbit.law = law
+    orbit.tech = industry
+  },
+  temperature: (deviation: number) => MATH.temperature.kelvin(_temperature(deviation))
 }

@@ -94,9 +94,9 @@ export const SYSTEM_MAP = {
             radius: orbit.r * mod,
             fill:
               mapMode === 'desirability'
-                ? METRICS.desirability.color(orbit.habitability.score)
+                ? METRICS.desirability.color(orbit.habitability)
                 : mapMode === 'biosphere'
-                ? METRICS.biosphere.color(orbit.biosphere.score)
+                ? METRICS.biosphere.color(orbit.biosphere.complexity)
                 : mapMode === 'population'
                 ? METRICS.population.color(orbit.population)
                 : ORBIT.colors.get()[orbit.type],
@@ -106,7 +106,7 @@ export const SYSTEM_MAP = {
             ctx,
             x: center.x,
             y: center.y + (orbit.r + 2.5) * mod,
-            text: ORBIT.name(orbit),
+            text: ORBIT.code(orbit),
             size: 0.025
           })
         }

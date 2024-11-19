@@ -129,7 +129,8 @@ const GalaxyMap = () => {
         onClick={() => {
           const point = window.galaxy.diagram.delaunay.find(cursor.x, cursor.y)
           const solar = window.galaxy.systems[point]
-          if (!solar.edge) {
+          const local = transform.scale > 30
+          if (local || !solar.edge) {
             const objects = SOLAR_SYSTEM.orbits(system ?? solar).filter(
               obj => obj.tag !== 'orbit' || obj.type !== 'asteroid belt'
             )
@@ -137,12 +138,11 @@ const GalaxyMap = () => {
               cursor,
               objects.map((obj, i) => ({ ...CANVAS.coordinates(obj), i }))
             )
-            const chosen =
-              transform.scale > 30
-                ? objects[closest.i]
-                : selected?.tag === 'nation'
-                ? window.galaxy.nations[solar.nation]
-                : solar
+            const chosen = local
+              ? objects[closest.i]
+              : selected?.tag === 'nation'
+              ? window.galaxy.nations[solar.nation]
+              : solar
             dispatch({ type: 'transition', payload: chosen })
           }
         }}

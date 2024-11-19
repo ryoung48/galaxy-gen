@@ -34,31 +34,62 @@ export interface Orbit {
   group: 'asteroid belt' | 'dwarf' | 'terrestrial' | 'helian' | 'jovian'
   type: 'asteroid belt' | 'asteroid' | DwarfType | TerrestrialType | HelianType | JovianType
   subtype?: string
+  au: number
   size: number // 0-9; A=10; B-E=11-14; G=15
-  atmosphere: number
-  hydrosphere: number
-  biosphere: {
+  diameter: number
+  mass: number
+  gravity: number
+  atmosphere: {
+    code: number
     type:
-      | 'sterile'
-      | 'microbial'
-      | 'human-miscible'
-      | 'immiscible'
-      | 'hybrid'
-      | 'engineered'
-      | 'remnant'
-    score: number
+      | 'breathable'
+      | 'exotic'
+      | 'corrosive'
+      | 'insidious'
+      | 'trace'
+      | 'vacuum'
+      | 'massive'
+      | 'gas giant envelope'
+    subtype?:
+      | 'very thin'
+      | 'thin'
+      | 'standard'
+      | 'dense'
+      | 'very dense'
+      | 'low'
+      | 'unusual'
+      | 'gas, helium'
+      | 'gas, hydrogen'
+    tainted?: boolean
+    hazard?:
+      | 'biologic'
+      | 'radioactive'
+      | 'gas mix'
+      | 'low oxygen'
+      | 'high oxygen'
+      | 'particulates'
+      | 'sulphur compounds'
+    unusual?: 'ellipsoid' | 'layered' | 'steam' | 'storms' | 'tides' | 'seasonal'
   }
+  hydrosphere: { code: number; distribution: number }
+  biosphere: { biomass: number; complexity: number }
   chemistry?: 'water' | 'ammonia' | 'methane' | 'sulfur' | 'chlorine'
-  temperature: 'burning' | 'hot' | 'temperate' | 'cold' | 'frozen' | `variable (${'hot' | 'cold'})`
+  temperature: {
+    kelvin: number
+    base: number
+    desc: 'burning' | 'hot' | 'temperate' | 'cold' | 'frozen'
+  }
+  rotation: number
+  eccentricity: number
+  axialTilt: number
+  period: number
   habitation: 'none' | 'abandoned' | 'outpost' | 'colony' | 'homeworld'
+  habitability: number
   population: number
   government: number
+  starport: 'A' | 'B' | 'C' | 'D' | 'E' | 'X'
+  tech: number
   law: number
-  industry: number
-  habitability: {
-    score: number
-    class: 'inhospitable' | 'harsh' | 'marginal' | 'comfortable' | 'paradise'
-  }
   orbits: Orbit[]
   rings?: 'minor' | 'complex'
   // display
@@ -73,35 +104,70 @@ export type OrbitSpawnParams = {
   group?: Orbit['group']
   angle: number
   distance: number
-  deviation: number
   homeworld?: boolean
+  unary: boolean
+  deviation: number
 }
 
 export type OrbitGroupDetails = {
-  type: (_params: { zone: Orbit['zone']; impactZone: boolean; parent?: Orbit }) => Orbit['type']
+  type: (_params: {
+    zone: Orbit['zone']
+    impactZone: boolean
+    parent?: Orbit
+    star: Star
+  }) => Orbit['type']
   orbits: () => Orbit['group'][]
+  size: (_params: { star: Star; deviation: number; size: number }) => {
+    diameter: number
+    mass: number
+    gravity: number
+  }
 }
 
 export type OrbitTypeDetails = {
   description: string
   color: string
-  roll: (_params: { star: Star; zone: Orbit['zone']; temperature: Orbit['temperature'] }) => {
+  tidalLock?: boolean
+  tidalFlex?: boolean
+  biosphere?: boolean
+  roll: (_params: { star: Star; zone: Orbit['zone'] }) => {
     size: number
     atmosphere: number
     hydrosphere: number
-    biosphere: number
     chemistry?: Orbit['chemistry']
     subtype?: string
   }
+  classify?: (_params: { orbit: Orbit; deviation: number }) => void
 }
 
 export type OrbitDesirabilityParams = {
-  star: Star
-  zone: Orbit['zone']
   type: Orbit['type']
-  asteroid: boolean
   hydrosphere: number
-  atmosphere: number
+  atmosphere: Orbit['atmosphere']
   temperature: Orbit['temperature']
+  size: number
+  gravity: number
+}
+
+export type OrbitFinalizeParams = {
+  orbit: Orbit
+  capital?: boolean
+  primary?: boolean
+  main?: Orbit
+}
+
+export interface EccentricityParams {
+  star?: boolean
+  asteroidMember?: boolean
+  tidalLocked?: boolean
+}
+
+export interface BiosphereParams {
+  atmosphere: Orbit['atmosphere']
+  hydrosphere: number
+  temperature: Orbit['temperature']['desc']
+  star: Star
+  type: Orbit['type']
+  chemistry?: Orbit['chemistry']
   size: number
 }

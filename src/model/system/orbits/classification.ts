@@ -1,0 +1,433 @@
+import { MATH } from '../../utilities/math'
+import { Orbit, OrbitTypeDetails } from './types'
+
+export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
+  acheronian: {
+    color: '#848484',
+    description:
+      "These are worlds that were directly affected by their primary's transition from the main sequence; the atmosphere and oceans have been boiled away, leaving a scorched, dead planet.",
+    roll: () => {
+      const size = window.dice.randint(1, 6) + 4
+      return { size, atmosphere: 1, hydrosphere: 0 }
+    }
+  },
+  arid: {
+    biosphere: true,
+    color: '#DEB887',
+    description:
+      'These are worlds with limited amounts of surface liquid, that maintain an equilibrium with the help of their tectonic activity and their biosphere.',
+    roll: ({ star, zone }) => {
+      const size = window.dice.roll(1, 6) + 4
+      const hydrosphere = window.dice.randint(1, 3)
+      let chemMod = 0
+      if (star.spectralClass === 'K') chemMod += 2
+      if (star.spectralClass === 'M') chemMod += 4
+      if (zone === 'outer') chemMod += 2
+      const chemRoll = window.dice.roll(1, 6) + chemMod
+      const chemistry = chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
+      const atmosphere =
+        chemistry === 'water'
+          ? MATH.clamp(window.dice.roll(2, 6) - 7 + size, 2, 9)
+          : window.dice.weightedChoice([
+              { v: 10, w: 9 },
+              { v: 11, w: 1 }
+            ])
+      return {
+        size,
+        atmosphere,
+        hydrosphere,
+        chemistry,
+        subtype:
+          chemistry === 'water' ? 'darwinian' : chemistry === 'ammonia' ? 'saganian' : 'asimovian'
+      }
+    }
+  },
+  asphodelian: {
+    color: '#778899',
+    description:
+      "These are worlds that were directly affected by their primary's transition from the main sequence; their atmosphere has been boiled away, leaving the surface exposed.",
+    roll: () => {
+      return { size: 14, atmosphere: 1, hydrosphere: 0 }
+    }
+  },
+  'asteroid belt': {
+    color: '#808080',
+    description:
+      'These are bodies too small to sustain hydrostatic equilibrium; nearly all asteroids and comets are small bodies.',
+    roll: () => {
+      return { size: -1, atmosphere: 0, hydrosphere: 0 }
+    }
+  },
+  asteroid: {
+    color: '#808080',
+    description:
+      'These are bodies too small to sustain hydrostatic equilibrium; nearly all asteroids and comets are small bodies.',
+    roll: () => {
+      return { size: 0, atmosphere: 0, hydrosphere: 0 }
+    },
+    classify: ({ orbit, deviation }) => {
+      orbit.subtype = window.dice.weightedChoice([
+        { v: 'vulcanoidal', w: deviation >= 1.5 ? 1 : 0 },
+        { v: 'metallic', w: 0.5 },
+        { v: 'silicaceous', w: 1 },
+        { v: 'carbonaceous', w: 1 },
+        { v: 'gelidaceous', w: deviation < -1.5 ? 1 : 0 },
+        { v: 'aggregate', w: 1 }
+      ])
+    }
+  },
+  chthonian: {
+    color: '#A52A2A',
+    description:
+      "These are worlds that were directly affected by their primary's transition from the main sequence, or that have simply spent too long in a tight epistellar orbit; their atmospheres have been stripped away.",
+    roll: () => {
+      return { size: 15, atmosphere: 1, hydrosphere: 0 }
+    }
+  },
+  'geo-cyclic': {
+    biosphere: true,
+    color: '#782fe0',
+    description:
+      'These are worlds with little liquid, that move through a slow geological cycle of a gradual build-up, a short wet and clement period, and a long decline.',
+    roll: ({ zone }) => {
+      const size = window.dice.roll(1, 6) - 1
+      const atmosphereRoll = Math.max(window.dice.roll(1, 6), 1)
+      const atmosphere =
+        atmosphereRoll > 3
+          ? window.dice.weightedChoice([
+              { v: 10, w: 9 },
+              { v: 11, w: 1 }
+            ])
+          : 1
+      const hydrosphere = Math.max(
+        0,
+        window.dice.roll(2, 6) + size - 7 - (atmosphere === 1 ? 4 : 0)
+      )
+      const chemRoll = window.dice.roll(1, 6) + (zone === 'outer' ? 2 : 0)
+      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
+      return {
+        size,
+        atmosphere,
+        hydrosphere,
+        chemistry,
+        subtype:
+          chemistry === 'water' ? 'arean' : chemistry === 'ammonia' ? 'utgardian' : 'titanian'
+      }
+    }
+  },
+  'geo-tidal': {
+    biosphere: true,
+    color: '#4682B4',
+    description:
+      'These are worlds that, through tidal-flexing, have a geological cycle similar to plate tectonics, that supports surface liquid and atmosphere.',
+    roll: ({ zone }) => {
+      const size = window.dice.roll(1, 6) - 1
+      const hydrosphere = window.dice.roll(2, 3) - 2
+      let chemMod = 0
+      if (zone === 'epistellar') chemMod -= 2
+      if (zone === 'outer') chemMod += 2
+      const chemRoll = window.dice.roll(1, 6) + chemMod
+      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
+      const atmosphere =
+        chemistry === 'water'
+          ? MATH.clamp(window.dice.roll(2, 6) - 7 + size, 2, 9)
+          : window.dice.weightedChoice([
+              { v: 10, w: 9 },
+              { v: 11, w: 1 }
+            ])
+      return {
+        size,
+        atmosphere,
+        hydrosphere,
+        chemistry,
+        subtype: chemistry === 'water' ? 'promethean' : chemistry === 'ammonia' ? 'burian' : 'atlan'
+      }
+    }
+  },
+  hebean: {
+    color: '#bce02f',
+    description:
+      'These are highly active worlds, due to tidal flexing, but with some regions of stability; the larger ones may be able to maintain some atmosphere and surface liquid.',
+    roll: () => {
+      const size = window.dice.roll(1, 6) - 1
+      let atmosphere = Math.max(1, window.dice.roll(1, 6) + size - 6)
+      if (atmosphere >= 2) atmosphere = 10
+      const hydrosphere = MATH.clamp(window.dice.roll(2, 6) + size - 11, 0, 11)
+      return { size, atmosphere, hydrosphere }
+    }
+  },
+  helian: {
+    color: '#FFA500',
+    description:
+      'These are typical helian or "subgiant" worlds - large enough to retain helium atmospheres.',
+    roll: () => {
+      const hydroRoll = window.dice.roll(1, 6)
+      const hydrosphere = hydroRoll <= 2 ? 0 : hydroRoll <= 5 ? window.dice.roll(2, 6) - 1 : 12
+      return { size: 14, atmosphere: 13, hydrosphere }
+    }
+  },
+  'jani-lithic': {
+    color: '#D2B48C',
+    description:
+      'These worlds, tide-locked to the primary, are rocky, dry, and geologically active.',
+    tidalLock: true,
+    roll: () => {
+      const size = window.dice.roll(1, 6) + 4
+      const atmosphereRoll = window.dice.roll(1, 6)
+      const atmosphere =
+        atmosphereRoll <= 3
+          ? 0
+          : window.dice.weightedChoice([
+              { v: 10, w: 9 },
+              { v: 11, w: 1 }
+            ])
+      return { size, atmosphere, hydrosphere: 0 }
+    }
+  },
+  jovian: {
+    color: '#FFDAB9',
+    description:
+      'These are huge worlds with helium-hydrogen envelopes and compressed cores; the largest emit more heat than they absorb.',
+    roll: () => {
+      return { size: 15, atmosphere: 14, hydrosphere: 13 }
+    },
+    classify: ({ orbit, deviation }) => {
+      if (orbit.mass <= 35) {
+        if (deviation >= 1) {
+          orbit.subtype = 'osirian'
+        } else if (deviation >= -1) {
+          orbit.subtype = 'brammian'
+        } else if (deviation >= -1.5) {
+          orbit.subtype = 'khonsonian'
+        } else {
+          orbit.subtype = 'neptunian'
+        }
+      } else if (orbit.mass <= 340) {
+        if (deviation >= -1.5) {
+          orbit.subtype = 'junic'
+        } else {
+          orbit.subtype = orbit.mass <= 100 ? 'saturnian' : 'jovic'
+        }
+      } else {
+        if (deviation >= -1.5) {
+          orbit.subtype = 'super-junic'
+        } else {
+          orbit.subtype = 'super-jovic'
+        }
+      }
+    }
+  },
+  meltball: {
+    color: '#FF4500',
+    description:
+      'These are dwarfs with molten or semi-molten surfaces, either from extreme tidal flexing, or extreme approach to a star.',
+    tidalFlex: true,
+    roll: () => {
+      const size = window.dice.randint(1, 6) - 1
+      return { size, atmosphere: 1, hydrosphere: 12 }
+    }
+  },
+  oceanic: {
+    biosphere: true,
+    color: '#1E90FF',
+    description:
+      'These are worlds with a continuous hydrological cycle and deep oceans, due to either dense greenhouse atmosphere or active plate tectonics.',
+    roll: ({ star, zone }) => {
+      const size = window.dice.roll(1, 6) + 4
+      let chemRoll = window.dice.roll(1, 6)
+      if (star.spectralClass === 'K') chemRoll += 2
+      if (star.spectralClass === 'M') chemRoll += 4
+      if (zone === 'outer') chemRoll += 2
+      const chemistry = chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
+      const atmosphereRoll = window.dice.roll(1, 6)
+      const atmosphere =
+        chemistry === 'water'
+          ? MATH.clamp(
+              window.dice.roll(2, 6) +
+                size -
+                6 -
+                (star.spectralClass === 'K' || star.luminosityClass === 'IV'
+                  ? 1
+                  : star.spectralClass === 'M'
+                  ? 2
+                  : 0),
+              2,
+              12
+            )
+          : atmosphereRoll === 1
+          ? 1
+          : atmosphereRoll <= 4
+          ? 10
+          : 12
+      return {
+        size,
+        atmosphere,
+        hydrosphere: window.dice.weightedChoice([
+          { v: 10, w: 5 },
+          { v: 11, w: 1 }
+        ]),
+        chemistry,
+        subtype: chemistry === 'water' ? 'pelagic' : chemistry === 'ammonia' ? 'nunnic' : 'teathic'
+      }
+    }
+  },
+  panthalassic: {
+    biosphere: true,
+    color: '#4169E1',
+    description:
+      'These are massive worlds, aborted gas giants, largely composed of water and hydrogen.',
+    roll: ({ star }) => {
+      let chemRoll = window.dice.roll(1, 6)
+      if (star.spectralClass === 'K') chemRoll += 2
+      if (star.spectralClass === 'M') chemRoll += 4
+      const secondChemRoll = window.dice.roll(2, 6)
+      const chemistry =
+        chemRoll <= 6
+          ? secondChemRoll <= 8
+            ? 'water'
+            : secondChemRoll <= 11
+            ? 'sulfur'
+            : 'chlorine'
+          : 'methane'
+      const atmosphere = Math.min(window.dice.roll(1, 6) + 8, 13)
+      return { size: 14, atmosphere, hydrosphere: 11, chemistry }
+    }
+  },
+  rockball: {
+    color: '#8B7D7B',
+    description:
+      'These are mostly dormant worlds, with surfaces largely unchanged since the early period of planetary formation.',
+    roll: ({ zone }) => {
+      const size = window.dice.roll(1, 6) - 1
+      let hydrosphere = window.dice.roll(2, 6) + size - 11
+      if (zone === 'epistellar') hydrosphere -= 2
+      if (zone === 'outer') hydrosphere += 2
+      return { size, atmosphere: 0, hydrosphere: MATH.clamp(hydrosphere, 0, 10) }
+    }
+  },
+  snowball: {
+    biosphere: true,
+    color: '#ADD8E6',
+    description:
+      'These worlds are composed of mostly ice and some rock. They may have varying degrees of activity, ranging from completely cold and still to cryo-volcanically active with extensive subsurface oceans.',
+    roll: ({ zone }) => {
+      const size = window.dice.roll(1, 6) - 1
+      const atmosphere = window.dice.roll(1, 6) <= 4 ? 0 : 1
+      const hydrosphere =
+        window.dice.roll(1, 6) <= 3
+          ? window.dice.weightedChoice([
+              { v: 10, w: 9 },
+              { v: 11, w: 1 }
+            ])
+          : Math.max(1, window.dice.roll(2, 6) - 2)
+      let chemRoll = window.dice.roll(1, 6)
+      if (zone === 'outer') chemRoll += 2
+      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
+      return { size, atmosphere, hydrosphere, chemistry }
+    }
+  },
+  stygian: {
+    color: '#2F4F4F',
+    description:
+      "These are worlds that were directly affected by their primary's transition from the main sequence; they are melted and blasted lumps.",
+    roll: () => {
+      return { size: window.dice.roll(1, 6) - 1, atmosphere: 0, hydrosphere: 0 }
+    }
+  },
+  tectonic: {
+    biosphere: true,
+    color: '#7CFC00',
+    description:
+      'These are worlds with active plate tectonics and large bodies of surface liquid, allowing for stable atmospheres and a high likelihood of life.',
+    roll: ({ star, zone }) => {
+      const size = window.dice.roll(1, 6) + 4
+      let chemRoll = window.dice.roll(1, 6)
+      if (star.spectralClass === 'K') chemRoll += 2
+      if (star.spectralClass === 'M') chemRoll += 4
+      if (zone === 'outer') chemRoll += 2
+      const secondChemRoll = window.dice.roll(2, 6)
+      const chemistry =
+        chemRoll <= 6
+          ? secondChemRoll <= 8
+            ? 'water'
+            : secondChemRoll <= 11
+            ? 'sulfur'
+            : 'chlorine'
+          : chemRoll <= 8
+          ? 'ammonia'
+          : 'methane'
+      const atmosphere =
+        chemistry === 'water'
+          ? MATH.clamp(window.dice.roll(2, 6) + size - 7, 2, 9)
+          : window.dice.weightedChoice([
+              { v: 10, w: 9 },
+              { v: 11, w: 1 }
+            ])
+      const hydrosphere = window.dice.randint(4, 9)
+      return {
+        size,
+        atmosphere,
+        hydrosphere,
+        chemistry,
+        subtype:
+          chemistry === 'water'
+            ? 'gaian'
+            : chemistry === 'sulfur'
+            ? 'thio-gaian'
+            : chemistry === 'chlorine'
+            ? 'chloritic-gaian'
+            : chemistry === 'ammonia'
+            ? 'amunian'
+            : 'tartarian'
+      }
+    }
+  },
+  telluric: {
+    color: '#8B0000',
+    description:
+      'These are worlds with geo-activity but no hydrological cycle at all, leading to dense runaway-greenhouse atmospheres.',
+    roll: () => {
+      const size = window.dice.roll(1, 6) + 4
+      const hydrosphere = window.dice.roll(1, 6) >= 4 ? 0 : 12
+      return {
+        size,
+        atmosphere: 12,
+        hydrosphere,
+        biosphere: 0
+      }
+    },
+    classify: ({ orbit, deviation }) => {
+      if (deviation >= 1) {
+        orbit.subtype = 'phosphorian'
+      } else {
+        orbit.subtype = 'cytherean'
+      }
+    }
+  },
+  vesperian: {
+    biosphere: true,
+    color: '#DAA520',
+    description:
+      'These worlds are tide-locked to their primary, but at a distance that permits surface liquid and the development of life.',
+    tidalLock: true,
+    roll: () => {
+      const size = window.dice.roll(1, 6) + 4
+      const chemRoll = window.dice.roll(1, 6)
+      const chemistry = chemRoll <= 11 ? 'water' : 'chlorine'
+      const atmosphere =
+        chemistry === 'water'
+          ? MATH.clamp(window.dice.roll(2, 6) + size - 7, 2, 9)
+          : window.dice.weightedChoice([
+              { v: 10, w: 9 },
+              { v: 11, w: 1 }
+            ])
+      const hydrosphere = Math.max(1, window.dice.roll(2, 6) - 2)
+      return {
+        size,
+        atmosphere,
+        hydrosphere,
+        chemistry
+      }
+    }
+  }
+}
