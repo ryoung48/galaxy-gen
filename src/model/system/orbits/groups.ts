@@ -118,7 +118,7 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
           if (parent?.group === 'helian') roll += 1
           if (parent?.group === 'jovian') roll += 2
           if (roll <= 4) return 'rockball'
-          if (roll <= 5) return 'geo-cyclic'
+          if (roll <= 6) return 'geo-cyclic'
           if (roll === 7) return 'meltball'
           return getRareDwarfType()
         }
