@@ -39,27 +39,22 @@ export interface Orbit {
   diameter: number
   mass: number
   gravity: number
+  density: number
+  composition: 'rocky' | 'ice' | 'gas'
   atmosphere: {
     code: number
-    type:
-      | 'breathable'
-      | 'exotic'
-      | 'corrosive'
-      | 'insidious'
-      | 'trace'
-      | 'vacuum'
-      | 'massive'
-      | 'gas giant envelope'
+    type: 'breathable' | 'exotic' | 'corrosive' | 'insidious' | 'trace' | 'vacuum' | 'gaseous'
     subtype?:
       | 'very thin'
       | 'thin'
       | 'standard'
       | 'dense'
       | 'very dense'
+      | 'extremely dense'
       | 'low'
       | 'unusual'
-      | 'gas, helium'
-      | 'gas, hydrogen'
+      | 'hydrogen'
+      | 'helium'
     tainted?: boolean
     hazard?:
       | 'biologic'
@@ -69,10 +64,10 @@ export interface Orbit {
       | 'high oxygen'
       | 'particulates'
       | 'sulphur compounds'
-    unusual?: 'ellipsoid' | 'layered' | 'steam' | 'storms' | 'tides' | 'seasonal'
+    unusual?: 'ellipsoid' | 'layered' | 'steam' | 'storms' | 'tides' | 'seasonal' | 'biologic'
   }
   hydrosphere: { code: number; distribution: number }
-  biosphere: { biomass: number; complexity: number }
+  biosphere: number
   chemistry?: 'water' | 'ammonia' | 'methane' | 'sulfur' | 'chlorine'
   temperature: {
     kelvin: number
@@ -83,12 +78,22 @@ export interface Orbit {
   eccentricity: number
   axialTilt: number
   period: number
-  habitation: 'none' | 'abandoned' | 'outpost' | 'colony' | 'homeworld'
   habitability: number
-  population: number
+  population: { code: number; size: number }
+  settlement?:
+    | 'refueling station'
+    | 'research base'
+    | 'freeport'
+    | 'mining station'
+    | 'corporate outpost'
+    | 'colonial outpost'
+    | 'frontier world'
+    | 'prison world'
+    | 'paradise world'
+    | 'industrial world'
+    | 'agricultural world'
+    | 'capital world'
   government: number
-  starport: 'A' | 'B' | 'C' | 'D' | 'E' | 'X'
-  tech: number
   law: number
   orbits: Orbit[]
   rings?: 'minor' | 'complex'
@@ -104,7 +109,7 @@ export type OrbitSpawnParams = {
   group?: Orbit['group']
   angle: number
   distance: number
-  homeworld?: boolean
+  designation?: 'homeworld' | 'primary'
   unary: boolean
   deviation: number
 }
@@ -117,11 +122,11 @@ export type OrbitGroupDetails = {
     star: Star
   }) => Orbit['type']
   orbits: () => Orbit['group'][]
-  size: (_params: { star: Star; deviation: number; size: number }) => {
-    diameter: number
-    mass: number
-    gravity: number
-  }
+  size: (_params: {
+    star: Star
+    deviation: number
+    size: number
+  }) => Pick<Orbit, 'diameter' | 'mass' | 'gravity' | 'density' | 'composition'>
 }
 
 export type OrbitTypeDetails = {
@@ -130,7 +135,7 @@ export type OrbitTypeDetails = {
   tidalLock?: boolean
   tidalFlex?: boolean
   biosphere?: boolean
-  roll: (_params: { star: Star; zone: Orbit['zone'] }) => {
+  roll: (_params: { star: Star; zone: Orbit['zone']; primary?: boolean }) => {
     size: number
     atmosphere: number
     hydrosphere: number
@@ -140,26 +145,33 @@ export type OrbitTypeDetails = {
   classify?: (_params: { orbit: Orbit; deviation: number }) => void
 }
 
-export type OrbitDesirabilityParams = {
+export type HabitabilityParams = {
   type: Orbit['type']
   hydrosphere: number
   atmosphere: Orbit['atmosphere']
   temperature: Orbit['temperature']
   size: number
   gravity: number
+  axialTilt: number
+  eccentricity: number
+}
+
+export type AxialTiltParams = {
+  tidalLocked?: boolean
+  homeworld?: boolean
 }
 
 export type OrbitFinalizeParams = {
   orbit: Orbit
   capital?: boolean
-  primary?: boolean
-  main?: Orbit
+  orbits: Orbit[]
 }
 
 export interface EccentricityParams {
   star?: boolean
   asteroidMember?: boolean
   tidalLocked?: boolean
+  homeworld?: boolean
 }
 
 export interface BiosphereParams {

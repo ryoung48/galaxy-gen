@@ -33,14 +33,12 @@ export const GALAXY_MAP = {
       ctx.strokeStyle = `rgba(0, 0, 0, 0.3)`
       ctx.lineWidth = 0.5
       const orbits = SOLAR_SYSTEM.orbits(system)
-      const biosphere = Math.max(
-        ...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere.complexity))
-      )
-      const population = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.population)))
-      const desirability = Math.max(...orbits.map(o => (o.tag === 'star' ? -4 : o.habitability)))
+      const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere)))
+      const population = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.population.code)))
+      const habitability = Math.max(...orbits.map(o => (o.tag === 'star' ? -4 : o.habitability)))
       ctx.fillStyle =
-        mapMode === 'desirability'
-          ? METRICS.desirability.color(desirability)
+        mapMode === 'habitability'
+          ? METRICS.habitability.color(habitability)
           : mapMode === 'biosphere'
           ? METRICS.biosphere.color(biosphere)
           : mapMode === 'orbits'
@@ -86,7 +84,7 @@ export const GALAXY_MAP = {
     })
     // nation names
     window.galaxy.nations.forEach(nation => {
-      const origin = window.galaxy.systems[nation.origin]
+      const origin = window.galaxy.systems[nation.capital]
       CANVAS.text({
         ctx,
         x: origin.x,

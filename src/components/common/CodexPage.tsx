@@ -34,7 +34,7 @@ export function CodexPage(props: { content: ReactNode } & CodexTitleProps) {
         <Grid item xs={1.5}>
           <Heraldry value={nation.name} size={50} config={HERALDRY.config(nation)}></Heraldry>
         </Grid>
-        <Grid item xs={12} p={0} my={3} className={classes.content}>
+        <Grid item xs={12} p={0} my={1} className={classes.content}>
           {content}
         </Grid>
       </Grid>

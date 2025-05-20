@@ -35,7 +35,7 @@ const spawn = (origin: number) => {
         }
       ])
     },
-    origin,
+    capital: origin,
     systems: [origin]
   }
   window.galaxy.nations.push(nation)
@@ -125,6 +125,11 @@ export const NATION = {
         lang: nation.language,
         key: 'solar system'
       })
+    })
+    window.galaxy.nations.forEach(nation => {
+      nation.systems
+        .map(idx => window.galaxy.systems[idx])
+        .forEach(system => SOLAR_SYSTEM.populate(system))
     })
   },
   systems: (nation: Nation) => nation.systems.map(idx => window.galaxy.systems[idx])

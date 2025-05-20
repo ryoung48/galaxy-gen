@@ -277,12 +277,12 @@ export const STAR = {
       const planets = STAR.orbits(star).filter(orbit => orbit.tag === 'orbit')
       if (!parent && planets.length > 0) {
         const topBio = planets.reduce((max, orbit) => {
-          const bio = orbit.biosphere.complexity
-          return bio > max.biosphere.complexity ? orbit : max
+          const bio = orbit.biosphere
+          return bio > max.biosphere ? orbit : max
         }, planets[0])
         planets.forEach(orbit => {
           if (orbit !== topBio) {
-            orbit.biosphere.complexity = Math.ceil(orbit.biosphere.complexity / 2)
+            orbit.biosphere = Math.ceil(orbit.biosphere / 2)
           }
         })
       }

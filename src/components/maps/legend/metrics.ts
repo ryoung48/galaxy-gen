@@ -19,22 +19,22 @@ export const METRICS = {
           text: biosphere.toString()
         }))
   },
-  desirability: {
+  habitability: {
     scale: scaleLinear([-10, 10], [0, 1]),
-    color: (heat: number) => interpolateSpectral(METRICS.desirability.scale(heat)),
+    color: (heat: number) => interpolateSpectral(METRICS.habitability.scale(heat)),
     legend: () =>
       range(-10, 11, 2)
         .reverse()
-        .map(desirability => ({
-          color: METRICS.desirability.color(desirability),
-          text: desirability.toString()
+        .map(habitability => ({
+          color: METRICS.habitability.color(habitability),
+          text: habitability.toString()
         }))
   },
   population: {
-    scale: scaleLinear([0, 11], [0, 1]),
+    scale: scaleLinear([0, 1, 9], [0, 0.2, 1]),
     color: (heat: number) => interpolateBlues(METRICS.population.scale(heat)),
     legend: () =>
-      range(0, 12)
+      range(0, 10)
         .reverse()
         .map(pops => ({
           color: METRICS.population.color(pops),

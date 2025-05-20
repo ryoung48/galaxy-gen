@@ -23,11 +23,39 @@ export const CANVAS = {
     ctx.fill()
     if (width > 0) ctx.stroke()
   },
+  sphere: ({ ctx, x, y, radius, fill }: Omit<DrawCircleParams, 'border'>) => {
+    // Create radial gradient
+    const gradient = ctx.createRadialGradient(
+      x - radius / 4, // Light source offset (x)
+      y - radius / 4, // Light source offset (y)
+      radius / 8, // Inner radius of gradient
+      x, // Center of sphere (x)
+      y, // Center of sphere (y)
+      radius // Outer radius of gradient
+    )
+    gradient.addColorStop(0, 'white') // Brightest part of the sphere
+    gradient.addColorStop(0.3, fill) // Main sphere color
+    gradient.addColorStop(1, 'black') // Dark edge of the sphere
+
+    // Draw the sphere with the gradient
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.fillStyle = gradient
+    ctx.fill()
+    ctx.closePath()
+
+    // Add a small highlight
+    ctx.beginPath()
+    ctx.arc(x - radius / 3, y - radius / 3, radius / 8, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
+    ctx.fill()
+    ctx.closePath()
+  },
   coordinates: (orbit: Orbit | Star): Point => {
     const system = window.galaxy.systems[orbit.system]
     const parent = orbit.tag === 'star' ? STAR.parent(orbit) : ORBIT.parent(orbit)
     const beltParent =
-      parent?.tag === 'orbit' && parent.type === 'asteroid belt' ? ORBIT.parent(parent) : undefined
+      parent?.tag === 'orbit' && parent.group === 'asteroid belt' ? ORBIT.parent(parent) : undefined
     const center = parent ? CANVAS.coordinates(beltParent ?? parent) : system
     return MATH.angles.cartesian({
       radius: (beltParent ? parent.distance : orbit.distance) * CONSTANTS.SOLAR_SYSTEM_MOD,

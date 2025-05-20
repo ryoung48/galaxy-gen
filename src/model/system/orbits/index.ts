@@ -2,11 +2,12 @@ import { scaleLinear } from 'd3'
 import { MATH } from '../../utilities/math'
 import {
   Orbit,
-  OrbitDesirabilityParams,
+  HabitabilityParams,
   OrbitSpawnParams,
-  OrbitFinalizeParams,
   EccentricityParams,
-  BiosphereParams
+  BiosphereParams,
+  AxialTiltParams,
+  OrbitFinalizeParams
 } from './types'
 import { LANGUAGE } from '../../languages'
 import { DICE } from '../../utilities/dice'
@@ -43,8 +44,7 @@ const biospheres: Record<string, string> = {
   '9': 'Simple global ecology',
   '10': 'Complex global ecology',
   '11': 'Proto-sapience',
-  '12': 'Full sapience',
-  '13': 'Trans-sapience'
+  '12': 'Full sapience'
 }
 
 const populations: Record<string, string> = {
@@ -77,9 +77,9 @@ const governments: Record<string, string> = {
   '10': 'Charismatic dictator',
   '11': 'Non-charismatic dictator',
   '12': 'Charismatic oligarchy',
-  '13': 'Theocracy',
-  '14': 'Supreme authority',
-  '15': 'Hive-mind collective'
+  '13': 'Religious Dictatorship',
+  '14': 'Religious Autocracy',
+  '15': 'Totalitarian Oligarchy'
 }
 
 const lawLevel = (law: number) => {
@@ -91,30 +91,22 @@ const lawLevel = (law: number) => {
   return 'Extreme restrictions: extensive monitoring and limitations, free speech curtailed'
 }
 
-const techLevel = (tech: number) => {
-  if (tech === 0) return 'No industry. Everything must be imported.'
-  if (tech <= 3) return 'Primitive. Mostly only raw materials made locally.'
-  if (tech <= 6) return 'Industrial. Local tools maintained, some produced'
-  if (tech <= 9) return 'Pre-Stellar. Production and maintenance of space technologies.'
-  if (tech <= 11) return 'Early Stellar. Support for A.I. and local starship production.'
-  if (tech <= 14) return 'Average Stellar. Support for terraforming, flying cities, clones.'
-  return 'High Stellar. Support for highest of the high tech.'
-}
-
 const habitable = ({
   hydrosphere,
   size,
   gravity,
   atmosphere,
   temperature,
-  type
-}: OrbitDesirabilityParams) => {
+  type,
+  axialTilt
+}: HabitabilityParams) => {
   let habitability = 10
 
   if (size <= 4) habitability -= 1
   else if (size >= 9) habitability += 1
 
-  if (atmosphere.code === 12 || atmosphere.code === 14) habitability -= 12
+  if (atmosphere.code === 12 || atmosphere.code === 14 || atmosphere.type === 'gaseous')
+    habitability -= 12
   else if (atmosphere.code === 11) habitability -= 10
   else if ([0, 1, 10].includes(atmosphere.code)) habitability -= 8
   else if (atmosphere.code === 2 || atmosphere.subtype === 'low' || atmosphere.unusual)
@@ -139,21 +131,24 @@ const habitable = ({
   else if (gravity <= 2) habitability -= 2
   else habitability -= 6
 
+  if (axialTilt >= 80) habitability -= 5
+  else if (axialTilt >= 60) habitability -= 3
+  else if (axialTilt >= 45) habitability -= 1
+
   if (ORBIT_CLASSIFICATION[type].tidalLock) habitability -= 2
   return habitability
 }
 
 const garden = () => {
   const size = window.dice.randint(5, 10)
-  const atmosphere = MATH.clamp(window.dice.roll(2, 6) + size - 7, 4, 9)
+  const atmosphere = window.dice.choice([5, 6, 8])
   const hydrosphere = window.dice.randint(4, 8)
   return {
     atmosphere,
     hydrosphere,
     size,
     chemistry: 'water' as const,
-    subtype: 'gaian',
-    biosphere: 12
+    subtype: 'gaian'
   }
 }
 
@@ -172,8 +167,9 @@ const rotation = (size: number, locked?: boolean, parent?: Orbit) => {
   return rotation
 }
 
-const axialTilt = (tidalLocked?: boolean) => {
+const axialTilt = ({ tidalLocked, homeworld }: AxialTiltParams) => {
   if (tidalLocked) return (window.dice.roll(2, 6) - 2) / 10
+  if (homeworld) return window.dice.uniform(0, 30)
   const standard = window.dice.roll(2, 6)
   if (standard <= 4) return window.dice.uniform(0.01, 0.1)
   if (standard <= 5) return window.dice.uniform(0.2, 1.2)
@@ -220,6 +216,8 @@ const finalizeAtmosphere = (
   hydrosphere: number,
   type: Orbit['type']
 ): Orbit['atmosphere'] => {
+  const nonhabitable = deviation < -1.5 || deviation > 1.5
+  if (nonhabitable && code >= 2 && code <= 9) code = 10
   if (code === 0) return { code, type: 'vacuum' }
   if (code === 1) return { code, type: 'trace' }
   if (code === 2) return { code, type: 'breathable', subtype: 'very thin', tainted: true }
@@ -268,12 +266,15 @@ const finalizeAtmosphere = (
       { v: 'very dense', w: 3 },
       { v: 'low', w: panthalassic ? 0 : 1 },
       { v: 'unusual', w: 0.5 },
-      { v: 'gas, helium', w: panthalassic ? 0 : 0.25 },
-      { v: 'gas, hydrogen', w: panthalassic ? 0 : 0.25 }
+      { v: 'helium', w: panthalassic ? 0 : 0.25 },
+      { v: 'hydrogen', w: panthalassic ? 0 : 0.25 }
     ])
     return {
       code,
-      type: 'massive',
+      type: window.dice.weightedChoice([
+        { v: 'breathable', w: nonhabitable ? 0 : 5 },
+        { v: 'exotic', w: 1 }
+      ]),
       subtype,
       unusual:
         subtype === 'unusual'
@@ -288,7 +289,7 @@ const finalizeAtmosphere = (
           : undefined
     }
   }
-  return { code, type: 'gas giant envelope' }
+  return { code, type: 'gaseous' }
 }
 
 const finalizeAtmosphereHazards = (atmosphere: Orbit['atmosphere']) => {
@@ -362,7 +363,7 @@ const calculateBiosphere = (params: BiosphereParams) => {
 
   complexity = Math.max(atmosphere.hazard === 'biologic' ? 1 : 0, Math.min(12, complexity))
 
-  return { biomass: 0, complexity }
+  return complexity
 }
 
 export const ORBIT = {
@@ -370,7 +371,6 @@ export const ORBIT = {
   populations,
   governments,
   lawLevel,
-  techLevel,
   hydrospheres,
   eccentricity: ({ star, asteroidMember, tidalLocked }: EccentricityParams) => {
     // 0 = circular
@@ -405,13 +405,70 @@ export const ORBIT = {
     }
     return orbit.name
   },
-  code: (orbit: Orbit) =>
-    orbit.population > 0 ? `${ORBIT.name(orbit)} (${orbit.habitation})` : ORBIT.name(orbit),
+  code: (orbit: Orbit) => (orbit.population.code > 0 ? `${ORBIT.name(orbit)}` : ORBIT.name(orbit)),
   orbits: (orbit: Orbit): Orbit[] => orbit.orbits.map(moon => [moon, ...ORBIT.orbits(moon)]).flat(),
   parent: (orbit: Orbit) =>
     orbit.parent.type === 'star'
       ? window.galaxy.stars[orbit.parent.idx]
       : window.galaxy.orbits[orbit.parent.idx],
+  populate: ({ orbit, capital, orbits }: OrbitFinalizeParams) => {
+    const parent = ORBIT.parent(orbit)
+    const settlement: Orbit['settlement'] = capital
+      ? 'capital world'
+      : orbit.habitability > 5
+      ? window.dice.weightedChoice([
+          { v: 'colonial outpost', w: 1 },
+          { v: 'frontier world', w: 1 },
+          { v: 'industrial world', w: 0.25 },
+          {
+            v: 'agricultural world',
+            w:
+              (orbit.temperature.desc === 'hot' || orbit.temperature.desc === 'temperate') &&
+              orbit.type === 'tectonic'
+                ? 1
+                : 0
+          },
+          { v: 'paradise world', w: 0.05 }
+        ])
+      : parent.tag === 'orbit' && parent.type === 'asteroid belt'
+      ? 'mining station'
+      : parent.tag === 'orbit' &&
+        parent.type === 'jovian' &&
+        orbits.every(orbit => orbit.settlement !== 'refueling station')
+      ? 'refueling station'
+      : window.dice.choice(['freeport', 'mining station', 'research base', 'corporate outpost'])
+    let populationCode =
+      settlement === 'capital world'
+        ? 9
+        : settlement === 'industrial world'
+        ? window.dice.randint(7, 8)
+        : settlement === 'frontier world' ||
+          settlement === 'agricultural world' ||
+          settlement === 'paradise world'
+        ? window.dice.randint(4, 6)
+        : window.dice.randint(2, 4)
+    if (orbit.type === 'vesperian') populationCode -= 1
+    const ranges = [
+      { min: 0, max: 0 },
+      { min: 1, max: 99 },
+      { min: 100, max: 999 },
+      { min: 1_000, max: 9_999 },
+      { min: 10_000, max: 99_999 },
+      { min: 100_000, max: 999_999 },
+      { min: 1_000_000, max: 9_999_999 },
+      { min: 10_000_000, max: 99_999_999 },
+      { min: 100_000_000, max: 999_999_999 },
+      { min: 1_000_000_000, max: 9_999_999_999 }
+    ]
+    const { min, max } = ranges[populationCode]
+    orbit.population = {
+      code: populationCode,
+      size: window.dice.randint(min, max)
+    }
+    orbit.settlement = settlement
+    orbit.government = Math.max(0, window.dice.roll(2, 6) - 7 + populationCode)
+    orbit.law = Math.max(0, window.dice.roll(2, 6) - 7 + orbit.government)
+  },
   spawn: ({
     star,
     zone,
@@ -420,14 +477,20 @@ export const ORBIT = {
     parent,
     angle,
     distance,
-    homeworld,
+    designation,
     unary,
     deviation
   }: OrbitSpawnParams): Orbit => {
+    const _homeworld = designation === 'homeworld'
+    const _primary = designation === 'primary'
     const selected =
       group ??
-      (homeworld
-        ? 'terrestrial'
+      (_homeworld || _primary
+        ? window.dice.weightedChoice([
+            { v: 'terrestrial', w: 6 },
+            { v: 'helian', w: _homeworld ? 0 : 1 },
+            { v: 'jovian', w: _homeworld ? 0 : 3 }
+          ])
         : window.dice.weightedChoice<Orbit['group']>([
             { v: 'asteroid belt', w: 2 },
             { v: 'dwarf', w: 2 },
@@ -435,10 +498,19 @@ export const ORBIT = {
             { v: 'helian', w: 1 },
             { v: 'jovian', w: zone === 'outer' ? 2 : 0.5 }
           ]))
-    const type = homeworld
+    const homeworld = _homeworld && selected === 'terrestrial'
+    const primary = _primary && selected === 'terrestrial'
+    const type = _homeworld
       ? 'tectonic'
+      : _primary
+      ? window.dice.choice<Orbit['type']>([
+          'tectonic',
+          star.spectralClass === 'M' ? 'vesperian' : 'tectonic',
+          'arid',
+          'oceanic'
+        ])
       : ORBIT_GROUPS[selected].type({ zone, impactZone, parent, star })
-    const detail = homeworld ? garden() : ORBIT_CLASSIFICATION[type].roll({ star, zone })
+    const detail = homeworld ? garden() : ORBIT_CLASSIFICATION[type].roll({ star, zone, primary })
     let { size } = detail
     const physique = ORBIT_GROUPS[selected].size({ star, deviation, size })
     const asteroidBelt = selected === 'asteroid belt'
@@ -464,16 +536,39 @@ export const ORBIT = {
           : 'burning'
     }
     const au = MATH.orbits.distance(kelvin, star.luminosity)
-    const r = scaleLinear([-1, 0, 5, 10, 15], [0, 1, 3, 6, 10])(size)
+    const r = scaleLinear([-1, 0, 5, 10, 14, 15], [0, 1, 3, 6, 8, 10])(size)
     const finalDistance = asteroidMember ? 0 : distance + r + (asteroidBelt ? 10 : 0)
+    const tilt = axialTilt({ tidalLocked: ORBIT_CLASSIFICATION[type].tidalLock, homeworld })
+    const eccentricity = asteroidBelt
+      ? 0
+      : parent && parent.group !== 'asteroid belt'
+      ? parent.eccentricity
+      : ORBIT.eccentricity({
+          tidalLocked: ORBIT_CLASSIFICATION[type].tidalLock,
+          asteroidMember: parent?.group === 'asteroid belt'
+        })
     const habitability = habitable({
       type,
       hydrosphere,
       atmosphere,
       size,
       temperature,
-      gravity: physique.gravity
+      gravity: physique.gravity,
+      axialTilt: tilt,
+      eccentricity
     })
+    const biosphere = homeworld
+      ? 12
+      : ORBIT_CLASSIFICATION[type].biosphere
+      ? calculateBiosphere({
+          atmosphere,
+          hydrosphere,
+          temperature: temperature.desc,
+          star,
+          type,
+          size
+        })
+      : 0
     const orbit: Orbit = {
       idx: window.galaxy.orbits.length,
       tag: 'orbit',
@@ -486,15 +581,8 @@ export const ORBIT = {
       type,
       subtype,
       rotation: rotation(size, ORBIT_CLASSIFICATION[type].tidalLock, parent),
-      eccentricity: asteroidBelt
-        ? 0
-        : parent && parent.group !== 'asteroid belt'
-        ? parent.eccentricity
-        : ORBIT.eccentricity({
-            tidalLocked: ORBIT_CLASSIFICATION[type].tidalLock,
-            asteroidMember: parent?.group === 'asteroid belt'
-          }),
-      axialTilt: axialTilt(ORBIT_CLASSIFICATION[type].tidalLock),
+      eccentricity,
+      axialTilt: tilt,
       au,
       period: parent ? parent.period : MATH.orbits.period(au, star.mass),
       size,
@@ -502,24 +590,12 @@ export const ORBIT = {
       atmosphere,
       temperature,
       hydrosphere: { code: hydrosphere, distribution: window.dice.roll(2, 6) - 2 },
-      biosphere: ORBIT_CLASSIFICATION[type].biosphere
-        ? calculateBiosphere({
-            atmosphere,
-            hydrosphere,
-            temperature: temperature.desc,
-            star,
-            type,
-            size
-          })
-        : { biomass: 0, complexity: 0 },
+      biosphere,
       chemistry,
       habitability,
-      habitation: 'none',
-      population: 0,
+      population: { code: 0, size: 0 },
       government: 0,
       law: 0,
-      starport: 'X',
-      tech: 0,
       orbits: [],
       r,
       parent: parent ? { type: 'orbit', idx: parent.idx } : { type: 'star', idx: star.idx }
@@ -527,9 +603,6 @@ export const ORBIT = {
     ORBIT_CLASSIFICATION[type].classify?.({ orbit, deviation })
     window.galaxy.orbits.push(orbit)
     if (selected === 'jovian') orbit.rings = window.dice.roll(1, 6) <= 4 ? 'minor' : 'complex'
-    if (selected === 'asteroid belt') {
-      console.log()
-    }
     if (!parent && (orbit.size > 0 || asteroidBelt)) {
       let subAngle = window.dice.randint(90, 270)
       let distance = orbit.r + 2
@@ -554,121 +627,6 @@ export const ORBIT = {
     }
     if (asteroidBelt) orbit.fullR = 10
     return orbit
-  },
-  finalize: ({ orbit, capital, primary, main }: OrbitFinalizeParams) => {
-    const habitability = orbit.habitability
-    const habitation =
-      orbit.biosphere.complexity >= 12
-        ? 'homeworld'
-        : (main?.population ?? Infinity) <= 1
-        ? 'none'
-        : (window.dice.roll(2, 6) - 2 < habitability && habitability >= 0) ||
-          (habitability > 3 && primary)
-        ? 'colony'
-        : window.dice.roll(1, 6) < 4 || primary
-        ? 'outpost'
-        : 'none'
-    const homeworldPop = habitability + window.dice.roll(1, 3) - window.dice.roll(1, 3)
-    let population =
-      habitation === 'homeworld'
-        ? homeworldPop
-        : habitation === 'colony'
-        ? window.dice.randint(4, Math.max(4, homeworldPop - 1))
-        : habitation === 'outpost'
-        ? Math.max(1, Math.min(habitability + window.dice.roll(1, 3), 4))
-        : 0
-    if (capital) population += 1
-    if (main) population = Math.min(main.population - 1, population)
-    let port = Math.max(
-      1,
-      window.dice.roll(2, 6) +
-        (population >= 10
-          ? 2
-          : population >= 8
-          ? 1
-          : population >= 5
-          ? 0
-          : population >= 3
-          ? -1
-          : -2)
-    )
-    if (habitation === 'none') port = 0
-    orbit.starport =
-      capital || port >= 11
-        ? 'A'
-        : port >= 9
-        ? 'B'
-        : port >= 7
-        ? 'C'
-        : port >= 5
-        ? 'D'
-        : port >= 3
-        ? 'E'
-        : 'X'
-    if (orbit.starport === 'X') population = 0
-    let government = population > 0 ? population + window.dice.roll(2, 6) - 7 : 0
-    if (habitation === 'outpost') government = Math.min(6, government)
-    if (capital && government === 6) government = 7
-    government = Math.max(0, government)
-    let industry = Math.max(
-      capital ? 15 : 0,
-      habitation === 'none'
-        ? 0
-        : window.dice.roll(1, 6) +
-            (orbit.starport === 'A'
-              ? 6
-              : orbit.starport === 'B'
-              ? 4
-              : orbit.starport === 'C'
-              ? 2
-              : 0) +
-            (orbit.size <= 1 ? 2 : orbit.size <= 4 ? 1 : 0) +
-            (orbit.atmosphere.code <= 3 || orbit.atmosphere.code >= 10 ? 1 : 0) +
-            (orbit.hydrosphere.code === 10
-              ? 2
-              : orbit.hydrosphere.code >= 9 || orbit.hydrosphere.code <= 1
-              ? 1
-              : 0) +
-            (orbit.hydrosphere.code === 10
-              ? 2
-              : orbit.hydrosphere.code >= 9 || orbit.hydrosphere.code <= 1
-              ? 1
-              : 0) +
-            (orbit.population <= 5 || orbit.population === 8
-              ? 1
-              : orbit.population === 9
-              ? 2
-              : orbit.population >= 10
-              ? 4
-              : 0) +
-            (government === 0 || government === 5
-              ? 1
-              : government === 7
-              ? 2
-              : government === 13
-              ? -2
-              : 0)
-    )
-    const minSustainable =
-      orbit.atmosphere.code === 12
-        ? 10
-        : orbit.atmosphere.code === 11
-        ? 9
-        : orbit.atmosphere.code <= 1 || orbit.atmosphere.code >= 14 || orbit.atmosphere.code === 10
-        ? 8
-        : orbit.atmosphere.code <= 3 || orbit.atmosphere.code === 13
-        ? 5
-        : orbit.atmosphere.code === 4 || orbit.atmosphere.code === 7 || orbit.atmosphere.code === 9
-        ? 3
-        : 0
-    if (main) industry = Math.min(main.tech - 1, industry)
-    industry = Math.max(minSustainable, industry)
-    const law = Math.max(0, government === 0 ? 0 : government + window.dice.roll(2, 6) - 7)
-    orbit.habitation = habitation
-    orbit.population = population
-    orbit.government = government
-    orbit.law = law
-    orbit.tech = industry
   },
   temperature: (deviation: number) => MATH.temperature.kelvin(_temperature(deviation))
 }

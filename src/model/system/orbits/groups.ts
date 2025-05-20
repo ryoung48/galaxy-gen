@@ -4,7 +4,7 @@ import { Star } from '../stars/types'
 
 function getComposition(modifiedRoll: number): string {
   if (modifiedRoll <= -4) return 'Exotic Ice'
-  if (modifiedRoll >= -3 && modifiedRoll <= -2) return 'Mostly Ice'
+  if (modifiedRoll >= -3 && modifiedRoll <= 2) return 'Mostly Ice'
   if (modifiedRoll >= 3 && modifiedRoll <= 6) return 'Mostly Rock'
   if (modifiedRoll >= 7 && modifiedRoll <= 11) return 'Rock and Metal'
   if (modifiedRoll >= 12 && modifiedRoll <= 14) return 'Mostly Metal'
@@ -26,7 +26,7 @@ function getDensityFromTable(densityRoll: number, composition: string): number {
   return densityValues[densityRoll - 2] // 2D roll ranges from 2 to 12
 }
 
-function calculateDensity(size: number, star: Star, deviation: number): number {
+function calculateDensity(size: number, star: Star, deviation: number) {
   // Roll 2D and apply all DMs
   let roll = window.dice.roll(2, 6)
   if (size <= 4) roll -= 1
@@ -41,7 +41,10 @@ function calculateDensity(size: number, star: Star, deviation: number): number {
   const composition = getComposition(modifiedRoll)
   // Get the density using the second roll
   const densityRoll = window.dice.roll(2, 6) // Roll 2D6 for density
-  return getDensityFromTable(densityRoll, composition)
+  return {
+    density: getDensityFromTable(densityRoll, composition),
+    composition: (modifiedRoll <= 2 ? 'ice' : 'rocky') as 'ice' | 'rocky'
+  }
 }
 
 const diameterEstimate = (size: number) => {
@@ -72,10 +75,10 @@ const calculateGravity = (density: number, diameter: number) => {
 
 const calculateSize: OrbitGroupDetails['size'] = ({ star, deviation, size }) => {
   const diameter = diameterEstimate(size)
-  const density = calculateDensity(size, star, deviation)
+  const { density, composition } = calculateDensity(size, star, deviation)
   const mass = density * diameter ** 3
   const gravity = calculateGravity(density, diameter)
-  return { diameter, mass, gravity }
+  return { diameter, mass, gravity, density, composition }
 }
 function getRareDwarfType() {
   const randomRoll = window.dice.roll(1, 6)
@@ -95,7 +98,7 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
     type: ({ parent }) => (parent ? 'asteroid' : 'asteroid belt'),
     orbits: () => {
       const roll = window.dice.roll(1, 6)
-      return ['asteroid belt' as Orbit['group']].concat(roll <= 4 ? [] : ['dwarf'])
+      return roll <= 4 ? ['asteroid belt'] : ['dwarf']
     },
     size: calculateSize
   },
@@ -246,7 +249,7 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
       }
       const density = mass / diameter ** 3
       const gravity = calculateGravity(density, diameter)
-      return { diameter, mass, gravity }
+      return { diameter, mass, gravity, density, composition: 'gas' }
     }
   }
 }

@@ -6,6 +6,6 @@ export type Nation = {
   name: string
   language: Language
   flag: { hue: number; color: string; style: 'monochrome' | 'contrast' | 'standard' }
-  origin: number
+  capital: number
   systems: number[]
 }

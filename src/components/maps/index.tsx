@@ -101,12 +101,12 @@ const GalaxyMap = () => {
           zIndex: 2,
           position: 'absolute',
           top: CONSTANTS.H * 0.54,
-          left: CONSTANTS.W * 0.8,
+          left: CONSTANTS.W * 0.7,
           background: 'white',
           borderRadius: 0
         }}
       >
-        {['nations', 'biosphere', 'orbits', 'desirability', 'population'].map(label => (
+        {['nations', 'biosphere', 'orbits', 'habitability', 'population'].map(label => (
           <ToggleButton key={label} value={label}>
             {label}
           </ToggleButton>
