@@ -5,11 +5,9 @@ import { ORBIT } from '../../model/system/orbits'
 import { METRICS } from '../maps/legend/metrics'
 
 export const BioRelations = () => {
-  const validOrbits = window.galaxy.orbits.filter(orbit => orbit.biosphere.complexity > 0)
+  const validOrbits = window.galaxy.orbits.filter(orbit => orbit.biosphere > 0)
   const orbitTypes = ARRAY.unique(validOrbits.map(orbit => orbit.type))
-  const biospheres = ARRAY.unique(validOrbits.map(orbit => orbit.biosphere.complexity)).sort(
-    (a, b) => a - b
-  )
+  const biospheres = ARRAY.unique(validOrbits.map(orbit => orbit.biosphere)).sort((a, b) => a - b)
   const members = [...orbitTypes, ...biospheres]
   const colors = members.map(() => 'white')
   const data = orbitTypes.reduce(
@@ -19,7 +17,7 @@ export const BioRelations = () => {
       validOrbits
         .filter(orbit => orbit.type === type)
         .forEach(orbit => {
-          dict[i][orbitTypes.length + orbit.biosphere.complexity - 1] += 1
+          dict[i][orbitTypes.length + orbit.biosphere - 1] += 1
         })
       return dict
     },
@@ -29,7 +27,7 @@ export const BioRelations = () => {
     const bioIndex = orbitTypes.length + biosphere - 1
     data[bioIndex] = range(data.length).map(() => 0)
     colors[bioIndex] = METRICS.biosphere.color(biosphere)
-    const orbits = validOrbits.filter(orbit => orbit.biosphere.complexity === biosphere)
+    const orbits = validOrbits.filter(orbit => orbit.biosphere === biosphere)
     orbits.forEach(orbit => {
       const index = orbitTypes.findIndex(type => type === orbit.type)
       data[bioIndex][index] += 1

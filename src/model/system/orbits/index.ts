@@ -269,12 +269,15 @@ const finalizeAtmosphere = (
       { v: 'helium', w: panthalassic ? 0 : 0.25 },
       { v: 'hydrogen', w: panthalassic ? 0 : 0.25 }
     ])
+    const gaseous = subtype === 'helium' || subtype === 'hydrogen'
     return {
       code,
-      type: window.dice.weightedChoice([
-        { v: 'breathable', w: nonhabitable ? 0 : 5 },
-        { v: 'exotic', w: 1 }
-      ]),
+      type: gaseous
+        ? 'gaseous'
+        : window.dice.weightedChoice([
+            { v: 'breathable', w: nonhabitable ? 0 : 5 },
+            { v: 'exotic', w: 1 }
+          ]),
       subtype,
       unusual:
         subtype === 'unusual'
@@ -499,16 +502,18 @@ export const ORBIT = {
             { v: 'jovian', w: zone === 'outer' ? 2 : 0.5 }
           ]))
     const homeworld = _homeworld && selected === 'terrestrial'
-    const primary = _primary && selected === 'terrestrial'
-    const type = _homeworld
+    const primary = _primary && (selected === 'terrestrial' || selected === 'dwarf')
+    const type = homeworld
       ? 'tectonic'
-      : _primary
-      ? window.dice.choice<Orbit['type']>([
-          'tectonic',
-          star.spectralClass === 'M' ? 'vesperian' : 'tectonic',
-          'arid',
-          'oceanic'
-        ])
+      : primary
+      ? selected === 'terrestrial'
+        ? window.dice.choice<Orbit['type']>([
+            'tectonic',
+            star.spectralClass === 'M' ? 'vesperian' : 'tectonic',
+            'arid',
+            'oceanic'
+          ])
+        : window.dice.choice<Orbit['type']>(['geo-tidal'])
       : ORBIT_GROUPS[selected].type({ zone, impactZone, parent, star })
     const detail = homeworld ? garden() : ORBIT_CLASSIFICATION[type].roll({ star, zone, primary })
     let { size } = detail
@@ -604,9 +609,13 @@ export const ORBIT = {
     window.galaxy.orbits.push(orbit)
     if (selected === 'jovian') orbit.rings = window.dice.roll(1, 6) <= 4 ? 'minor' : 'complex'
     if (!parent && (orbit.size > 0 || asteroidBelt)) {
+      const habMoonNeeded = _primary && selected !== 'terrestrial'
       let subAngle = window.dice.randint(90, 270)
       let distance = orbit.r + 2
-      orbit.orbits = ORBIT_GROUPS[selected].orbits().map(satellite => {
+      const orbits = ORBIT_GROUPS[selected].orbits()
+      if (habMoonNeeded && orbits.length < 1) orbits.push('dwarf')
+      const habIndex = habMoonNeeded ? window.dice.randint(0, orbits.length - 1) : -1
+      orbit.orbits = orbits.map((satellite, i) => {
         const moon = ORBIT.spawn({
           parent: orbit,
           zone: orbit.zone,
@@ -616,7 +625,8 @@ export const ORBIT = {
           distance: distance,
           angle: subAngle,
           unary,
-          deviation
+          deviation,
+          designation: habIndex === i ? 'primary' : undefined
         })
         subAngle += window.dice.randint(90, 270)
         distance = moon.distance + moon.r + 1

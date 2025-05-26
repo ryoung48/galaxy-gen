@@ -219,8 +219,8 @@ export const STAR = {
         innerCompanion || secondaryNoPlanets || star.zone === 'inner'
           ? 0
           : star.zone === 'outer'
-          ? 2
-          : 5
+          ? 1
+          : 3
       const inner = Math.min(maxInner, window.dice.randint(1, mClass ? 4 : 5))
       const maxOuter =
         outerCompanion || secondaryNoPlanets || star.zone === 'inner'
@@ -229,17 +229,44 @@ export const STAR = {
           ? 2
           : 5
       const outer = Math.min(maxOuter, window.dice.randint(innerCompanion ? 1 : 0, mClass ? 4 : 5))
-      const satellites: { type: 'satellite'; deviation: number; zone: Orbit['zone'] }[] = [
+      const satellites: {
+        type: 'satellite'
+        deviation: number
+        zone: Orbit['zone']
+        primary?: boolean
+        homeworld?: boolean
+      }[] = [
         ...window.dice
           .sample([2.25, 1.75], epistellar)
           .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'epistellar' as const })),
         ...window.dice
-          .sample([1.25, 0.75, 0, -0.75, -1.25], inner)
+          .sample(
+            homeworld ? [1.25, 0.75, -0.75, -1.25] : [1.25, 0.75, 0, -0.75, -1.25],
+            homeworld ? inner - 1 : inner
+          )
           .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'inner' as const })),
         ...window.dice
           .sample([-1.75, -2.25, -2.75, -3.25, -3.75], outer)
           .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'outer' as const }))
       ]
+      if (homeworld)
+        satellites.push({
+          type: 'satellite' as const,
+          deviation: 0,
+          zone: 'inner' as const,
+          homeworld: true
+        })
+      else if (satellites.length > 0 && !parent) {
+        const primary = satellites.slice(1).reduce((min, satellite) => {
+          return Math.abs(min.deviation) > Math.abs(satellite.deviation) ? satellite : min
+        }, satellites[0])
+        if (primary.zone === 'inner') {
+          primary.primary = true
+          if (Math.abs(primary.deviation) > 1) {
+            primary.deviation = window.dice.choice([-0.5, 0, 0.75])
+          }
+        }
+      }
       const orbitals = [...companions, ...satellites]
       orbitals.sort((a, b) => b.deviation - a.deviation)
       let angle = incrementAngle()
@@ -267,25 +294,18 @@ export const STAR = {
                   template.deviation + 0.25
                 ),
                 impactZone: impactZone > 0,
-                unary: companions.length === 0
+                unary: companions.length === 0,
+                designation: template.homeworld
+                  ? 'homeworld'
+                  : template.primary
+                  ? 'primary'
+                  : undefined
               })
         impactZone -= 1
         star.orbits.push(obj)
         angle += incrementAngle()
         distance = obj.distance + (obj.fullR ?? obj.r)
       })
-      const planets = STAR.orbits(star).filter(orbit => orbit.tag === 'orbit')
-      if (!parent && planets.length > 0) {
-        const topBio = planets.reduce((max, orbit) => {
-          const bio = orbit.biosphere
-          return bio > max.biosphere ? orbit : max
-        }, planets[0])
-        planets.forEach(orbit => {
-          if (orbit !== topBio) {
-            orbit.biosphere = Math.ceil(orbit.biosphere / 2)
-          }
-        })
-      }
       if (parent) {
         star.fullR = distance
         star.distance += star.fullR - star.r

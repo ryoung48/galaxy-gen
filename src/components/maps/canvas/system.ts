@@ -38,9 +38,6 @@ export const SYSTEM_MAP = {
     })
     objects.forEach(object => {
       const center = CANVAS.coordinates(object)
-      if (object.system === 128) {
-        console.log()
-      }
       if (object.tag === 'star') {
         const star = object
         CANVAS.circle({
@@ -48,8 +45,8 @@ export const SYSTEM_MAP = {
           ...center,
           radius: star.r * mod,
           fill:
-            mapMode === 'desirability'
-              ? METRICS.desirability.color(-10)
+            mapMode === 'habitability'
+              ? METRICS.habitability.color(-10)
               : mapMode === 'biosphere'
               ? METRICS.biosphere.color(0)
               : mapMode === 'population'
@@ -93,12 +90,12 @@ export const SYSTEM_MAP = {
             y: center.y,
             radius: orbit.r * mod,
             fill:
-              mapMode === 'desirability'
-                ? METRICS.desirability.color(orbit.habitability)
+              mapMode === 'habitability'
+                ? METRICS.habitability.color(orbit.habitability)
                 : mapMode === 'biosphere'
-                ? METRICS.biosphere.color(orbit.biosphere.complexity)
+                ? METRICS.biosphere.color(orbit.biosphere)
                 : mapMode === 'population'
-                ? METRICS.population.color(orbit.population)
+                ? METRICS.population.color(orbit.population.code)
                 : ORBIT.colors.get()[orbit.type],
             border: { color: 'black', width: mod * 0.5 }
           })

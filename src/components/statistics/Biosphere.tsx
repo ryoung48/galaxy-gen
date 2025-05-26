@@ -2,10 +2,10 @@ import CustomLineChart from './line'
 
 export const BiosphereDistribution = () => {
   const bioFreq = window.galaxy.orbits
-    .filter(orbit => orbit.biosphere.complexity > 0)
+    .filter(orbit => orbit.biosphere > 0)
     .reduce((dict: Record<number, number>, orbit) => {
-      if (!dict[orbit.biosphere.complexity]) dict[orbit.biosphere.complexity] = 0
-      dict[orbit.biosphere.complexity] += 1
+      if (!dict[orbit.biosphere]) dict[orbit.biosphere] = 0
+      dict[orbit.biosphere] += 1
       return dict
     }, {})
   const data = Object.entries(bioFreq)

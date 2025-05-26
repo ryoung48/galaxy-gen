@@ -16,7 +16,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#DEB887',
     description:
       'These are worlds with limited amounts of surface liquid, that maintain an equilibrium with the help of their tectonic activity and their biosphere.',
-    roll: ({ star, zone }) => {
+    roll: ({ star, zone, primary }) => {
       const size = window.dice.roll(1, 6) + 4
       const hydrosphere = window.dice.randint(1, 3)
       let chemMod = 0
@@ -24,7 +24,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
       if (star.spectralClass === 'M') chemMod += 4
       if (zone === 'outer') chemMod += 2
       const chemRoll = window.dice.roll(1, 6) + chemMod
-      const chemistry = chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
+      const chemistry = primary || chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
       const atmosphere =
         chemistry === 'water'
           ? MATH.clamp(window.dice.roll(2, 6) - 7 + size, 2, 9)
@@ -89,7 +89,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#782fe0',
     description:
       'These are worlds with little liquid, that move through a slow geological cycle of a gradual build-up, a short wet and clement period, and a long decline.',
-    roll: ({ zone }) => {
+    roll: ({ zone, primary }) => {
       const size = window.dice.roll(1, 6) - 1
       const atmosphereRoll = Math.max(window.dice.roll(1, 6), 1)
       const atmosphere =
@@ -104,7 +104,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
         window.dice.roll(2, 6) + size - 7 - (atmosphere === 1 ? 4 : 0)
       )
       const chemRoll = window.dice.roll(1, 6) + (zone === 'outer' ? 2 : 0)
-      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
+      const chemistry = primary || chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
       return {
         size,
         atmosphere,
@@ -120,14 +120,14 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#4682B4',
     description:
       'These are worlds that, through tidal-flexing, have a geological cycle similar to plate tectonics, that supports surface liquid and atmosphere.',
-    roll: ({ zone }) => {
+    roll: ({ zone, primary }) => {
       const size = window.dice.roll(1, 6) - 1
       const hydrosphere = window.dice.roll(2, 3) - 2
       let chemMod = 0
       if (zone === 'epistellar') chemMod -= 2
       if (zone === 'outer') chemMod += 2
       const chemRoll = window.dice.roll(1, 6) + chemMod
-      const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
+      const chemistry = primary || chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
       const atmosphere =
         chemistry === 'water'
           ? MATH.clamp(window.dice.roll(2, 6) - 7 + size, 2, 9)
@@ -232,13 +232,13 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#1E90FF',
     description:
       'These are worlds with a continuous hydrological cycle and deep oceans, due to either dense greenhouse atmosphere or active plate tectonics.',
-    roll: ({ star, zone }) => {
+    roll: ({ star, zone, primary }) => {
       const size = window.dice.roll(1, 6) + 4
       let chemRoll = window.dice.roll(1, 6)
       if (star.spectralClass === 'K') chemRoll += 2
       if (star.spectralClass === 'M') chemRoll += 4
       if (zone === 'outer') chemRoll += 2
-      const chemistry = chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
+      const chemistry = primary || chemRoll <= 6 ? 'water' : chemRoll <= 8 ? 'ammonia' : 'methane'
       const atmosphereRoll = window.dice.roll(1, 6)
       const atmosphere =
         chemistry === 'water'
@@ -339,7 +339,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#7CFC00',
     description:
       'These are worlds with active plate tectonics and large bodies of surface liquid, allowing for stable atmospheres and a high likelihood of life.',
-    roll: ({ star, zone }) => {
+    roll: ({ star, zone, primary }) => {
       const size = window.dice.roll(1, 6) + 4
       let chemRoll = window.dice.roll(1, 6)
       if (star.spectralClass === 'K') chemRoll += 2
@@ -347,7 +347,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
       if (zone === 'outer') chemRoll += 2
       const secondChemRoll = window.dice.roll(2, 6)
       const chemistry =
-        chemRoll <= 6
+        primary || chemRoll <= 6
           ? secondChemRoll <= 8
             ? 'water'
             : secondChemRoll <= 11
@@ -410,10 +410,10 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       'These worlds are tide-locked to their primary, but at a distance that permits surface liquid and the development of life.',
     tidalLock: true,
-    roll: () => {
+    roll: ({ primary }) => {
       const size = window.dice.roll(1, 6) + 4
       const chemRoll = window.dice.roll(1, 6)
-      const chemistry = chemRoll <= 11 ? 'water' : 'chlorine'
+      const chemistry = primary || chemRoll <= 11 ? 'water' : 'chlorine'
       const atmosphere =
         chemistry === 'water'
           ? MATH.clamp(window.dice.roll(2, 6) + size - 7, 2, 9)
