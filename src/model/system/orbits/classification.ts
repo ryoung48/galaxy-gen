@@ -1,5 +1,17 @@
 import { MATH } from '../../utilities/math'
+import { Star } from '../stars/types'
 import { Orbit, OrbitTypeDetails } from './types'
+
+const gasGiantSizes = (star: Star) => {
+  let firstRoll = window.dice.roll(1, 6)
+  const { luminosityClass, spectralClass } = star
+  if (luminosityClass === 'VI' || (luminosityClass === 'V' && spectralClass === 'M')) firstRoll -= 1
+  if (firstRoll <= 2) return 16
+  if (firstRoll <= 4) return 17
+  return 18
+}
+
+const helianSizes = () => window.dice.choice([11, 12, 13, 14, 14])
 
 export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
   acheronian: {
@@ -47,7 +59,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       "These are worlds that were directly affected by their primary's transition from the main sequence; their atmosphere has been boiled away, leaving the surface exposed.",
     roll: () => {
-      return { size: 14, atmosphere: 1, hydrosphere: 0 }
+      return { size: helianSizes(), atmosphere: 1, hydrosphere: 0 }
     }
   },
   'asteroid belt': {
@@ -80,8 +92,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#A52A2A',
     description:
       "These are worlds that were directly affected by their primary's transition from the main sequence, or that have simply spent too long in a tight epistellar orbit; their atmospheres have been stripped away.",
-    roll: () => {
-      return { size: 15, atmosphere: 1, hydrosphere: 0 }
+    roll: ({ star }) => {
+      return { size: gasGiantSizes(star), atmosphere: 1, hydrosphere: 0 }
     }
   },
   'geo-cyclic': {
@@ -163,7 +175,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     roll: () => {
       const hydroRoll = window.dice.roll(1, 6)
       const hydrosphere = hydroRoll <= 2 ? 0 : hydroRoll <= 5 ? window.dice.roll(2, 6) - 1 : 12
-      return { size: 14, atmosphere: 13, hydrosphere }
+      return { size: helianSizes(), atmosphere: 13, hydrosphere }
     }
   },
   'jani-lithic': {
@@ -188,8 +200,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#FFDAB9',
     description:
       'These are huge worlds with helium-hydrogen envelopes and compressed cores; the largest emit more heat than they absorb.',
-    roll: () => {
-      return { size: 15, atmosphere: 14, hydrosphere: 13 }
+    roll: ({ star }) => {
+      return { size: gasGiantSizes(star), atmosphere: 14, hydrosphere: 13 }
     },
     classify: ({ orbit, deviation }) => {
       if (orbit.mass <= 35) {
@@ -290,7 +302,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
             : 'chlorine'
           : 'methane'
       const atmosphere = Math.min(window.dice.roll(1, 6) + 8, 13)
-      return { size: 14, atmosphere, hydrosphere: 11, chemistry }
+      return { size: helianSizes(), atmosphere, hydrosphere: 11, chemistry }
     }
   },
   rockball: {
@@ -314,7 +326,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
       const size = window.dice.roll(1, 6) - 1
       const atmosphere = window.dice.roll(1, 6) <= 4 ? 0 : 1
       const hydrosphere =
-        window.dice.roll(1, 6) <= 3
+        window.dice.roll(1, 6) <= 2
           ? window.dice.weightedChoice([
               { v: 10, w: 9 },
               { v: 11, w: 1 }

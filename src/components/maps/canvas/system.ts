@@ -95,7 +95,7 @@ export const SYSTEM_MAP = {
                 : mapMode === 'biosphere'
                 ? METRICS.biosphere.color(orbit.biosphere)
                 : mapMode === 'population'
-                ? METRICS.population.color(orbit.population.code)
+                ? METRICS.population.color(orbit.population?.code ?? 0)
                 : ORBIT.colors.get()[orbit.type],
             border: { color: 'black', width: mod * 0.5 }
           })

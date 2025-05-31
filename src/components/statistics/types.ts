@@ -1,1 +1,12 @@
-export type Stat = 'stars' | 'planets' | 'moons' | 'orbits' | 'biosphere' | 'relations'
+export type Stat =
+  | 'stars'
+  | 'planets'
+  | 'moons'
+  | 'orbits'
+  | 'biosphere'
+  | 'relations'
+  | 'hydrosphere'
+  | 'atmosphere'
+  | 'habitability'
+  | 'size'
+  | 'population'

@@ -34,7 +34,9 @@ export const GALAXY_MAP = {
       ctx.lineWidth = 0.5
       const orbits = SOLAR_SYSTEM.orbits(system)
       const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere)))
-      const population = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.population.code)))
+      const population = Math.max(
+        ...orbits.map(o => (o.tag === 'star' ? 0 : o.population?.code ?? 0))
+      )
       const habitability = Math.max(...orbits.map(o => (o.tag === 'star' ? -4 : o.habitability)))
       ctx.fillStyle =
         mapMode === 'habitability'

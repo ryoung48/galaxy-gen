@@ -408,7 +408,7 @@ export const ORBIT = {
     }
     return orbit.name
   },
-  code: (orbit: Orbit) => (orbit.population.code > 0 ? `${ORBIT.name(orbit)}` : ORBIT.name(orbit)),
+  code: (orbit: Orbit) => ORBIT.name(orbit),
   orbits: (orbit: Orbit): Orbit[] => orbit.orbits.map(moon => [moon, ...ORBIT.orbits(moon)]).flat(),
   parent: (orbit: Orbit) =>
     orbit.parent.type === 'star'
@@ -562,9 +562,7 @@ export const ORBIT = {
       axialTilt: tilt,
       eccentricity
     })
-    const biosphere = homeworld
-      ? 12
-      : ORBIT_CLASSIFICATION[type].biosphere
+    const biosphere = ORBIT_CLASSIFICATION[type].biosphere
       ? calculateBiosphere({
           atmosphere,
           hydrosphere,
@@ -598,7 +596,6 @@ export const ORBIT = {
       biosphere,
       chemistry,
       habitability,
-      population: { code: 0, size: 0 },
       government: 0,
       law: 0,
       orbits: [],

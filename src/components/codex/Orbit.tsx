@@ -153,7 +153,7 @@ const OrbitView = (props: { orbit: Orbit }) => {
           <Grid item xs={12}>
             <b>Habitability: </b> ({orbit.habitability}) {describeHabitability(orbit.habitability)}
           </Grid>
-          {orbit.population.code > 0 && (
+          {orbit.population && (
             <Fragment>
               <Grid item xs={12}>
                 <b>Population: </b> {formatters.population.format(orbit.population.size)} (

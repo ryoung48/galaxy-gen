@@ -79,7 +79,7 @@ export interface Orbit {
   axialTilt: number
   period: number
   habitability: number
-  population: { code: number; size: number }
+  population?: { code: number; size: number }
   settlement?:
     | 'refueling station'
     | 'research base'

@@ -65,7 +65,8 @@ const diameterEstimate = (size: number) => {
   else if (size === 11) estimate = window.dice.uniform(16800, 18400)
   else if (size === 12) estimate = window.dice.uniform(18400, 20000)
   else if (size === 13) estimate = window.dice.uniform(20000, 21600)
-  else if (size === 14) estimate = window.dice.uniform(21600, 24800)
+  else if (size === 14) estimate = window.dice.uniform(21600, 23199)
+  else if (size === 15) estimate = window.dice.uniform(23200, 24800)
   return estimate / earth
 }
 
@@ -227,18 +228,14 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
             .map(() => 'dwarf' as Orbit['group'])
             .concat([(window.dice.roll(1, 6) <= 5 ? 'terrestrial' : 'helian') as Orbit['group']])
     },
-    size: ({ star }) => {
-      let firstRoll = window.dice.roll(1, 6)
-      const { luminosityClass, spectralClass } = star
-      if (luminosityClass === 'VI' || (luminosityClass === 'V' && spectralClass === 'M'))
-        firstRoll -= 1
+    size: ({ size }) => {
       let diameter: number
       let mass: number
-      if (firstRoll <= 2) {
+      if (size === 16) {
         // Small Gas Giant
         diameter = window.dice.uniform(2, 6)
         mass = scaleLinear([2, 6], [10, 35])(diameter)
-      } else if (firstRoll <= 4) {
+      } else if (size === 17) {
         // Medium Gas Giant
         diameter = window.dice.uniform(6, 12)
         mass = scaleLinear([6, 12], [40, 340])(diameter)
