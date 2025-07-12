@@ -7,6 +7,37 @@ import { Fragment } from 'react'
 import { MATH } from '../../model/utilities/math'
 import { COLORS } from '../../theme/colors'
 import { StyledText } from '../common/StyledText'
+import { TEMPERATURE } from '../../model/system/orbits/temperature'
+import { METRICS } from '../maps/legend/metrics'
+import { ATMOSPHERE } from '../../model/system/orbits/atmosphere'
+import { HYDROSPHERE } from '../../model/system/orbits/hydrosphere'
+import Icon from '@mdi/react'
+import {
+  mdiRuler,
+  mdiClockOutline,
+  mdiRotate3dVariant,
+  mdiOrbit,
+  mdiCompass,
+  mdiCloudOutline,
+  mdiSnowflake,
+  mdiWeatherSunny,
+  mdiFire,
+  mdiWater,
+  mdiWaterOff,
+  mdiWaterOutline,
+  mdiWeatherHurricane,
+  mdiHeart,
+  mdiAccountGroup,
+  mdiGrass,
+  mdiEarth,
+  mdiCog,
+  mdiTerrain
+} from '@mdi/js'
+import { SIZE } from '../../model/system/orbits/groups'
+import { BIOSPHERE } from '../../model/system/orbits/biosphere'
+
+// Custom simple circle path (filled) for planet/moon icon
+const mdiSphere = 'M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2Z'
 
 function describeEccentricity(eccentricity: number): string {
   if (eccentricity === 0) {
@@ -75,8 +106,61 @@ function describeHabitability(rating: number): string {
   }
 }
 
+function describeTechnology(tech: number): string {
+  if (tech === 0) return 'No industry'
+  if (tech >= 1 && tech <= 3) return 'Primitive'
+  if (tech >= 4 && tech <= 6) return 'Industrial'
+  if (tech >= 7 && tech <= 9) return 'Early Stellar'
+  if (tech >= 10 && tech <= 11) return 'Late Stellar'
+  if (tech >= 12 && tech <= 14) return 'Low Imperial'
+  if (tech >= 15) return 'High Imperial'
+  return `Tech Level ${tech}`
+}
+
 const formatters = {
   population: new Intl.NumberFormat('en-US', { notation: 'compact' })
+}
+
+// Temperature color gradient (cold to hot)
+const getTemperatureColor = (celsius: number): string => {
+  if (celsius < -50) return '#a2d6f8' // very cold
+  if (celsius < 0) return '#00bfff' // cold
+  if (celsius < 30) return '#32cd32' // temperate
+  if (celsius < 60) return '#ffa500' // warm
+  if (celsius < 100) return '#ff8c00' // hot
+  return '#ff4500' // scorching
+}
+
+// Choose mdi path based on climate description
+const getClimateIconPath = (climate: string) => {
+  switch (climate) {
+    case 'frozen':
+    case 'cold':
+      return mdiSnowflake
+    case 'temperate':
+    case 'hot':
+      return mdiWeatherSunny
+    case 'burning':
+      return mdiFire
+    default:
+      return mdiWeatherSunny
+  }
+}
+
+// Choose mdi path based on hydrosphere code
+const getHydrosphereIconPath = (code: number) => {
+  if (code === 0) return mdiWaterOff // arid, barren
+  if (code <= 2) return mdiWaterOutline // dry to semi-arid
+  if (code <= 12) return mdiWater // moderate water presence
+  return mdiWeatherHurricane // gas-giant core or exotic cases
+}
+
+// Color mapping for composition types
+const compositionColor: Record<Orbit['composition'], string> = {
+  rocky: '#c2a679', // tan / rock
+  ice: '#a2d6f8', // light blue ice
+  metallic: '#c0c0c0', // silver
+  gas: '#e8daef' // pale yellow
 }
 
 const OrbitView = (props: { orbit: Orbit }) => {
@@ -85,23 +169,29 @@ const OrbitView = (props: { orbit: Orbit }) => {
   const moon = parent.tag !== 'star' && parent.group !== 'asteroid belt'
   const asteroid = orbit.group === 'asteroid belt'
   const { atmosphere } = orbit
-  const hydro = ORBIT.hydrospheres.find(h => h.code === orbit.hydrosphere.code)
+  const hydro = HYDROSPHERE.labels.find(h => h.code === orbit.hydrosphere.code)
   return (
     <CodexPage
       title={ORBIT.name(orbit)}
       subtitle={
-        <StyledText
-          text={`${orbit.type}${asteroid ? '' : moon ? ' moon' : ' planet'}${
-            orbit.subtype
-              ? ` (${orbit.subtype}${orbit.chemistry ? `, ${orbit.chemistry}` : ''}${
-                  orbit.rings ? `, ${orbit.rings} rings` : ''
-                })`
-              : ''
-          }, ${TEXT.decorate({
-            link: window.galaxy.systems[orbit.system],
-            color: COLORS.subtitle
-          })}`}
-        ></StyledText>
+        <Fragment>
+          <Icon
+            path={mdiSphere}
+            size={0.5}
+            color={ORBIT.colors.get()[orbit.type]}
+            style={{ verticalAlign: 'middle', marginRight: 4, marginBottom: 1 }}
+          />
+          <StyledText
+            text={`${orbit.type}${asteroid ? '' : moon ? ' moon' : ' planet'}${
+              orbit.subtype
+                ? ` (${orbit.subtype}${orbit.chemistry ? `, ${orbit.chemistry}` : ''})`
+                : ''
+            }, ${TEXT.decorate({
+              link: window.galaxy.systems[orbit.system],
+              color: COLORS.subtitle
+            })}`}
+          ></StyledText>
+        </Fragment>
       }
       content={
         <Grid container>
@@ -109,27 +199,85 @@ const OrbitView = (props: { orbit: Orbit }) => {
             <i>{ORBIT.describe(orbit)}</i>
           </Grid>
           <Grid item xs={12}>
-            <b>Distance: </b> {MATH.orbits.fromAU(orbit.au).toFixed(2)} ({orbit.au.toFixed(2)} AU)
+            <Icon
+              path={mdiRuler}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Distance: </b>{' '}
+            {orbit.moon
+              ? `${orbit.moon.pd.toFixed(2)} PD`
+              : `${MATH.orbits.fromAU(orbit.au).toFixed(2)} (${orbit.au.toFixed(2)} AU)`}
           </Grid>
           <Grid item xs={12}>
-            <b>Period: </b> {MATH.time.convertYears(orbit.period)}
+            <Icon
+              path={mdiClockOutline}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Period: </b>{' '}
+            {orbit.moon
+              ? MATH.time.convertHours(orbit.moon.period)
+              : MATH.time.convertYears(orbit.period)}
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiRotate3dVariant}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Rotation: </b> {isFinite(orbit.rotation) ? `${orbit.rotation} hours` : 'Infinite'} (
             {describeRotation(orbit.rotation)})
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiOrbit}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Eccentricity: </b> {orbit.eccentricity.toFixed(2)} (
             {describeEccentricity(orbit.eccentricity)})
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiCompass}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Axial Tilt: </b> {orbit.axialTilt.toFixed(2)}° ({describeAxialTilt(orbit.axialTilt)})
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiEarth}
+              size={0.7}
+              color={SIZE.colors(orbit.size)}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Size: </b>({orbit.size}) {orbit.diameter.toFixed(2)}⊕ (D), {orbit.mass.toFixed(3)}⊕
             (M), {orbit.gravity.toFixed(2)} (G)
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiTerrain}
+              size={0.7}
+              color={compositionColor[orbit.composition]}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Composition: </b>{' '}
+            {orbit.composition.charAt(0).toUpperCase() + orbit.composition.slice(1)}
+          </Grid>
+          <Grid item xs={12}>
+            <Icon
+              path={mdiCloudOutline}
+              size={0.7}
+              color={ATMOSPHERE.color(atmosphere.code)}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Atmosphere: </b> ({orbit.atmosphere.code}) {TEXT.capitalize(atmosphere.type)}{' '}
             {atmosphere.subtype
               ? `(${atmosphere.subtype}${
@@ -140,24 +288,73 @@ const OrbitView = (props: { orbit: Orbit }) => {
               : ''}
           </Grid>
           <Grid item xs={12}>
-            <b>Temperature: </b> {MATH.temperature.celsius(orbit.temperature.kelvin).toFixed(2)}°C (
-            {orbit.temperature.desc})
+            {(() => {
+              const climate = TEMPERATURE.describe(orbit.temperature.mean)
+              return (
+                <Icon
+                  path={getClimateIconPath(climate)}
+                  size={0.7}
+                  color={getTemperatureColor(MATH.temperature.celsius(orbit.temperature.mean))}
+                  style={{ verticalAlign: 'middle', marginRight: 4 }}
+                />
+              )
+            })()}
+            <b>Temperature: </b> {MATH.temperature.celsius(orbit.temperature.mean).toFixed(2)}°C (
+            {TEMPERATURE.describe(orbit.temperature.mean)}){' '}
+            <span style={{ color: COLORS.subtitle }}>
+              [{MATH.temperature.celsius(orbit.temperature.low).toFixed(1)}°C,{' '}
+              {MATH.temperature.celsius(orbit.temperature.high).toFixed(1)}°C]
+            </span>
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={getHydrosphereIconPath(orbit.hydrosphere.code)}
+              size={0.7}
+              color={HYDROSPHERE.color[orbit.hydrosphere.code]}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Hydrosphere: </b> ({orbit.hydrosphere.code}){' '}
             {hydro?.range ? `${hydro.range} (${hydro.description})` : hydro?.description}
           </Grid>
           <Grid item xs={12}>
-            <b>Biosphere: </b> ({orbit.biosphere}) {ORBIT.biospheres[orbit.biosphere]}
+            <Icon
+              path={mdiGrass}
+              size={0.7}
+              color={METRICS.biosphere.color(orbit.biosphere)}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Biosphere: </b> ({orbit.biosphere}) {BIOSPHERE.labels[orbit.biosphere]}
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiHeart}
+              size={0.7}
+              color={METRICS.habitability.color(orbit.habitability)}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Habitability: </b> ({orbit.habitability}) {describeHabitability(orbit.habitability)}
           </Grid>
+          {orbit.technology !== undefined && (
+            <Grid item xs={12}>
+              <Icon
+                path={mdiCog}
+                size={0.7}
+                color={METRICS.tech.color(orbit.technology)}
+                style={{ verticalAlign: 'middle', marginRight: 4 }}
+              />
+              <b>Industry: </b> ({orbit.technology}) {describeTechnology(orbit.technology)}
+            </Grid>
+          )}
           {orbit.population && (
             <Fragment>
               <Grid item xs={12}>
-                <b>Population: </b> {formatters.population.format(orbit.population.size)} (
-                {orbit.settlement})
+                <Icon
+                  path={mdiAccountGroup}
+                  size={0.7}
+                  color={METRICS.population.color(orbit.population!.code)}
+                  style={{ verticalAlign: 'middle', marginRight: 4 }}
+                />
+                <b>Population: </b> {formatters.population.format(orbit.population.size)}
               </Grid>
             </Fragment>
           )}

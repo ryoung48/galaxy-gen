@@ -1,4 +1,16 @@
 import { Grid } from '@mui/material'
+import Icon from '@mdi/react'
+import {
+  mdiTimerSand,
+  mdiRuler,
+  mdiOrbit,
+  mdiClockOutline,
+  mdiWeight,
+  mdiRulerSquare,
+  mdiBrightness5,
+  mdiFire
+} from '@mdi/js'
+
 import { TEXT } from '../../model/utilities/text'
 import { CodexPage } from '../common/CodexPage'
 import { StyledText } from '../common/StyledText'
@@ -7,6 +19,9 @@ import { Star } from '../../model/system/stars/types'
 import { STAR } from '../../model/system/stars'
 import { MATH } from '../../model/utilities/math'
 
+// Custom simple circle path (filled) for planet/moon icon
+const mdiSphere = 'M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2Z'
+
 const formatters = {
   temperature: new Intl.NumberFormat('en-US', {
     style: 'unit',
@@ -14,6 +29,16 @@ const formatters = {
     notation: 'compact'
   }),
   luminosity: new Intl.NumberFormat('en-US', { notation: 'compact', minimumFractionDigits: 5 })
+}
+
+// Temperature color gradient (cold to hot)
+const getTemperatureColor = (celsius: number): string => {
+  if (celsius < -50) return '#1e90ff' // very cold
+  if (celsius < 0) return '#00bfff' // cold
+  if (celsius < 30) return '#32cd32' // temperate
+  if (celsius < 60) return '#ffa500' // warm
+  if (celsius < 100) return '#ff8c00' // hot
+  return '#ff4500' // scorching
 }
 
 const StarView = (props: { star: Star }) => {
@@ -28,39 +53,95 @@ const StarView = (props: { star: Star }) => {
     <CodexPage
       title={STAR.name(star)}
       subtitle={
-        <StyledText
-          text={`Star (${star.spectralClass}${star.subtype}-${
-            star.luminosityClass
-          }), ${TEXT.decorate({
-            link: window.galaxy.systems[star.system],
-            color: COLORS.subtitle
-          })}`}
-        ></StyledText>
+        <>
+          <Icon
+            path={mdiSphere}
+            size={0.5}
+            color={STAR.color(star)}
+            style={{ verticalAlign: 'middle', marginRight: 4, marginBottom: 3 }}
+          />
+          <StyledText
+            text={`Star (${star.spectralClass}${star.subtype}-${
+              star.luminosityClass
+            }), ${TEXT.decorate({
+              link: window.galaxy.systems[star.system],
+              color: COLORS.subtitle
+            })}`}
+          />
+        </>
       }
       content={
         <Grid container>
           <Grid item xs={12}>
+            <Icon
+              path={mdiTimerSand}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Age: </b> {age}
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiRuler}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Distance: </b> {MATH.orbits.fromAU(star.au).toFixed(2)} ({star.au.toFixed(2)} AU)
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiOrbit}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Eccentricity: </b> {star.eccentricity.toFixed(2)}
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiClockOutline}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Period: </b> {MATH.time.convertYears(star.period)}
           </Grid>
           <Grid item xs={12}>
-            <b>Mass: </b> {star.mass.toFixed(2)}
+            <Icon
+              path={mdiWeight}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Mass: </b> {star.mass.toFixed(2)} ☉
           </Grid>
           <Grid item xs={12}>
-            <b>Diameter: </b> {star.diameter.toFixed(2)} ({star.r})
+            <Icon
+              path={mdiRulerSquare}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Diameter: </b> {star.diameter.toFixed(2)} ☉ ({star.r})
           </Grid>
           <Grid item xs={12}>
-            <b>Luminosity: </b> {formatters.luminosity.format(star.luminosity)}
+            <Icon
+              path={mdiBrightness5}
+              size={0.7}
+              color={STAR.color(star)}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Luminosity: </b> {formatters.luminosity.format(star.luminosity)} ☉
           </Grid>
           <Grid item xs={12}>
+            <Icon
+              path={mdiFire}
+              size={0.7}
+              color={getTemperatureColor(MATH.temperature.celsius(star.temperature))}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
             <b>Temperature: </b>{' '}
             {formatters.temperature.format(MATH.temperature.celsius(star.temperature))}
           </Grid>

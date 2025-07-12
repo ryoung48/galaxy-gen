@@ -1,6 +1,5 @@
 import { RefObject, useEffect, useRef, useState } from 'react'
 import { CONSTANTS } from '../../model/constants'
-import { COLORS } from '../../theme/colors'
 import { SOLAR_SYSTEM } from '../../model/system'
 import { CANVAS } from './canvas'
 import { pointer, scaleLinear } from 'd3'
@@ -14,6 +13,7 @@ import { SYSTEM_MAP } from './canvas/system'
 import { GALAXY_MAP } from './canvas/galaxy'
 import { MapModes } from './types'
 import { LEGEND } from './legend'
+import { BACKGROUND } from './canvas/background'
 
 const paint = (
   canvasRef: RefObject<HTMLCanvasElement>,
@@ -28,6 +28,62 @@ const paint = (
   canvas.height = canvas.clientHeight
   const ctx = canvas.getContext('2d')!
   ctx.clearRect(0, 0, CONSTANTS.W, CONSTANTS.H)
+  ctx.save()
+  const objects = local && solarSystem ? SOLAR_SYSTEM.orbits(solarSystem) : []
+  const mod = CONSTANTS.SOLAR_SYSTEM_MOD
+  const objectPositions = objects.map(obj => {
+    const worldPos = CANVAS.coordinates(obj)
+    return {
+      x: worldPos.x * transform.scale + transform.dx,
+      y: worldPos.y * transform.scale + transform.dy,
+      r: obj.r * mod * transform.scale
+    }
+  })
+
+  let systemCenter: { x: number; y: number } | undefined
+  let maxSystemRadius: number | undefined
+
+  if (local && solarSystem) {
+    const primaryStar = objects.find(o => o.tag === 'star' && o.idx === solarSystem.star.idx)
+
+    if (primaryStar) {
+      const primaryStarCoords = CANVAS.coordinates(primaryStar)
+      systemCenter = {
+        x: primaryStarCoords.x * transform.scale + transform.dx,
+        y: primaryStarCoords.y * transform.scale + transform.dy
+      }
+
+      let maxWorldRadius = 0
+      for (const object of objects) {
+        const objectCoords = CANVAS.coordinates(object)
+        const dist = MATH.distance(
+          [primaryStarCoords.x, primaryStarCoords.y],
+          [objectCoords.x, objectCoords.y]
+        )
+        const objectRadius = object.r * mod
+        if (dist + objectRadius > maxWorldRadius) {
+          maxWorldRadius = dist + objectRadius
+        }
+      }
+
+      maxSystemRadius = maxWorldRadius * 1.5 * transform.scale // Add padding for the fade effect
+    }
+  } else {
+    // Galaxy view - center at galaxy center
+    systemCenter = {
+      x: CONSTANTS.W * 0.5 * transform.scale + transform.dx,
+      y: CONSTANTS.H * 0.5 * transform.scale + transform.dy
+    }
+    maxSystemRadius = 335 * transform.scale * 1.2 // Galaxy radius plus padding
+  }
+
+  BACKGROUND.paint({
+    ctx,
+    objects: objectPositions,
+    systemCenter,
+    maxSystemRadius
+  })
+  ctx.restore()
   ctx.translate(transform.dx, transform.dy)
   ctx.scale(transform.scale, transform.scale)
   if (local) SYSTEM_MAP.paint({ ctx, selected, solarSystem, mapMode: mode })
@@ -115,7 +171,7 @@ const GalaxyMap = () => {
       <canvas
         ref={canvasRef}
         style={{
-          backgroundColor: COLORS.map,
+          backgroundColor: 'black',
           border: 'double rgba(255, 255, 255, 0.4)',
           width: '100%',
           height: window.screen.height * 0.85
@@ -131,9 +187,7 @@ const GalaxyMap = () => {
           const solar = window.galaxy.systems[point]
           const local = transform.scale > 30
           if (local || !solar.edge) {
-            const objects = SOLAR_SYSTEM.orbits(system ?? solar).filter(
-              obj => obj.tag !== 'orbit' || obj.type !== 'asteroid belt'
-            )
+            const objects = SOLAR_SYSTEM.orbits(system ?? solar)
             const closest = MATH.findClosest(
               cursor,
               objects.map((obj, i) => ({ ...CANVAS.coordinates(obj), i }))

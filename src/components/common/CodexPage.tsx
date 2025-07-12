@@ -32,7 +32,12 @@ export function CodexPage(props: { content: ReactNode } & CodexTitleProps) {
           <CodexTitle title={title} subtitle={subtitle}></CodexTitle>
         </Grid>
         <Grid item xs={1.5}>
-          <Heraldry value={nation.name} size={50} config={HERALDRY.config(nation)}></Heraldry>
+          <Heraldry
+            value={nation.name}
+            size={50}
+            config={HERALDRY.config(nation)}
+            style={nation.flag.style}
+          ></Heraldry>
         </Grid>
         <Grid item xs={12} p={0} my={1} className={classes.content}>
           {content}

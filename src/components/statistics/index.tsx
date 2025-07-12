@@ -12,6 +12,8 @@ import { AtmosphereDistribution } from './Atmosphere'
 import { HabitabilityDistribution } from './Habitability'
 import { SizeDistribution } from './Size'
 import { PopulationDistribution } from './Population'
+import { TechnologyDistribution } from './Technology'
+import { GovernmentDistribution } from './Government'
 
 export function StatisticsView() {
   const modes = [
@@ -23,7 +25,9 @@ export function StatisticsView() {
     'atmosphere',
     'biosphere',
     'habitability',
-    'population'
+    'population',
+    'industry',
+    'government'
   ] as Stat[]
   return (
     <Grid container pt={12}>
@@ -41,6 +45,8 @@ export function StatisticsView() {
           if (mode === 'habitability') return <HabitabilityDistribution></HabitabilityDistribution>
           if (mode === 'size') return <SizeDistribution></SizeDistribution>
           if (mode === 'population') return <PopulationDistribution></PopulationDistribution>
+          if (mode === 'industry') return <TechnologyDistribution></TechnologyDistribution>
+          if (mode === 'government') return <GovernmentDistribution></GovernmentDistribution>
           return <span></span>
         }}
       ></ToggleButtons>

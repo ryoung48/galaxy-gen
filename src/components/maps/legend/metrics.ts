@@ -1,6 +1,7 @@
 import {
   interpolateBlues,
   interpolateGreens,
+  interpolateOranges,
   interpolatePurples,
   interpolateSpectral,
   range,
@@ -10,9 +11,14 @@ import {
 export const METRICS = {
   biosphere: {
     scale: scaleLinear([0, 12], [0, 1]),
-    color: (heat: number) => interpolateGreens(METRICS.biosphere.scale(heat)),
+    color: (heat: number) =>
+      heat === -1
+        ? '#d6d6d6'
+        : heat > 12
+        ? '#8268ed'
+        : interpolateGreens(METRICS.biosphere.scale(heat)),
     legend: () =>
-      range(0, 14)
+      range(0, 13)
         .reverse()
         .map(biosphere => ({
           color: METRICS.biosphere.color(biosphere),
@@ -31,10 +37,10 @@ export const METRICS = {
         }))
   },
   population: {
-    scale: scaleLinear([0, 1, 9], [0, 0.2, 1]),
+    scale: scaleLinear([0, 1, 10], [0, 0.2, 1]),
     color: (heat: number) => interpolateBlues(METRICS.population.scale(heat)),
     legend: () =>
-      range(0, 10)
+      range(0, 11)
         .reverse()
         .map(pops => ({
           color: METRICS.population.color(pops),
@@ -50,6 +56,17 @@ export const METRICS = {
         .map(orbits => ({
           color: METRICS.orbits.color(orbits),
           text: orbits.toString()
+        }))
+  },
+  tech: {
+    scale: scaleLinear([0, 15], [0, 1]),
+    color: (heat: number) => interpolateOranges(METRICS.tech.scale(heat)),
+    legend: () =>
+      range(0, 16)
+        .reverse()
+        .map(tech => ({
+          color: METRICS.tech.color(tech),
+          text: tech.toString()
         }))
   }
 }

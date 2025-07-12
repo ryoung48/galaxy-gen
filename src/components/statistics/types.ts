@@ -10,3 +10,5 @@ export type Stat =
   | 'habitability'
   | 'size'
   | 'population'
+  | 'industry'
+  | 'government'

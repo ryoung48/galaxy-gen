@@ -1,15 +1,5 @@
 import { range, scaleLinear } from 'd3'
 import { Orbit, OrbitGroupDetails } from './types'
-import { Star } from '../stars/types'
-
-function getComposition(modifiedRoll: number): string {
-  if (modifiedRoll <= -4) return 'Exotic Ice'
-  if (modifiedRoll >= -3 && modifiedRoll <= 2) return 'Mostly Ice'
-  if (modifiedRoll >= 3 && modifiedRoll <= 6) return 'Mostly Rock'
-  if (modifiedRoll >= 7 && modifiedRoll <= 11) return 'Rock and Metal'
-  if (modifiedRoll >= 12 && modifiedRoll <= 14) return 'Mostly Metal'
-  return 'Compressed Metal'
-}
 
 // Looks up density from the table
 function getDensityFromTable(densityRoll: number, composition: string): number {
@@ -26,25 +16,19 @@ function getDensityFromTable(densityRoll: number, composition: string): number {
   return densityValues[densityRoll - 2] // 2D roll ranges from 2 to 12
 }
 
-function calculateDensity(size: number, star: Star, deviation: number) {
-  // Roll 2D and apply all DMs
-  let roll = window.dice.roll(2, 6)
-  if (size <= 4) roll -= 1
-  else if (size <= 9) roll += 1
-  else roll += 3
-  if (deviation <= 0) roll += 1
-  else roll -= Math.floor(Math.abs(deviation))
-  if (star.age > 10) roll -= 1
-
-  const modifiedRoll = Math.min(Math.max(roll, -4), 15) // Clamp to range -4 to 15
+function calculateDensity(composition: Orbit['composition']) {
   // Determine composition from modified roll
-  const composition = getComposition(modifiedRoll)
+  const detailed = window.dice.weightedChoice([
+    { v: 'Exotic Ice', w: composition === 'ice' ? 1 : 0 },
+    { v: 'Mostly Ice', w: composition === 'ice' ? 5 : 0 },
+    { v: 'Mostly Rock', w: composition === 'rocky' ? 5 : 0 },
+    { v: 'Rock and Metal', w: composition === 'metallic' || composition === 'rocky' ? 1 : 0 },
+    { v: 'Mostly Metal', w: composition === 'metallic' ? 5 : 0 },
+    { v: 'Compressed Metal', w: composition === 'metallic' ? 1 : 0 }
+  ])
   // Get the density using the second roll
   const densityRoll = window.dice.roll(2, 6) // Roll 2D6 for density
-  return {
-    density: getDensityFromTable(densityRoll, composition),
-    composition: (modifiedRoll <= 2 ? 'ice' : 'rocky') as 'ice' | 'rocky'
-  }
+  return getDensityFromTable(densityRoll, detailed)
 }
 
 const diameterEstimate = (size: number) => {
@@ -74,12 +58,12 @@ const calculateGravity = (density: number, diameter: number) => {
   return density * diameter
 }
 
-const calculateSize: OrbitGroupDetails['size'] = ({ star, deviation, size }) => {
+const calculateSize: OrbitGroupDetails['size'] = ({ size, composition }) => {
   const diameter = diameterEstimate(size)
-  const { density, composition } = calculateDensity(size, star, deviation)
+  const density = calculateDensity(composition)
   const mass = density * diameter ** 3
   const gravity = calculateGravity(density, diameter)
-  return { diameter, mass, gravity, density, composition }
+  return { diameter, mass, gravity, density }
 }
 function getRareDwarfType() {
   const randomRoll = window.dice.roll(1, 6)
@@ -110,7 +94,7 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
       switch (zone) {
         case 'epistellar': {
           if (parent?.group === 'asteroid belt') roll -= 2
-          if (roll <= 3) return 'rockball'
+          if (roll <= 4) return 'rockball'
           if (roll <= 5) return 'meltball'
           return getRareDwarfType()
         }
@@ -118,7 +102,7 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
           if (parent?.group === 'asteroid belt') roll -= 2
           if (parent?.group === 'helian') roll += 1
           if (parent?.group === 'jovian') roll += 2
-          if (roll <= 4) return 'rockball'
+          if (roll <= 5) return 'rockball'
           if (roll <= 6) return 'geo-cyclic'
           if (roll === 7) return 'meltball'
           return getRareDwarfType()
@@ -127,7 +111,7 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
           if (parent?.group === 'asteroid belt') roll -= 1
           if (parent?.group === 'helian') roll += 1
           if (parent?.group === 'jovian') roll += 2
-          if (roll <= 3) return 'snowball'
+          if (roll <= 4) return 'snowball'
           if (roll <= 6) return 'rockball'
           if (roll === 7) return 'meltball'
           return getOuterRareDwarfType()
@@ -219,14 +203,20 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
           return 'jovian'
       }
     },
-    orbits: () => {
+    orbits: ({ size }) => {
       const satellites = window.dice.roll(1, 6)
       const roll = window.dice.roll(1, 6)
       return roll <= 5
         ? range(satellites).map(() => 'dwarf' as Orbit['group'])
         : range(satellites - 1)
             .map(() => 'dwarf' as Orbit['group'])
-            .concat([(window.dice.roll(1, 6) <= 5 ? 'terrestrial' : 'helian') as Orbit['group']])
+            .concat([
+              window.dice.weightedChoice([
+                { v: 'terrestrial', w: 0.7 },
+                { v: 'helian', w: 0.2 },
+                { v: 'jovian', w: size > 16 ? 0.1 : 0 }
+              ])
+            ])
     },
     size: ({ size }) => {
       let diameter: number
@@ -248,5 +238,31 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
       const gravity = calculateGravity(density, diameter)
       return { diameter, mass, gravity, density, composition: 'gas' }
     }
+  }
+}
+
+export const SIZE = {
+  colors: (size: number): string => {
+    if (size === -1) return '#8b4513' // saddle brown - asteroid belt
+    if (size === 0) return '#a0522d' // sienna - small bodies
+    if (size === 1) return '#cd853f' // peru - small planets
+    if (size === 2) return '#daa520' // goldenrod - Luna-class
+    if (size === 3) return '#b8860b' // dark goldenrod - Mercury-class
+    if (size === 4) return '#ff8c00' // dark orange - Mars-class
+    if (size === 5) return '#ffa500' // orange - size 5
+    if (size === 6) return '#ffd700' // gold - size 6
+    if (size === 7) return '#9acd32' // yellow-green - size 7
+    if (size === 8) return '#228b22' // forest green - Terra-class
+    if (size === 9) return '#32cd32' // lime green - Super-Earth
+    if (size === 10) return '#00ced1' // dark turquoise - size A
+    if (size === 11) return '#4169e1' // royal blue - size B
+    if (size === 12) return '#0000ff' // blue - size C
+    if (size === 13) return '#4b0082' // indigo - size D
+    if (size === 14) return '#8a2be2' // blue violet - size E
+    if (size === 15) return '#9370db' // medium purple - size F
+    if (size === 16) return '#ba55d3' // medium orchid - small gas giant
+    if (size === 17) return '#da70d6' // orchid - medium gas giant
+    if (size === 18) return '#ff69b4' // hot pink - large gas giant
+    return '#808080' // fallback gray
   }
 }

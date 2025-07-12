@@ -1,11 +1,18 @@
 import { ORBIT } from './orbits'
 import { STAR } from './stars'
 import { SolarSystem, SolarSystemSpawnParams } from './types'
+import { DESIRABILITY } from './orbits/desirability'
+import { VORONOI } from '../utilities/voronoi'
 
 export const SOLAR_SYSTEM = {
   name: (system: SolarSystem) => `${system.name} #${system.idx + 1}`,
   nation: (system: SolarSystem) => window.galaxy.nations[system.nation],
   neighbors: (system: SolarSystem) => system.lanes.map(i => window.galaxy.systems[i]),
+  commonEdge: (i: number, j: number) => {
+    const iData = window.galaxy.diagram.cellPolygon(i)
+    const jData = window.galaxy.diagram.cellPolygon(j)
+    return VORONOI.commonEdge(iData, jData)
+  },
   orbits: (system: SolarSystem) => {
     return [system.star, ...STAR.orbits(system.star)]
   },
@@ -15,15 +22,16 @@ export const SOLAR_SYSTEM = {
     const isCapital = system === capital
     const [main, ...orbits] = STAR.orbits(system.star)
       .filter(orbit => orbit.tag === 'orbit')
-      .filter(orbit => orbit.type !== 'asteroid belt' && orbit.type !== 'jovian')
-      .sort((a, b) => b.habitability - a.habitability)
+      .sort((a, b) => DESIRABILITY.get(b) - DESIRABILITY.get(a))
     if (!main) return
-    ORBIT.populate({ orbit: main, capital: isCapital, orbits })
-    const settlements = window.dice.randint(0, 3) + (isCapital ? 2 : 0)
-    window.dice
-      .shuffle(orbits)
-      .slice(0, settlements)
-      .forEach(orbit => ORBIT.populate({ orbit, orbits }))
+    ORBIT.populate({ orbit: main, capital: isCapital, mainworld: true })
+    const maxPop = (main.population?.code ?? 0) - window.dice.roll(1, 6)
+    const settlements = maxPop > 0 ? window.dice.randint(0, 3) : 0
+    const maxTech = main.technology
+    orbits.slice(0, settlements).forEach(orbit => ORBIT.populate({ orbit, maxPop, maxTech }))
+    orbits
+      .filter(orbit => !orbit.population && orbit.biosphere === 12)
+      .forEach(orbit => ORBIT.populate({ orbit, maxPop, maxTech }))
   },
   spawn: (params: SolarSystemSpawnParams): SolarSystem => {
     return {

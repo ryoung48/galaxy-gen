@@ -7,6 +7,7 @@ import { Nation } from '../../model/nations/types'
 
 const NationView = (props: { nation: Nation }) => {
   const nation = props.nation
+  const systems = NATION.systems(nation)
   return (
     <CodexPage
       title={nation.name}
@@ -15,11 +16,9 @@ const NationView = (props: { nation: Nation }) => {
         <Grid container>
           <Grid item>
             <span>
-              <b>Systems: </b>{' '}
+              <b>Systems ({systems.length}): </b>{' '}
               <StyledText
-                text={NATION.systems(nation)
-                  .map(system => TEXT.decorate({ link: system }))
-                  .join(', ')}
+                text={systems.map(system => TEXT.decorate({ link: system })).join(', ')}
               ></StyledText>
             </span>
           </Grid>

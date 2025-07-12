@@ -11,7 +11,7 @@ const gasGiantSizes = (star: Star) => {
   return 18
 }
 
-const helianSizes = () => window.dice.choice([11, 12, 13, 14, 14])
+const helianSizes = () => window.dice.choice([11, 12, 13, 14, 15])
 
 export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
   acheronian: {
@@ -20,7 +20,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
       "These are worlds that were directly affected by their primary's transition from the main sequence; the atmosphere and oceans have been boiled away, leaving a scorched, dead planet.",
     roll: () => {
       const size = window.dice.randint(1, 6) + 4
-      return { size, atmosphere: 1, hydrosphere: 0 }
+      return { size, atmosphere: 1, hydrosphere: 0, composition: 'rocky' }
     }
   },
   arid: {
@@ -50,7 +50,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
         hydrosphere,
         chemistry,
         subtype:
-          chemistry === 'water' ? 'darwinian' : chemistry === 'ammonia' ? 'saganian' : 'asimovian'
+          chemistry === 'water' ? 'darwinian' : chemistry === 'ammonia' ? 'saganian' : 'asimovian',
+        composition: 'rocky'
       }
     }
   },
@@ -59,41 +60,44 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       "These are worlds that were directly affected by their primary's transition from the main sequence; their atmosphere has been boiled away, leaving the surface exposed.",
     roll: () => {
-      return { size: helianSizes(), atmosphere: 1, hydrosphere: 0 }
+      return { size: helianSizes(), atmosphere: 1, hydrosphere: 0, composition: 'rocky' }
     }
   },
   'asteroid belt': {
-    color: '#808080',
+    color: '#575656',
     description:
       'These are bodies too small to sustain hydrostatic equilibrium; nearly all asteroids and comets are small bodies.',
     roll: () => {
-      return { size: -1, atmosphere: 0, hydrosphere: 0 }
+      return { size: 0, atmosphere: 0, hydrosphere: 0, composition: 'rocky' }
     }
   },
   asteroid: {
     color: '#808080',
     description:
       'These are bodies too small to sustain hydrostatic equilibrium; nearly all asteroids and comets are small bodies.',
-    roll: () => {
-      return { size: 0, atmosphere: 0, hydrosphere: 0 }
-    },
-    classify: ({ orbit, deviation }) => {
-      orbit.subtype = window.dice.weightedChoice([
-        { v: 'vulcanoidal', w: deviation >= 1.5 ? 1 : 0 },
-        { v: 'metallic', w: 0.5 },
-        { v: 'silicaceous', w: 1 },
-        { v: 'carbonaceous', w: 1 },
-        { v: 'gelidaceous', w: deviation < -1.5 ? 1 : 0 },
-        { v: 'aggregate', w: 1 }
-      ])
+    roll: ({ deviation }) => {
+      return {
+        size: 0,
+        atmosphere: 0,
+        hydrosphere: 0,
+        composition: 'rocky',
+        subtype: window.dice.weightedChoice([
+          { v: 'vulcanoidal', w: deviation >= 1.5 ? 1 : 0 },
+          { v: 'metallic', w: 0.5 },
+          { v: 'silicaceous', w: 1 },
+          { v: 'carbonaceous', w: 1 },
+          { v: 'gelidaceous', w: deviation < -1.5 ? 1 : 0 },
+          { v: 'aggregate', w: 1 }
+        ])
+      }
     }
   },
   chthonian: {
     color: '#A52A2A',
     description:
       "These are worlds that were directly affected by their primary's transition from the main sequence, or that have simply spent too long in a tight epistellar orbit; their atmospheres have been stripped away.",
-    roll: ({ star }) => {
-      return { size: gasGiantSizes(star), atmosphere: 1, hydrosphere: 0 }
+    roll: () => {
+      return { size: 16, atmosphere: 1, hydrosphere: 0, composition: 'gas' }
     }
   },
   'geo-cyclic': {
@@ -102,7 +106,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       'These are worlds with little liquid, that move through a slow geological cycle of a gradual build-up, a short wet and clement period, and a long decline.',
     roll: ({ zone, primary }) => {
-      const size = window.dice.roll(1, 6) - 1
+      const size = window.dice.roll(1, 5) - 1
       const atmosphereRoll = Math.max(window.dice.roll(1, 6), 1)
       const atmosphere =
         atmosphereRoll > 3
@@ -123,7 +127,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
         hydrosphere,
         chemistry,
         subtype:
-          chemistry === 'water' ? 'arean' : chemistry === 'ammonia' ? 'utgardian' : 'titanian'
+          chemistry === 'water' ? 'arean' : chemistry === 'ammonia' ? 'utgardian' : 'titanian',
+        composition: 'rocky'
       }
     }
   },
@@ -133,7 +138,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       'These are worlds that, through tidal-flexing, have a geological cycle similar to plate tectonics, that supports surface liquid and atmosphere.',
     roll: ({ zone, primary }) => {
-      const size = window.dice.roll(1, 6) - 1
+      const size = window.dice.roll(1, 5) - 1
       const hydrosphere = window.dice.roll(2, 3) - 2
       let chemMod = 0
       if (zone === 'epistellar') chemMod -= 2
@@ -152,7 +157,9 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
         atmosphere,
         hydrosphere,
         chemistry,
-        subtype: chemistry === 'water' ? 'promethean' : chemistry === 'ammonia' ? 'burian' : 'atlan'
+        subtype:
+          chemistry === 'water' ? 'promethean' : chemistry === 'ammonia' ? 'burian' : 'atlan',
+        composition: chemistry === 'methane' ? 'ice' : 'rocky'
       }
     }
   },
@@ -161,11 +168,11 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       'These are highly active worlds, due to tidal flexing, but with some regions of stability; the larger ones may be able to maintain some atmosphere and surface liquid.',
     roll: () => {
-      const size = window.dice.roll(1, 6) - 1
+      const size = window.dice.roll(1, 5) - 1
       let atmosphere = Math.max(1, window.dice.roll(1, 6) + size - 6)
       if (atmosphere >= 2) atmosphere = 10
       const hydrosphere = MATH.clamp(window.dice.roll(2, 6) + size - 11, 0, 11)
-      return { size, atmosphere, hydrosphere }
+      return { size, atmosphere, hydrosphere, composition: 'rocky' }
     }
   },
   helian: {
@@ -175,7 +182,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     roll: () => {
       const hydroRoll = window.dice.roll(1, 6)
       const hydrosphere = hydroRoll <= 2 ? 0 : hydroRoll <= 5 ? window.dice.roll(2, 6) - 1 : 12
-      return { size: helianSizes(), atmosphere: 13, hydrosphere }
+      return { size: helianSizes(), atmosphere: 13, hydrosphere, composition: 'rocky' }
     }
   },
   'jani-lithic': {
@@ -193,39 +200,45 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
               { v: 10, w: 9 },
               { v: 11, w: 1 }
             ])
-      return { size, atmosphere, hydrosphere: 0 }
+      return { size, atmosphere, hydrosphere: 0, composition: 'rocky' }
     }
   },
   jovian: {
     color: '#FFDAB9',
     description:
       'These are huge worlds with helium-hydrogen envelopes and compressed cores; the largest emit more heat than they absorb.',
-    roll: ({ star }) => {
-      return { size: gasGiantSizes(star), atmosphere: 14, hydrosphere: 13 }
-    },
-    classify: ({ orbit, deviation }) => {
-      if (orbit.mass <= 35) {
+    roll: ({ star, deviation }) => {
+      const size = gasGiantSizes(star)
+      let subtype = 'unknown'
+      if (size === 16) {
         if (deviation >= 1) {
-          orbit.subtype = 'osirian'
+          subtype = 'osirian'
         } else if (deviation >= -1) {
-          orbit.subtype = 'brammian'
+          subtype = 'brammian'
         } else if (deviation >= -1.5) {
-          orbit.subtype = 'khonsonian'
+          subtype = 'khonsonian'
         } else {
-          orbit.subtype = 'neptunian'
+          subtype = 'neptunian'
         }
-      } else if (orbit.mass <= 340) {
+      } else if (size === 17) {
         if (deviation >= -1.5) {
-          orbit.subtype = 'junic'
+          subtype = 'junic'
         } else {
-          orbit.subtype = orbit.mass <= 100 ? 'saturnian' : 'jovic'
+          subtype = 'jovic'
         }
       } else {
         if (deviation >= -1.5) {
-          orbit.subtype = 'super-junic'
+          subtype = 'super-junic'
         } else {
-          orbit.subtype = 'super-jovic'
+          subtype = 'super-jovic'
         }
+      }
+      return {
+        size,
+        atmosphere: 14,
+        hydrosphere: 13,
+        composition: 'gas',
+        subtype
       }
     }
   },
@@ -234,9 +247,18 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       'These are dwarfs with molten or semi-molten surfaces, either from extreme tidal flexing, or extreme approach to a star.',
     tidalFlex: true,
-    roll: () => {
-      const size = window.dice.randint(1, 6) - 1
-      return { size, atmosphere: 1, hydrosphere: 12 }
+    roll: ({ parent, zone }) => {
+      const size = window.dice.randint(1, 5) - 1
+      return {
+        size,
+        atmosphere: 1,
+        hydrosphere: 12,
+        eccentric: parent ? false : true,
+        composition: window.dice.weightedChoice([
+          { v: 'rocky', w: 5 },
+          { v: 'metallic', w: zone === 'epistellar' ? 1 : 0 }
+        ])
+      }
     }
   },
   oceanic: {
@@ -279,7 +301,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
           { v: 11, w: 1 }
         ]),
         chemistry,
-        subtype: chemistry === 'water' ? 'pelagic' : chemistry === 'ammonia' ? 'nunnic' : 'teathic'
+        subtype: chemistry === 'water' ? 'pelagic' : chemistry === 'ammonia' ? 'nunnic' : 'teathic',
+        composition: 'rocky'
       }
     }
   },
@@ -302,7 +325,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
             : 'chlorine'
           : 'methane'
       const atmosphere = Math.min(window.dice.roll(1, 6) + 8, 13)
-      return { size: helianSizes(), atmosphere, hydrosphere: 11, chemistry }
+      return { size: helianSizes(), atmosphere, hydrosphere: 11, chemistry, composition: 'rocky' }
     }
   },
   rockball: {
@@ -310,11 +333,19 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       'These are mostly dormant worlds, with surfaces largely unchanged since the early period of planetary formation.',
     roll: ({ zone }) => {
-      const size = window.dice.roll(1, 6) - 1
+      const size = window.dice.roll(1, 5) - 1
       let hydrosphere = window.dice.roll(2, 6) + size - 11
       if (zone === 'epistellar') hydrosphere -= 2
       if (zone === 'outer') hydrosphere += 2
-      return { size, atmosphere: 0, hydrosphere: MATH.clamp(hydrosphere, 0, 10) }
+      return {
+        size,
+        atmosphere: 0,
+        hydrosphere: MATH.clamp(hydrosphere, 0, 10),
+        composition: window.dice.weightedChoice([
+          { v: 'rocky', w: 5 },
+          { v: 'metallic', w: zone === 'outer' ? 0 : 1 }
+        ])
+      }
     }
   },
   snowball: {
@@ -323,7 +354,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     description:
       'These worlds are composed of mostly ice and some rock. They may have varying degrees of activity, ranging from completely cold and still to cryo-volcanically active with extensive subsurface oceans.',
     roll: ({ zone }) => {
-      const size = window.dice.roll(1, 6) - 1
+      const size = window.dice.roll(1, 5) - 1
       const atmosphere = window.dice.roll(1, 6) <= 4 ? 0 : 1
       const hydrosphere =
         window.dice.roll(1, 6) <= 2
@@ -335,15 +366,29 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
       let chemRoll = window.dice.roll(1, 6)
       if (zone === 'outer') chemRoll += 2
       const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'
-      return { size, atmosphere, hydrosphere, chemistry }
+      return {
+        size,
+        atmosphere,
+        hydrosphere,
+        chemistry,
+        composition: 'ice'
+      }
     }
   },
   stygian: {
     color: '#2F4F4F',
     description:
       "These are worlds that were directly affected by their primary's transition from the main sequence; they are melted and blasted lumps.",
-    roll: () => {
-      return { size: window.dice.roll(1, 6) - 1, atmosphere: 0, hydrosphere: 0 }
+    roll: ({ zone }) => {
+      return {
+        size: window.dice.roll(1, 5) - 1,
+        atmosphere: 0,
+        hydrosphere: 0,
+        composition: window.dice.weightedChoice([
+          { v: 'rocky', w: 5 },
+          { v: 'metallic', w: zone === 'outer' ? 0 : 1 }
+        ])
+      }
     }
   },
   tectonic: {
@@ -390,7 +435,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
             ? 'chloritic-gaian'
             : chemistry === 'ammonia'
             ? 'amunian'
-            : 'tartarian'
+            : 'tartarian',
+        composition: 'rocky'
       }
     }
   },
@@ -398,21 +444,16 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#8B0000',
     description:
       'These are worlds with geo-activity but no hydrological cycle at all, leading to dense runaway-greenhouse atmospheres.',
-    roll: () => {
+    roll: ({ deviation }) => {
       const size = window.dice.roll(1, 6) + 4
       const hydrosphere = window.dice.roll(1, 6) >= 4 ? 0 : 12
       return {
         size,
         atmosphere: 12,
         hydrosphere,
-        biosphere: 0
-      }
-    },
-    classify: ({ orbit, deviation }) => {
-      if (deviation >= 1) {
-        orbit.subtype = 'phosphorian'
-      } else {
-        orbit.subtype = 'cytherean'
+        biosphere: 0,
+        composition: 'rocky',
+        subtype: deviation >= 1 ? 'phosphorian' : 'cytherean'
       }
     }
   },
@@ -438,7 +479,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
         size,
         atmosphere,
         hydrosphere,
-        chemistry
+        chemistry,
+        composition: 'rocky'
       }
     }
   }

@@ -1,4 +1,5 @@
 import { CustomPieChart } from './pie'
+import { HYDROSPHERE } from '../../model/system/orbits/hydrosphere'
 
 export const HydrosphereDistribution = () => {
   const hydroFreq = window.galaxy.orbits.reduce((dict: Record<number, number>, orbit) => {
@@ -8,24 +9,6 @@ export const HydrosphereDistribution = () => {
   }, {})
 
   const total = Object.values(hydroFreq).reduce((sum, count) => sum + count, 0)
-
-  // Generate colors for different hydrosphere levels - tan to blue theme
-  const colors = [
-    '#d2b48c',
-    '#c4a373',
-    '#b6925a',
-    '#a88141',
-    '#9a7028',
-    '#8c5f0f',
-    '#7e6e3c',
-    '#707d69',
-    '#628c96',
-    '#549bc3',
-    '#46aaf0',
-    '#5e7af8',
-    '#ff625d',
-    '#f290ff'
-  ]
 
   const getHydrosphereLabel = (level: number): string => {
     if (level === 0) return 'Desert (0%–5%)'
@@ -50,7 +33,7 @@ export const HydrosphereDistribution = () => {
       id: getHydrosphereLabel(parseInt(level)),
       label: getHydrosphereLabel(parseInt(level)),
       value: count,
-      color: colors[index % colors.length]
+      color: HYDROSPHERE.color[index % HYDROSPHERE.color.length]
     }))
     .sort((a, b) => parseInt(a.id.split('-')[1]) - parseInt(b.id.split('-')[1]))
 

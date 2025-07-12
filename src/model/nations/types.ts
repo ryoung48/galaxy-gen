@@ -5,7 +5,11 @@ export type Nation = {
   tag: 'nation'
   name: string
   language: Language
-  flag: { hue: number; color: string; style: 'monochrome' | 'contrast' | 'standard' }
+  flag: {
+    hue: number
+    color: string
+    style: 'monochrome' | 'dark chromatic' | 'light chromatic' | 'dawn' | 'dusk'
+  }
   capital: number
   systems: number[]
 }

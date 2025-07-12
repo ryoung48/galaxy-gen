@@ -4,6 +4,7 @@ import { StarCompanionTemplate, Star, StarSpawnParams } from './types'
 import { LANGUAGE } from '../../languages'
 import { MATH } from '../../utilities/math'
 import { Orbit } from '../orbits/types'
+import { TEMPERATURE } from '../orbits/temperature'
 
 const incrementAngle = () => window.dice.randint(90, 270)
 
@@ -126,7 +127,7 @@ const isGiant = (luminosityClass: Star['luminosityClass']) =>
 export const STAR = {
   classes: spectralAttributes,
   color: (star: Star): string =>
-    isGiant(star.luminosityClass) ? 'red' : spectralAttributes[star.spectralClass].color,
+    isGiant(star.luminosityClass) ? '#ff4500' : spectralAttributes[star.spectralClass].color,
   name: (star: Star) => {
     if (!star.name) {
       const system = window.galaxy.systems[star.system]
@@ -152,7 +153,7 @@ export const STAR = {
   }: StarSpawnParams): Star => {
     const classAttributes = attributes ?? starClass(parent, homeworld)
     const au = parent
-      ? MATH.orbits.distance(ORBIT.temperature(deviation ?? 0), parent.luminosity)
+      ? MATH.orbits.distance(TEMPERATURE.base(deviation ?? 0), parent.luminosity)
       : 0
     const star: Star = {
       idx: window.galaxy.stars.length,
@@ -172,143 +173,151 @@ export const STAR = {
     if (parent) star.distance += star.r
     window.galaxy.stars.push(star)
     if (star.zone !== 'epistellar') {
-      const giant = isGiant(star.luminosityClass)
-      const companions: StarCompanionTemplate[] = []
-      const companionOdds = 10
-      const epistellarCompanion = !giant && window.dice.roll(2, 6) >= companionOdds
-      if (epistellarCompanion) {
-        companions.push({
-          type: 'star',
-          deviation: window.dice.uniform(1.5, 2.5),
-          zone: 'epistellar',
-          attributes: starClass(star)
-        })
-      }
-      const innerCompanion = !parent && !homeworld && window.dice.roll(2, 6) >= companionOdds
-      if (innerCompanion) {
-        companions.push({
-          type: 'star',
-          deviation: window.dice.uniform(-1, 1),
-          zone: 'inner',
-          attributes: starClass(star)
-        })
-      }
-      const outerCompanion = !parent && window.dice.roll(2, 6) >= companionOdds
-      if (outerCompanion) {
-        companions.push({
-          type: 'star',
-          deviation: window.dice.uniform(-3.5, -1.5),
-          zone: 'outer',
-          attributes: starClass(star)
-        })
-      }
-      if (!parent && window.dice.roll(2, 6) >= companionOdds) {
-        companions.push({
-          type: 'star',
-          deviation: window.dice.uniform(-4.5, -4),
-          zone: 'distant',
-          attributes: starClass(star)
-        })
-      }
-      const mClass = star.spectralClass === 'M'
-      const secondaryNoPlanets = parent && window.dice.random > 0.5
-      const maxEpistellar =
-        epistellarCompanion || secondaryNoPlanets ? 0 : star.zone === 'inner' ? 1 : 2
-      const epistellar = Math.min(maxEpistellar, window.dice.randint(0, mClass ? 1 : 2))
-      const maxInner =
-        innerCompanion || secondaryNoPlanets || star.zone === 'inner'
-          ? 0
-          : star.zone === 'outer'
-          ? 1
-          : 3
-      const inner = Math.min(maxInner, window.dice.randint(1, mClass ? 4 : 5))
-      const maxOuter =
-        outerCompanion || secondaryNoPlanets || star.zone === 'inner'
-          ? 0
-          : star.zone === 'outer'
-          ? 2
-          : 5
-      const outer = Math.min(maxOuter, window.dice.randint(innerCompanion ? 1 : 0, mClass ? 4 : 5))
-      const satellites: {
-        type: 'satellite'
-        deviation: number
-        zone: Orbit['zone']
-        primary?: boolean
-        homeworld?: boolean
-      }[] = [
-        ...window.dice
-          .sample([2.25, 1.75], epistellar)
-          .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'epistellar' as const })),
-        ...window.dice
-          .sample(
-            homeworld ? [1.25, 0.75, -0.75, -1.25] : [1.25, 0.75, 0, -0.75, -1.25],
-            homeworld ? inner - 1 : inner
-          )
-          .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'inner' as const })),
-        ...window.dice
-          .sample([-1.75, -2.25, -2.75, -3.25, -3.75], outer)
-          .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'outer' as const }))
-      ]
-      if (homeworld)
-        satellites.push({
-          type: 'satellite' as const,
-          deviation: 0,
-          zone: 'inner' as const,
-          homeworld: true
-        })
-      else if (satellites.length > 0 && !parent) {
-        const primary = satellites.slice(1).reduce((min, satellite) => {
-          return Math.abs(min.deviation) > Math.abs(satellite.deviation) ? satellite : min
-        }, satellites[0])
-        if (primary.zone === 'inner') {
-          primary.primary = true
-          if (Math.abs(primary.deviation) > 1) {
-            primary.deviation = window.dice.choice([-0.5, 0, 0.75])
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const giant = isGiant(star.luminosityClass)
+        const companions: StarCompanionTemplate[] = []
+        const companionOdds = 11
+        const epistellarCompanion = !giant && window.dice.roll(2, 6) >= companionOdds
+        if (epistellarCompanion) {
+          companions.push({
+            type: 'star',
+            deviation: window.dice.uniform(1.5, 2.5),
+            zone: 'epistellar',
+            attributes: starClass(star)
+          })
+        }
+        const innerCompanion = !parent && !homeworld && window.dice.roll(2, 6) >= companionOdds
+        if (innerCompanion) {
+          companions.push({
+            type: 'star',
+            deviation: window.dice.uniform(-1, 1),
+            zone: 'inner',
+            attributes: starClass(star)
+          })
+        }
+        const outerCompanion = !parent && window.dice.roll(2, 6) >= companionOdds
+        if (outerCompanion) {
+          companions.push({
+            type: 'star',
+            deviation: window.dice.uniform(-3.5, -1.5),
+            zone: 'outer',
+            attributes: starClass(star)
+          })
+        }
+        if (!parent && window.dice.roll(2, 6) >= companionOdds) {
+          companions.push({
+            type: 'star',
+            deviation: window.dice.uniform(-4.5, -4),
+            zone: 'distant',
+            attributes: starClass(star)
+          })
+        }
+        const mClass = star.spectralClass === 'M'
+        const secondaryNoPlanets = parent && window.dice.random > 0.5
+        const maxEpistellar =
+          epistellarCompanion || secondaryNoPlanets ? 0 : star.zone === 'inner' ? 1 : 2
+        const epistellar = Math.min(maxEpistellar, window.dice.randint(0, mClass ? 1 : 2))
+        const maxInner =
+          innerCompanion || secondaryNoPlanets || star.zone === 'inner'
+            ? 0
+            : star.zone === 'outer'
+            ? 1
+            : 3
+        const inner = Math.min(maxInner, window.dice.randint(1, mClass ? 4 : 5))
+        const maxOuter =
+          outerCompanion || secondaryNoPlanets || star.zone === 'inner'
+            ? 0
+            : star.zone === 'outer'
+            ? 2
+            : 5
+        const outer = Math.min(
+          maxOuter,
+          window.dice.randint(innerCompanion ? 1 : 0, mClass ? 4 : 5)
+        )
+        const satellites: {
+          type: 'satellite'
+          deviation: number
+          zone: Orbit['zone']
+          primary?: boolean
+          homeworld?: boolean
+        }[] = [
+          ...window.dice
+            .sample([2.25, 1.75], epistellar)
+            .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'epistellar' as const })),
+          ...window.dice
+            .sample(
+              homeworld ? [1.25, 0.75, -0.75, -1.25] : [1.25, 0.75, 0, -0.75, -1.25],
+              homeworld ? inner - 1 : inner
+            )
+            .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'inner' as const })),
+          ...window.dice
+            .sample([-1.75, -2.25, -2.75, -3.25, -3.75], outer)
+            .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'outer' as const }))
+        ]
+        if (homeworld)
+          satellites.push({
+            type: 'satellite' as const,
+            deviation: 0,
+            zone: 'inner' as const,
+            homeworld: true
+          })
+        else if (satellites.length > 0 && !parent) {
+          const primary = satellites.slice(1).reduce((min, satellite) => {
+            return Math.abs(min.deviation) > Math.abs(satellite.deviation) ? satellite : min
+          }, satellites[0])
+          if (primary.zone === 'inner') {
+            primary.primary = true
+            if (Math.abs(primary.deviation) > 1) {
+              primary.deviation = window.dice.choice([-0.5, 0, 0.75])
+            }
           }
         }
-      }
-      const orbitals = [...companions, ...satellites]
-      orbitals.sort((a, b) => b.deviation - a.deviation)
-      let angle = incrementAngle()
-      let distance = star.r + 10
-      let impactZone = giant ? window.dice.randint(1, 2) : 0
-      orbitals.forEach(template => {
-        const obj =
-          template.type === 'star'
-            ? STAR.spawn({
-                system,
-                parent: star,
-                distance,
-                angle,
-                zone: template.zone,
-                deviation: template.deviation,
-                attributes: template.attributes
-              })
-            : ORBIT.spawn({
-                star,
-                zone: template.zone,
-                angle,
-                distance,
-                deviation: window.dice.uniform(
-                  template.deviation - 0.25,
-                  template.deviation + 0.25
-                ),
-                impactZone: impactZone > 0,
-                unary: companions.length === 0,
-                designation: template.homeworld
-                  ? 'homeworld'
-                  : template.primary
-                  ? 'primary'
-                  : undefined
-              })
-        impactZone -= 1
-        star.orbits.push(obj)
-        angle += incrementAngle()
-        distance = obj.distance + (obj.fullR ?? obj.r)
-      })
-      if (parent) {
-        star.fullR = distance
-        star.distance += star.fullR - star.r
+        if (satellites.length === 0 && !parent) continue
+        const orbitals = [...companions, ...satellites]
+        orbitals.sort((a, b) => b.deviation - a.deviation)
+        let angle = incrementAngle()
+        let distance = star.r + 10
+        let impactZone = giant ? window.dice.randint(1, 2) : 0
+        orbitals.forEach(template => {
+          const obj =
+            template.type === 'star'
+              ? STAR.spawn({
+                  system,
+                  parent: star,
+                  distance,
+                  angle,
+                  zone: template.zone,
+                  deviation: template.deviation,
+                  attributes: template.attributes
+                })
+              : ORBIT.spawn({
+                  star,
+                  zone: template.zone,
+                  angle,
+                  distance,
+                  deviation: window.dice.uniform(
+                    template.deviation - 0.25,
+                    template.deviation + 0.25
+                  ),
+                  impactZone: impactZone > 0,
+                  unary: companions.length === 0,
+                  designation: template.homeworld
+                    ? 'homeworld'
+                    : template.primary
+                    ? 'primary'
+                    : undefined
+                })
+          impactZone -= 1
+          star.orbits.push(obj)
+          angle += incrementAngle()
+          distance = obj.distance + (obj.fullR ?? obj.r)
+        })
+        if (parent) {
+          star.fullR = distance
+          star.distance += star.fullR - star.r
+        }
+        break
       }
     }
     return star

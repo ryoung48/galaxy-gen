@@ -9,5 +9,6 @@ export const CONSTANTS = {
   R: 6.96e8, // Radius of the sun in meters
   AU: 1.496e11, // Astronomical Unit in meters
   EM: 5.972e24, // Mass of the Earth in kilograms
-  ER: 6.371e6 // Radius of the Earth in meters
+  ER: 6.371e6, // Radius of the Earth in meters
+  ED: 12742 // Diameter of the Earth in kilometers
 }

@@ -37,3 +37,10 @@ export type PaintGalaxyParams = {
   solarSystem?: SolarSystem
   mapMode: MapModes
 }
+
+export type DrawCurveParams = DrawLineParams & {
+  /**
+   * Curveness factor – roughly the fraction of the segment length used as orthogonal offset for the control point (default 0.2)
+   */
+  curveness?: number
+}

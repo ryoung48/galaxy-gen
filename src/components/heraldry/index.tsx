@@ -1,14 +1,16 @@
 import * as jdenticon from 'jdenticon'
 import React, { useEffect, useRef } from 'react'
 import { HERALDRY } from './common'
+import { Nation } from '../../model/nations/types'
 
 interface IdenticonProps {
   value: string
   size: number
   config?: jdenticon.JdenticonConfig
+  style: Nation['flag']['style']
 }
 
-export const Heraldry: React.FC<IdenticonProps> = ({ value, size, config }) => {
+export const Heraldry: React.FC<IdenticonProps> = ({ value, size, config, style }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const shieldSize = size * 1.5
   const backColor = config?.backColor ?? '#ffffff'
@@ -25,7 +27,8 @@ export const Heraldry: React.FC<IdenticonProps> = ({ value, size, config }) => {
       h: shieldSize,
       w: shieldSize * 0.8,
       borderWidth: 2,
-      backColor
+      backColor,
+      style
     })
     ctx.save()
     ctx.translate(size * 0.16, size * 0.18)

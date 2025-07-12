@@ -143,6 +143,10 @@ export const MATH = {
         const hours = inputYears * daysInYear * hoursInDay
         return `${hours.toFixed(2)} hours`
       }
+    },
+    convertHours: (inputHours: number): string => {
+      const hoursInYear = 24 * 365.25
+      return MATH.time.convertYears(inputHours / hoursInYear)
     }
   }
 }

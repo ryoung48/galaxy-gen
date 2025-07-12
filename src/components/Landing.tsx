@@ -30,7 +30,7 @@ export function Landing() {
                 window.galaxy = GALAXY.spawn({
                   radius: { min: 100, max: 300 },
                   dimensions: { width: CONSTANTS.W, height: CONSTANTS.H },
-                  size: 2000,
+                  size: 3000,
                   seed
                 })
                 dispatch({ type: 'init', payload: { id: seed } })

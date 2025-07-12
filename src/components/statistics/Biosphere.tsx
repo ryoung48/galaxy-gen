@@ -1,10 +1,9 @@
-import { range } from 'd3'
 import { CustomPieChart } from './pie'
 import { METRICS } from '../maps/legend/metrics'
 
 export const BiosphereDistribution = () => {
   const bioFreq = window.galaxy.orbits
-    .filter(orbit => orbit.biosphere > 0)
+    .filter(orbit => orbit.biosphere !== 0)
     .reduce((dict: Record<number, number>, orbit) => {
       if (!dict[orbit.biosphere]) dict[orbit.biosphere] = 0
       dict[orbit.biosphere] += 1
@@ -13,10 +12,8 @@ export const BiosphereDistribution = () => {
 
   const total = Object.values(bioFreq).reduce((sum, count) => sum + count, 0)
 
-  // Generate colors for different biosphere complexity levels
-  const colors = range(1, 13).map(i => METRICS.biosphere.color(i))
-
   const getBiosphereLabel = (complexity: number): string => {
+    if (complexity === -1) return 'Remnants (-1)'
     if (complexity === 0) return 'Sterile (0)'
     if (complexity === 1) return 'Building Blocks (1)'
     if (complexity === 2) return 'Single-celled Organisms (2)'
@@ -30,17 +27,17 @@ export const BiosphereDistribution = () => {
     if (complexity === 10) return 'Complex Global Ecology (10)'
     if (complexity === 11) return 'Proto-sapience (11)'
     if (complexity === 12) return 'Full Sapience (12)'
-    return `Complexity ${complexity}`
+    return `Engineered (${complexity})`
   }
 
   const data = Object.entries(bioFreq)
-    .map(([complexity, count], index) => ({
+    .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+    .map(([complexity, count]) => ({
       id: getBiosphereLabel(parseInt(complexity)),
       label: getBiosphereLabel(parseInt(complexity)),
       value: count,
-      color: colors[index % colors.length]
+      color: METRICS.biosphere.color(parseInt(complexity))
     }))
-    .sort((a, b) => parseInt(a.id.split('-')[1]) - parseInt(b.id.split('-')[1]))
 
   return <CustomPieChart data={data} total={total} />
 }

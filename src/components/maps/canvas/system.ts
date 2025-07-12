@@ -7,6 +7,7 @@ import { CANVAS } from '.'
 import { PaintGalaxyParams } from './types'
 import { ORBIT } from '../../../model/system/orbits'
 import { METRICS } from '../legend/metrics'
+import { MATH } from '../../../model/utilities/math'
 
 export const SYSTEM_MAP = {
   paint: ({ ctx, selected, solarSystem, mapMode }: PaintGalaxyParams) => {
@@ -40,7 +41,7 @@ export const SYSTEM_MAP = {
       const center = CANVAS.coordinates(object)
       if (object.tag === 'star') {
         const star = object
-        CANVAS.circle({
+        CANVAS.sun({
           ctx,
           ...center,
           radius: star.r * mod,
@@ -51,8 +52,7 @@ export const SYSTEM_MAP = {
               ? METRICS.biosphere.color(0)
               : mapMode === 'population'
               ? METRICS.population.color(0)
-              : STAR.color(star),
-          border: { color: 'black', width: mod }
+              : STAR.color(star)
         })
         CANVAS.text({
           ctx,
@@ -64,58 +64,72 @@ export const SYSTEM_MAP = {
       } else {
         if (object.type === 'asteroid belt') {
           const parent = ORBIT.parent(object)
-          const center = CANVAS.coordinates(parent ?? object)
+          const asteroidCenter = CANVAS.coordinates(parent ?? object)
+          const asteroidBeltRadius = object.distance
+          const beltWidth = 10
+          // Draw the translucent belt band
+          CANVAS.circle({
+            ctx,
+            ...asteroidCenter,
+            radius: asteroidBeltRadius * mod,
+            fill: 'transparent',
+            border: {
+              color: 'rgba(160, 140, 120, 0.15)',
+              width: beltWidth * mod
+            }
+          })
           DICE.swap(solarSystem.seed, () => {
-            const asteroidBeltRadius = object.distance
-            const numAsteroids = (150 * object.distance) / 120
+            const numAsteroids = Math.floor(5 * object.distance)
             for (let i = 0; i < numAsteroids; i++) {
               const angle = window.dice.random * 360
-              const radiusOffset = window.dice.random * 10 - 5 // random offset to asteroid belt radius
-              const x = center.x + (asteroidBeltRadius + radiusOffset) * Math.cos(angle) * mod
-              const y = center.y + (asteroidBeltRadius + radiusOffset) * Math.sin(angle) * mod
-              CANVAS.circle({
+              const radiusOffset = window.dice.random * beltWidth - beltWidth / 2
+              const asteroidPosition = MATH.angles.cartesian({
+                radius: (asteroidBeltRadius + radiusOffset) * mod,
+                deg: angle,
+                center: asteroidCenter
+              })
+              CANVAS.asteroid({
                 ctx,
-                x,
-                y,
-                radius: (1 + window.dice.random) * mod,
-                fill: 'gray'
+                x: asteroidPosition.x,
+                y: asteroidPosition.y,
+                radius: (0.5 + window.dice.random) * mod,
+                fill: COLORS.darken('#808080', window.dice.random * 30)
               })
             }
           })
-        } else {
-          const orbit = object
-          CANVAS.circle({
-            ctx,
-            x: center.x,
-            y: center.y,
-            radius: orbit.r * mod,
-            fill:
-              mapMode === 'habitability'
-                ? METRICS.habitability.color(orbit.habitability)
-                : mapMode === 'biosphere'
-                ? METRICS.biosphere.color(orbit.biosphere)
-                : mapMode === 'population'
-                ? METRICS.population.color(orbit.population?.code ?? 0)
-                : ORBIT.colors.get()[orbit.type],
-            border: { color: 'black', width: mod * 0.5 }
-          })
-          CANVAS.text({
-            ctx,
-            x: center.x,
-            y: center.y + (orbit.r + 2.5) * mod,
-            text: ORBIT.code(orbit),
-            size: 0.025
-          })
         }
+        const orbit = object
+        CANVAS.sphere({
+          ctx,
+          x: center.x,
+          y: center.y,
+          radius: orbit.r * mod,
+          fill:
+            mapMode === 'habitability'
+              ? METRICS.habitability.color(orbit.habitability)
+              : mapMode === 'biosphere'
+              ? METRICS.biosphere.color(orbit.biosphere)
+              : mapMode === 'population'
+              ? METRICS.population.color(orbit.population?.code ?? 0)
+              : ORBIT.colors.get()[orbit.type]
+        })
+        CANVAS.text({
+          ctx,
+          x: center.x,
+          y: center.y + (orbit.r + 1.5) * mod,
+          text: ORBIT.code(orbit),
+          size: 0.025
+        })
       }
     })
     if (selected?.tag === 'star' || selected?.tag === 'orbit') {
+      const offset = selected.tag === 'star' ? 1 : 0.5
       const center = CANVAS.coordinates(selected)
       CANVAS.circle({
         ctx,
         x: center.x,
         y: center.y,
-        radius: (selected.r + 1) * mod,
+        radius: (selected.r + offset) * mod,
         fill: 'transparent',
         border: { color: COLORS.accent, width: mod * 0.25 }
       })

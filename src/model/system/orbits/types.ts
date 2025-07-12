@@ -1,4 +1,7 @@
 import { Star } from '../stars/types'
+import { AsteroidBelt } from './asteroids/types'
+import { Atmosphere } from './atmosphere/types'
+import { MoonOrbit } from './moons/types'
 
 type DwarfType =
   | 'rockball'
@@ -34,51 +37,26 @@ export interface Orbit {
   group: 'asteroid belt' | 'dwarf' | 'terrestrial' | 'helian' | 'jovian'
   type: 'asteroid belt' | 'asteroid' | DwarfType | TerrestrialType | HelianType | JovianType
   subtype?: string
+  belt?: AsteroidBelt
+  moon?: MoonOrbit
   au: number
   size: number // 0-9; A=10; B-E=11-14; G=15
   diameter: number
   mass: number
   gravity: number
   density: number
-  composition: 'rocky' | 'ice' | 'gas'
-  atmosphere: {
-    code: number
-    type: 'breathable' | 'exotic' | 'corrosive' | 'insidious' | 'trace' | 'vacuum' | 'gaseous'
-    subtype?:
-      | 'very thin'
-      | 'thin'
-      | 'standard'
-      | 'dense'
-      | 'very dense'
-      | 'extremely dense'
-      | 'low'
-      | 'unusual'
-      | 'hydrogen'
-      | 'helium'
-    tainted?: boolean
-    hazard?:
-      | 'biologic'
-      | 'radioactive'
-      | 'gas mix'
-      | 'low oxygen'
-      | 'high oxygen'
-      | 'particulates'
-      | 'sulphur compounds'
-    unusual?: 'ellipsoid' | 'layered' | 'steam' | 'storms' | 'tides' | 'seasonal' | 'biologic'
-  }
+  composition: 'rocky' | 'ice' | 'metallic' | 'gas'
+  atmosphere: Atmosphere
   hydrosphere: { code: number; distribution: number }
   biosphere: number
   chemistry?: 'water' | 'ammonia' | 'methane' | 'sulfur' | 'chlorine'
-  temperature: {
-    kelvin: number
-    base: number
-    desc: 'burning' | 'hot' | 'temperate' | 'cold' | 'frozen'
-  }
+  temperature: { mean: number; high: number; low: number }
   rotation: number
   eccentricity: number
   axialTilt: number
   period: number
   habitability: number
+  resources: number
   population?: { code: number; size: number }
   settlement?:
     | 'refueling station'
@@ -93,8 +71,10 @@ export interface Orbit {
     | 'industrial world'
     | 'agricultural world'
     | 'capital world'
-  government: number
-  law: number
+  government?: number
+  law?: number
+  starport?: 'X' | 'E' | 'D' | 'C' | 'B' | 'A'
+  technology?: number
   orbits: Orbit[]
   rings?: 'minor' | 'complex'
   // display
@@ -112,6 +92,7 @@ export type OrbitSpawnParams = {
   designation?: 'homeworld' | 'primary'
   unary: boolean
   deviation: number
+  moon?: Omit<MoonOrbit, 'period'>
 }
 
 export type OrbitGroupDetails = {
@@ -121,12 +102,11 @@ export type OrbitGroupDetails = {
     parent?: Orbit
     star: Star
   }) => Orbit['type']
-  orbits: () => Orbit['group'][]
+  orbits: ({ size }: { size: number }) => Orbit['group'][]
   size: (_params: {
-    star: Star
-    deviation: number
     size: number
-  }) => Pick<Orbit, 'diameter' | 'mass' | 'gravity' | 'density' | 'composition'>
+    composition: Orbit['composition']
+  }) => Pick<Orbit, 'diameter' | 'mass' | 'gravity' | 'density'>
 }
 
 export type OrbitTypeDetails = {
@@ -135,25 +115,22 @@ export type OrbitTypeDetails = {
   tidalLock?: boolean
   tidalFlex?: boolean
   biosphere?: boolean
-  roll: (_params: { star: Star; zone: Orbit['zone']; primary?: boolean }) => {
+  subtypes?: Record<string, { description?: string; composition?: Orbit['composition'] }>
+  roll: (_params: {
+    star: Star
+    zone: Orbit['zone']
+    primary?: boolean
+    parent?: Orbit
+    deviation: number
+  }) => {
     size: number
     atmosphere: number
     hydrosphere: number
+    composition: Orbit['composition']
     chemistry?: Orbit['chemistry']
     subtype?: string
+    eccentric?: boolean
   }
-  classify?: (_params: { orbit: Orbit; deviation: number }) => void
-}
-
-export type HabitabilityParams = {
-  type: Orbit['type']
-  hydrosphere: number
-  atmosphere: Orbit['atmosphere']
-  temperature: Orbit['temperature']
-  size: number
-  gravity: number
-  axialTilt: number
-  eccentricity: number
 }
 
 export type AxialTiltParams = {
@@ -161,25 +138,18 @@ export type AxialTiltParams = {
   homeworld?: boolean
 }
 
-export type OrbitFinalizeParams = {
-  orbit: Orbit
-  capital?: boolean
-  orbits: Orbit[]
-}
-
 export interface EccentricityParams {
   star?: boolean
   asteroidMember?: boolean
   tidalLocked?: boolean
   homeworld?: boolean
+  moon?: Omit<MoonOrbit, 'period'>
 }
 
-export interface BiosphereParams {
-  atmosphere: Orbit['atmosphere']
-  hydrosphere: number
-  temperature: Orbit['temperature']['desc']
-  star: Star
-  type: Orbit['type']
-  chemistry?: Orbit['chemistry']
-  size: number
+export type PopulateOrbitParams = {
+  orbit: Orbit
+  maxPop?: number
+  maxTech?: number
+  capital?: boolean
+  mainworld?: boolean
 }

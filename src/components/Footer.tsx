@@ -19,7 +19,7 @@ const classes = {
 export function Footer() {
   return (
     <Box component='div' className={classes.footer}>
-      <Typography className={classes.text}>© 2017</Typography>
+      <Typography className={classes.text}>© 2024</Typography>
     </Box>
   )
 }
