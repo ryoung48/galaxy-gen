@@ -8,6 +8,7 @@ import { SolarSystem } from '../../model/system/types'
 
 const SolarSystemView = (props: { system: SolarSystem }) => {
   const system = props.system
+  console.log(system)
   return (
     <CodexPage
       title={system.name}

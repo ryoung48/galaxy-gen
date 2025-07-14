@@ -1,29 +1,29 @@
 import { Orbit } from '../orbits/types'
+import { ResourceUnit } from '../resources/types'
 
-interface StarAttributes {
-  spectralClass: 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M'
-  luminosityClass: 'Ia' | 'Ib' | 'II' | 'III' | 'IV' | 'V' | 'VI'
-  subtype: number
-  mass: number
-  temperature: number
-  diameter: number
-  luminosity: number
-  age: number
-  eccentricity: number
-}
-
-export interface Star extends StarAttributes {
+export interface Star {
   idx: number
   tag: 'star'
   name: string
   system: number
   parent?: number
   zone?: Orbit['zone'] | 'distant'
+  type:
+    | 'a star'
+    | 'b star'
+    | 'f star'
+    | 'g star'
+    | 'k star'
+    | 'm star'
+    | 'm red giant'
+    | 't star'
+    | 'neutron star'
+    | 'black hole'
+    | 'pulsar'
   angle: number
   distance: number
-  period: number
-  au: number
   orbits: (Orbit | Star)[]
+  resources: ResourceUnit[]
   // display
   r: number
   fullR?: number
@@ -35,8 +35,7 @@ export type StarSpawnParams = {
   distance?: number
   angle?: number
   zone?: Star['zone']
-  attributes?: StarAttributes
-  deviation?: number
+  spectral?: Star['type']
   homeworld?: boolean
 }
 
@@ -44,5 +43,5 @@ export type StarCompanionTemplate = {
   type: 'star'
   deviation: number
   zone: Star['zone']
-  attributes: StarAttributes
+  spectral: Star['type']
 }

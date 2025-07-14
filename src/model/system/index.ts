@@ -1,7 +1,5 @@
-import { ORBIT } from './orbits'
 import { STAR } from './stars'
 import { SolarSystem, SolarSystemSpawnParams } from './types'
-import { DESIRABILITY } from './orbits/desirability'
 import { VORONOI } from '../utilities/voronoi'
 
 export const SOLAR_SYSTEM = {
@@ -16,23 +14,6 @@ export const SOLAR_SYSTEM = {
   orbits: (system: SolarSystem) => {
     return [system.star, ...STAR.orbits(system.star)]
   },
-  populate: (system: SolarSystem) => {
-    const nation = window.galaxy.nations[system.nation]
-    const capital = window.galaxy.systems[nation.capital]
-    const isCapital = system === capital
-    const [main, ...orbits] = STAR.orbits(system.star)
-      .filter(orbit => orbit.tag === 'orbit')
-      .sort((a, b) => DESIRABILITY.get(b) - DESIRABILITY.get(a))
-    if (!main) return
-    ORBIT.populate({ orbit: main, capital: isCapital, mainworld: true })
-    const maxPop = (main.population?.code ?? 0) - window.dice.roll(1, 6)
-    const settlements = maxPop > 0 ? window.dice.randint(0, 3) : 0
-    const maxTech = main.technology
-    orbits.slice(0, settlements).forEach(orbit => ORBIT.populate({ orbit, maxPop, maxTech }))
-    orbits
-      .filter(orbit => !orbit.population && orbit.biosphere === 12)
-      .forEach(orbit => ORBIT.populate({ orbit, maxPop, maxTech }))
-  },
   spawn: (params: SolarSystemSpawnParams): SolarSystem => {
     return {
       ...params,
@@ -42,20 +23,11 @@ export const SOLAR_SYSTEM = {
         tag: 'star',
         name: '',
         system: -1,
-        age: 0,
         distance: 0,
         angle: 0,
-        spectralClass: 'O',
-        luminosityClass: 'V',
-        subtype: 0,
-        eccentricity: 0,
-        period: 0,
-        au: 0,
-        mass: 0,
-        temperature: 0,
-        diameter: 0,
-        luminosity: 0,
+        type: 'a star',
         orbits: [],
+        resources: [],
         r: 40
       },
       seed: window.dice.generateId(),
@@ -63,5 +35,31 @@ export const SOLAR_SYSTEM = {
       name: '',
       nation: -1
     }
+  }
+}
+
+export const SIZE = {
+  colors: (size: number): string => {
+    if (size === -1) return '#8b4513' // saddle brown - asteroid belt
+    if (size === 0) return '#a0522d' // sienna - small bodies
+    if (size === 1) return '#cd853f' // peru - small planets
+    if (size === 2) return '#daa520' // goldenrod - Luna-class
+    if (size === 3) return '#b8860b' // dark goldenrod - Mercury-class
+    if (size === 4) return '#ff8c00' // dark orange - Mars-class
+    if (size === 5) return '#ffa500' // orange - size 5
+    if (size === 6) return '#ffd700' // gold - size 6
+    if (size === 7) return '#9acd32' // yellow-green - size 7
+    if (size === 8) return '#228b22' // forest green - Terra-class
+    if (size === 9) return '#32cd32' // lime green - Super-Earth
+    if (size === 10) return '#00ced1' // dark turquoise - size A
+    if (size === 11) return '#4169e1' // royal blue - size B
+    if (size === 12) return '#0000ff' // blue - size C
+    if (size === 13) return '#4b0082' // indigo - size D
+    if (size === 14) return '#8a2be2' // blue violet - size E
+    if (size === 15) return '#9370db' // medium purple - size F
+    if (size === 16) return '#ba55d3' // medium orchid - small gas giant
+    if (size === 17) return '#da70d6' // orchid - medium gas giant
+    if (size === 18) return '#ff69b4' // hot pink - large gas giant
+    return '#808080' // fallback gray
   }
 }

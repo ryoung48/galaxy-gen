@@ -6,14 +6,145 @@ import { COLORS } from '../../../theme/colors'
 import { CANVAS } from '.'
 import { PaintGalaxyParams } from './types'
 import { ORBIT } from '../../../model/system/orbits'
-import { METRICS } from '../legend/metrics'
 import { MATH } from '../../../model/utilities/math'
+import { ORBITAL_DEPOSITS } from '../../../model/system/resources'
+import { Orbit } from '../../../model/system/orbits/types'
+import { Star } from '../../../model/system/stars/types'
+import {
+  mdiDiamondStone,
+  mdiLightningBolt,
+  mdiAccountGroup,
+  mdiAtom,
+  mdiCog,
+  mdiFire,
+  mdiStar,
+  mdiAnvil,
+  mdiFlask,
+  mdiRing,
+  mdiTerrain
+} from '@mdi/js'
+import { ORBIT_CLASSIFICATION } from '../../../model/system/orbits/classification'
+
+// MDI icon paths for each resource type
+const RESOURCE_ICONS = {
+  minerals: mdiTerrain,
+  energy: mdiLightningBolt,
+  society: mdiAccountGroup,
+  physics: mdiAtom,
+  engineering: mdiCog,
+  trade: mdiRing,
+  'exotic gas': mdiFire,
+  'rare crystals': mdiDiamondStone,
+  'volatile motes': mdiFlask,
+  zro: mdiStar,
+  alloys: mdiAnvil
+} as const
+
+// Helper function to draw MDI icon on canvas using Path2D
+const drawMDIIcon = ({
+  ctx,
+  x,
+  y,
+  size,
+  path,
+  color
+}: {
+  ctx: CanvasRenderingContext2D
+  x: number
+  y: number
+  size: number
+  path: string
+  color: string
+}) => {
+  try {
+    // Create a Path2D object from the SVG path
+    const path2D = new Path2D(path)
+
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(size / 24, size / 24) // Scale to fit in 24x24 viewBox
+    ctx.fillStyle = color
+
+    // Fill the path
+    ctx.fill(path2D)
+
+    ctx.restore()
+  } catch (error) {
+    // Fallback to simple circle if Path2D fails
+    console.warn('Path2D not supported, falling back to circle:', error)
+    ctx.save()
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(x, y, size / 2, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.restore()
+  }
+}
+
+// Helper function to draw resource icons and values
+const drawResources = ({
+  ctx,
+  object,
+  center,
+  mod
+}: {
+  ctx: CanvasRenderingContext2D
+  object: Orbit | Star
+  center: { x: number; y: number }
+  mod: number
+}) => {
+  if (!object.resources || object.resources.length === 0) return
+
+  const resourceSpacing = 1.5 * mod
+  const iconSize = 0.6 * mod
+  const textSize = 1 * mod
+  const nameY = center.y + (object.r + (object.tag === 'star' ? 6 : 2)) * mod
+
+  // Calculate text width dynamically
+  ctx.font = `${textSize}px Michroma`
+  const startX = center.x - 1 * mod // Offset based on actual text width
+  const startY = nameY
+
+  object.resources.forEach((resource, index) => {
+    const resourceDef =
+      ORBITAL_DEPOSITS.deposits[resource.type as keyof typeof ORBITAL_DEPOSITS.deposits]
+    if (!resourceDef) return
+
+    const x = startX
+    const y = startY + index * resourceSpacing
+
+    // Draw resource icon (MDI)
+    const iconPath = RESOURCE_ICONS[resource.type as keyof typeof RESOURCE_ICONS]
+    if (iconPath) {
+      drawMDIIcon({
+        ctx,
+        x,
+        y,
+        size: iconSize * 2,
+        path: iconPath,
+        color: resourceDef.color
+      })
+    }
+
+    // Draw resource tag
+    CANVAS.text({
+      ctx,
+      x: x + iconSize + 0.75 * mod,
+      y: y + textSize,
+      text: `${resource.amount}`,
+      size: textSize,
+      color: resourceDef.color,
+      align: 'left'
+    })
+  })
+}
 
 export const SYSTEM_MAP = {
-  paint: ({ ctx, selected, solarSystem, mapMode }: PaintGalaxyParams) => {
+  paint: ({ ctx, selected, solarSystem }: PaintGalaxyParams) => {
     if (!solarSystem) return
     const mod = CONSTANTS.SOLAR_SYSTEM_MOD
     const objects = SOLAR_SYSTEM.orbits(solarSystem)
+    ctx.globalAlpha = 0.5
     objects.forEach(object => {
       const radius = object.distance
       const parent = object.tag === 'star' ? STAR.parent(object) : ORBIT.parent(object)
@@ -37,6 +168,7 @@ export const SYSTEM_MAP = {
         }
       })
     })
+    ctx.globalAlpha = 1
     objects.forEach(object => {
       const center = CANVAS.coordinates(object)
       if (object.tag === 'star') {
@@ -45,24 +177,10 @@ export const SYSTEM_MAP = {
           ctx,
           ...center,
           radius: star.r * mod,
-          fill:
-            mapMode === 'habitability'
-              ? METRICS.habitability.color(-10)
-              : mapMode === 'biosphere'
-              ? METRICS.biosphere.color(0)
-              : mapMode === 'population'
-              ? METRICS.population.color(0)
-              : STAR.color(star)
-        })
-        CANVAS.text({
-          ctx,
-          x: center.x,
-          y: center.y + (star.r + 5) * mod,
-          text: STAR.name(star),
-          size: 0.05
+          fill: STAR.color(star)
         })
       } else {
-        if (object.type === 'asteroid belt') {
+        if (ORBIT_CLASSIFICATION[object.type]?.asteroidBelt) {
           const parent = ORBIT.parent(object)
           const asteroidCenter = CANVAS.coordinates(parent ?? object)
           const asteroidBeltRadius = object.distance
@@ -97,29 +215,46 @@ export const SYSTEM_MAP = {
               })
             }
           })
+        } else {
+          const orbit = object
+          CANVAS.sphere({
+            ctx,
+            x: center.x,
+            y: center.y,
+            radius: orbit.r * mod,
+            fill: ORBIT.color(orbit)
+          })
         }
-        const orbit = object
-        CANVAS.sphere({
-          ctx,
-          x: center.x,
-          y: center.y,
-          radius: orbit.r * mod,
-          fill:
-            mapMode === 'habitability'
-              ? METRICS.habitability.color(orbit.habitability)
-              : mapMode === 'biosphere'
-              ? METRICS.biosphere.color(orbit.biosphere)
-              : mapMode === 'population'
-              ? METRICS.population.color(orbit.population?.code ?? 0)
-              : ORBIT.colors.get()[orbit.type]
-        })
+      }
+    })
+    objects.forEach(object => {
+      const center = CANVAS.coordinates(object)
+      if (object.tag === 'star') {
+        const star = object
+        const starName = STAR.name(star)
         CANVAS.text({
           ctx,
           x: center.x,
-          y: center.y + (orbit.r + 1.5) * mod,
-          text: ORBIT.code(orbit),
-          size: 0.025
+          y: center.y + (star.r + 5) * mod,
+          text: starName,
+          size: 0.05
         })
+        // Draw star resources
+        drawResources({ ctx, object: star, center, mod })
+      } else {
+        if (!ORBIT_CLASSIFICATION[object.type]?.asteroidBelt) {
+          const orbit = object
+          const orbitName = ORBIT.name(orbit)
+          CANVAS.text({
+            ctx,
+            x: center.x,
+            y: center.y + (orbit.r + 1.5) * mod,
+            text: orbitName,
+            size: 0.025
+          })
+          // Draw orbit resources
+          drawResources({ ctx, object: orbit, center, mod })
+        }
       }
     })
     if (selected?.tag === 'star' || selected?.tag === 'orbit') {

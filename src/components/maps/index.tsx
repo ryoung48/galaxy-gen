@@ -29,7 +29,9 @@ const paint = (
   const ctx = canvas.getContext('2d')!
   ctx.clearRect(0, 0, CONSTANTS.W, CONSTANTS.H)
   ctx.save()
-  const objects = local && solarSystem ? SOLAR_SYSTEM.orbits(solarSystem) : []
+  const objects = (local && solarSystem ? SOLAR_SYSTEM.orbits(solarSystem) : []).filter(
+    o => o.tag !== 'orbit' || (o.type !== 'asteroid belt' && o.type !== 'ice asteroid belt')
+  )
   const mod = CONSTANTS.SOLAR_SYSTEM_MOD
   const objectPositions = objects.map(obj => {
     const worldPos = CANVAS.coordinates(obj)

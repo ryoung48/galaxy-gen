@@ -1,9 +1,10 @@
 import { CustomPieChart } from './pie'
-import { ORBIT } from '../../model/system/orbits'
+import { ORBIT_CLASSIFICATION } from '../../model/system/orbits/classification'
+import { Orbit } from '../../model/system/orbits/types'
 
 export const PlanetFrequency = () => {
   const planets = window.galaxy.orbits.filter(
-    orbit => orbit.parent.type === 'star' && orbit.group !== 'asteroid belt'
+    orbit => orbit.parent.type === 'star' && !ORBIT_CLASSIFICATION[orbit.type]?.asteroidBelt
   )
   const total = planets.length
   const orbitFreq = planets.reduce((dict: Record<string, number>, orbit) => {
@@ -17,7 +18,7 @@ export const PlanetFrequency = () => {
         id: k,
         label: k,
         value: v,
-        color: ORBIT.colors.get()[k]
+        color: ORBIT_CLASSIFICATION[k as Orbit['type']].color
       }
     })
     .sort((a, b) => b.value - a.value)

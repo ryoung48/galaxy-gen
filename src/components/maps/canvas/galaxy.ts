@@ -8,7 +8,6 @@ import { STAR } from '../../../model/system/stars'
 import { HERALDRY } from '../../heraldry/common'
 import { CANVAS } from '.'
 import { PaintGalaxyParams } from './types'
-import { METRICS } from '../legend/metrics'
 import { VORONOI } from '../../../model/utilities/voronoi'
 import { scaleLinear } from 'd3'
 import { COLORS } from '../../../theme/colors'
@@ -252,22 +251,7 @@ export const GALAXY_MAP = {
       const opacity = 0.25
       ctx.strokeStyle = `rgba(0, 0, 0, 0.1)`
       ctx.lineWidth = 0.15
-      const orbits = SOLAR_SYSTEM.orbits(system)
-      const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere)))
-      const population = Math.max(
-        ...orbits.map(o => (o.tag === 'star' ? 0 : o.population?.code ?? 0))
-      )
-      const habitability = Math.max(...orbits.map(o => (o.tag === 'star' ? -10 : o.habitability)))
-      ctx.fillStyle =
-        mapMode === 'habitability'
-          ? METRICS.habitability.color(habitability)
-          : mapMode === 'biosphere'
-          ? METRICS.biosphere.color(biosphere)
-          : mapMode === 'orbits'
-          ? METRICS.orbits.color(orbits.length - 1)
-          : mapMode === 'population'
-          ? METRICS.population.color(population)
-          : nation.flag.color.replace('%)', `%, ${opacity})`)
+      ctx.fillStyle = nation.flag.color.replace('%)', `%, ${opacity})`)
       let path = cellPathCache.get(system.idx)
       if (!path) {
         path = new Path2D(window.galaxy.diagram.renderCell(system.idx))

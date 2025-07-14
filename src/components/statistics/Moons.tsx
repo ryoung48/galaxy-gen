@@ -1,9 +1,10 @@
 import { CustomPieChart } from './pie'
-import { ORBIT } from '../../model/system/orbits'
+import { Orbit } from '../../model/system/orbits/types'
+import { ORBIT_CLASSIFICATION } from '../../model/system/orbits/classification'
 
 export const MoonFrequency = () => {
   const moons = window.galaxy.orbits.filter(
-    orbit => orbit.parent.type !== 'star' && orbit.type !== 'asteroid'
+    orbit => orbit.parent.type !== 'star' && !ORBIT_CLASSIFICATION[orbit.type]?.asteroid
   )
   const total = moons.length
   const orbitFreq = moons.reduce((dict: Record<string, number>, orbit) => {
@@ -18,7 +19,7 @@ export const MoonFrequency = () => {
         id: k,
         label: k,
         value: v,
-        color: ORBIT.colors.get()[k]
+        color: ORBIT_CLASSIFICATION[k as Orbit['type']].color
       }
     })
     .sort((a, b) => b.value - a.value)

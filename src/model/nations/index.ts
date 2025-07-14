@@ -242,13 +242,6 @@ export const NATION = {
       system.star = STAR.spawn({ system: system.idx, homeworld: system.homeworld })
       system.name = LANGUAGE.word.unique({ lang: nation.language, key: 'solar system' })
     })
-
-    // Populate every system with settlements/resources
-    window.galaxy.nations.forEach(nation => {
-      nation.systems
-        .map(idx => window.galaxy.systems[idx])
-        .forEach(system => SOLAR_SYSTEM.populate(system))
-    })
   },
   systems: (nation: Nation) => nation.systems.map(idx => window.galaxy.systems[idx])
 }

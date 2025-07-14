@@ -29,6 +29,7 @@ export type DrawTextParams = {
   text: string
   color?: string
   size: number
+  align?: 'center' | 'left'
 }
 
 export type PaintGalaxyParams = {

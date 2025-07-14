@@ -1,6 +1,5 @@
 import { NATION } from '../nations'
 import { SOLAR_SYSTEM } from '../system'
-import { ORBIT } from '../system/orbits'
 import { DICE } from '../utilities/dice'
 import { MATH } from '../utilities/math'
 import { MINIMUM_SPANNING_TREE } from '../utilities/mst'
@@ -62,7 +61,6 @@ export const GALAXY = {
     window.galaxy.systems = systems
     window.galaxy.mst = mst
     NATION.spawn()
-    ORBIT.colors.set()
     return window.galaxy
   },
   worlds: () => window.galaxy.systems.filter(p => !p.edge)

@@ -157,7 +157,10 @@ export const CANVAS = {
     const system = window.galaxy.systems[orbit.system]
     const parent = orbit.tag === 'star' ? STAR.parent(orbit) : ORBIT.parent(orbit)
     const beltParent =
-      parent?.tag === 'orbit' && parent.group === 'asteroid belt' ? ORBIT.parent(parent) : undefined
+      parent?.tag === 'orbit' &&
+      (parent.type === 'asteroid belt' || parent.type === 'ice asteroid belt')
+        ? ORBIT.parent(parent)
+        : undefined
     const center = parent ? CANVAS.coordinates(beltParent ?? parent) : system
     return MATH.angles.cartesian({
       radius: (beltParent ? parent.distance : orbit.distance) * CONSTANTS.SOLAR_SYSTEM_MOD,
@@ -188,8 +191,8 @@ export const CANVAS = {
     ctx.quadraticCurveTo(cpX, cpY, x2, y2)
     ctx.stroke()
   },
-  text: ({ ctx, x, y, text, color, size }: DrawTextParams) => {
-    ctx.textAlign = 'center'
+  text: ({ ctx, x, y, text, color, size, align = 'center' }: DrawTextParams) => {
+    ctx.textAlign = align
     ctx.font = `${size}px Michroma`
     ctx.fillStyle = color ?? 'black'
     ctx.fillText(text, x, y)

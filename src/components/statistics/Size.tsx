@@ -1,9 +1,12 @@
-import { SIZE } from '../../model/system/orbits/groups'
 import { CustomPieChart } from './pie'
+import { SIZE } from '../../model/system'
+import { ORBIT_CLASSIFICATION } from '../../model/system/orbits/classification'
 
 export const SizeDistribution = () => {
   const sizeFreq = window.galaxy.orbits
-    .filter(o => o.group !== 'asteroid belt')
+    .filter(
+      o => !ORBIT_CLASSIFICATION[o.type]?.asteroidBelt && !ORBIT_CLASSIFICATION[o.type]?.asteroid
+    )
     .reduce((dict: Record<string, number>, orbit) => {
       const sizeKey = orbit.size.toString()
       if (!dict[sizeKey]) dict[sizeKey] = 0
