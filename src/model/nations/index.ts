@@ -241,6 +241,8 @@ export const NATION = {
       const nation = SOLAR_SYSTEM.nation(system)
       system.star = STAR.spawn({ system: system.idx, homeworld: system.homeworld })
       system.name = LANGUAGE.word.unique({ lang: nation.language, key: 'solar system' })
+      const resources = SOLAR_SYSTEM.orbits(system).flatMap(orbit => orbit.resources).length
+      if (resources === 0) system.star.resources.push({ type: 'energy', amount: 1 })
     })
   },
   systems: (nation: Nation) => nation.systems.map(idx => window.galaxy.systems[idx])

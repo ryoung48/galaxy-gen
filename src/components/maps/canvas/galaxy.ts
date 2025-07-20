@@ -11,9 +11,55 @@ import { PaintGalaxyParams } from './types'
 import { VORONOI } from '../../../model/utilities/voronoi'
 import { scaleLinear } from 'd3'
 import { COLORS } from '../../../theme/colors'
-import { Star as StarType } from '../../../model/system/stars/types'
-import { EdgeMap } from '../../../model/utilities/voronoi/types'
+import { drawResourceIconWithText, RESOURCE_ICONS } from './resourceIcons'
 import { MATH } from '../../../model/utilities/math'
+import { Star } from '../../../model/system/stars/types'
+import { EdgeMap } from '../../../model/utilities/voronoi/types'
+
+// Aggregate resources for a solar system and draw them beneath the system icon
+const drawSystemResources = ({
+  ctx,
+  system
+}: {
+  ctx: CanvasRenderingContext2D
+  system: import('../../../model/system/types').SolarSystem
+}) => {
+  // Gather resources from star + all orbiting bodies
+  const objects = SOLAR_SYSTEM.orbits(system)
+  const totals: Record<string, number> = {}
+  objects.forEach(obj => {
+    obj.resources?.forEach(res => {
+      totals[res.type] = (totals[res.type] ?? 0) + res.amount
+    })
+  })
+
+  const entries = Object.entries(totals) as [keyof typeof RESOURCE_ICONS, number][]
+  if (entries.length === 0) return
+
+  // Layout constants (world-units)
+  const iconRenderSize = 0.45
+  const iconSpacing = 0.25
+  const textSize = 0.22
+
+  const iconRowY = system.y + 1.0
+  // (text y handled by shared helper)
+
+  const totalWidth = entries.length * iconRenderSize + (entries.length - 1) * iconSpacing
+  const startX = system.x - totalWidth / 2
+
+  entries.forEach(([type, amount], idx) => {
+    const iconX = startX + idx * (iconRenderSize + iconSpacing)
+
+    drawResourceIconWithText({
+      ctx,
+      resource: { type, amount },
+      x: iconX,
+      y: iconRowY,
+      iconSize: iconRenderSize,
+      textSize
+    })
+  })
+}
 
 // Caches to avoid recalculating heavy objects every frame
 const cellPathCache = new Map<number, Path2D>()
@@ -352,9 +398,9 @@ export const GALAXY_MAP = {
     const drawSystemNames = currentScale > 8 // skip tiny text when zoomed out
     systems.forEach(system => {
       // Determine all stars in the system (primary + companions)
-      const stars: StarType[] = [
+      const stars: Star[] = [
         system.star,
-        ...STAR.orbits(system.star).filter((o): o is StarType => o.tag === 'star')
+        ...STAR.orbits(system.star).filter((o): o is Star => o.tag === 'star')
       ]
 
       const focused = system.idx === solarSystem?.idx
@@ -385,6 +431,11 @@ export const GALAXY_MAP = {
           fill: 'transparent',
           border: { color: COLORS.accent, width: 0.15 }
         })
+      }
+
+      // Draw aggregated resources when system names are visible
+      if (drawSystemNames) {
+        drawSystemResources({ ctx, system })
       }
     })
     // nation names & heraldry – fade out as the user zooms in

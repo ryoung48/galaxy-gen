@@ -7,79 +7,10 @@ import { CANVAS } from '.'
 import { PaintGalaxyParams } from './types'
 import { ORBIT } from '../../../model/system/orbits'
 import { MATH } from '../../../model/utilities/math'
-import { ORBITAL_DEPOSITS } from '../../../model/system/resources'
+import { drawResourceIconWithText } from './resourceIcons'
 import { Orbit } from '../../../model/system/orbits/types'
 import { Star } from '../../../model/system/stars/types'
-import {
-  mdiDiamondStone,
-  mdiLightningBolt,
-  mdiAccountGroup,
-  mdiAtom,
-  mdiCog,
-  mdiFire,
-  mdiStar,
-  mdiAnvil,
-  mdiFlask,
-  mdiRing,
-  mdiTerrain
-} from '@mdi/js'
 import { ORBIT_CLASSIFICATION } from '../../../model/system/orbits/classification'
-
-// MDI icon paths for each resource type
-const RESOURCE_ICONS = {
-  minerals: mdiTerrain,
-  energy: mdiLightningBolt,
-  society: mdiAccountGroup,
-  physics: mdiAtom,
-  engineering: mdiCog,
-  trade: mdiRing,
-  'exotic gas': mdiFire,
-  'rare crystals': mdiDiamondStone,
-  'volatile motes': mdiFlask,
-  zro: mdiStar,
-  alloys: mdiAnvil
-} as const
-
-// Helper function to draw MDI icon on canvas using Path2D
-const drawMDIIcon = ({
-  ctx,
-  x,
-  y,
-  size,
-  path,
-  color
-}: {
-  ctx: CanvasRenderingContext2D
-  x: number
-  y: number
-  size: number
-  path: string
-  color: string
-}) => {
-  try {
-    // Create a Path2D object from the SVG path
-    const path2D = new Path2D(path)
-
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.scale(size / 24, size / 24) // Scale to fit in 24x24 viewBox
-    ctx.fillStyle = color
-
-    // Fill the path
-    ctx.fill(path2D)
-
-    ctx.restore()
-  } catch (error) {
-    // Fallback to simple circle if Path2D fails
-    console.warn('Path2D not supported, falling back to circle:', error)
-    ctx.save()
-    ctx.fillStyle = color
-    ctx.beginPath()
-    ctx.arc(x, y, size / 2, 0, 2 * Math.PI)
-    ctx.fill()
-    ctx.restore()
-  }
-}
 
 // Helper function to draw resource icons and values
 const drawResources = ({
@@ -95,46 +26,31 @@ const drawResources = ({
 }) => {
   if (!object.resources || object.resources.length === 0) return
 
-  const resourceSpacing = 1.5 * mod
-  const iconSize = 0.6 * mod
-  const textSize = 1 * mod
-  const nameY = center.y + (object.r + (object.tag === 'star' ? 6 : 2)) * mod
+  // Layout variables
+  const iconHalf = 0.35 * mod // moderately sized icon reference
+  const iconRenderSize = iconHalf * 2 // rendered size (0.7 * mod)
+  const iconSpacing = 0.3 * mod // balanced spacing
+  const textSize = 0.7 * mod // text balanced with icon
 
-  // Calculate text width dynamically
-  ctx.font = `${textSize}px Michroma`
-  const startX = center.x - 1 * mod // Offset based on actual text width
-  const startY = nameY
+  // Y positions for icon row and number row
+  const iconRowY = center.y + (object.r + (object.tag === 'star' ? 6 : 2)) * mod
+  // (text y handled by shared helper)
+
+  // Calculate horizontal centering
+  const totalWidth =
+    object.resources.length * iconRenderSize + (object.resources.length - 1) * iconSpacing
+  const startX = center.x - totalWidth / 2
 
   object.resources.forEach((resource, index) => {
-    const resourceDef =
-      ORBITAL_DEPOSITS.deposits[resource.type as keyof typeof ORBITAL_DEPOSITS.deposits]
-    if (!resourceDef) return
+    const iconLeftX = startX + index * (iconRenderSize + iconSpacing)
 
-    const x = startX
-    const y = startY + index * resourceSpacing
-
-    // Draw resource icon (MDI)
-    const iconPath = RESOURCE_ICONS[resource.type as keyof typeof RESOURCE_ICONS]
-    if (iconPath) {
-      drawMDIIcon({
-        ctx,
-        x,
-        y,
-        size: iconSize * 2,
-        path: iconPath,
-        color: resourceDef.color
-      })
-    }
-
-    // Draw resource tag
-    CANVAS.text({
+    drawResourceIconWithText({
       ctx,
-      x: x + iconSize + 0.75 * mod,
-      y: y + textSize,
-      text: `${resource.amount}`,
-      size: textSize,
-      color: resourceDef.color,
-      align: 'left'
+      resource,
+      x: iconLeftX,
+      y: iconRowY,
+      iconSize: iconRenderSize,
+      textSize
     })
   })
 }

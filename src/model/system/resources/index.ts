@@ -5,7 +5,7 @@ const deposits: OrbitalDeposit = {
   minerals: {
     tag: 'M',
     color: '#d66c57',
-    weight: 10,
+    weight: 20,
     max: 5,
     weights: {
       asteroid: 2,
@@ -135,7 +135,7 @@ const deposits: OrbitalDeposit = {
 
 export const ORBITAL_DEPOSITS = {
   deposits,
-  spawn: ({ object, primary }: OrbitalDepositSpawnParams) => {
+  spawn: ({ object }: OrbitalDepositSpawnParams) => {
     Object.entries(deposits)
       .filter(([, resource]) => resource.weights[object.type])
       .forEach(([key, resource]) => {
@@ -144,7 +144,7 @@ export const ORBITAL_DEPOSITS = {
             v: { type: key as Resource, amount: i + 1 },
             w: (resource.weights[object.type] ?? 0) / 2 ** i
           })),
-          { v: false as const, w: primary && key === 'energy' ? 0 : 10 }
+          { v: false as const, w: 30 }
         ])
         if (spawn) object.resources.push(spawn)
       })
