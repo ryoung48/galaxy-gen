@@ -1,3 +1,5 @@
+import { Star } from '../../stars/types'
+
 export const HYDROSPHERE = {
   color: [
     '#d2b48c',
@@ -30,5 +32,11 @@ export const HYDROSPHERE = {
     { code: 11, description: 'Superdense (incredibly deep world oceans)' },
     { code: 12, description: 'Intense volcanism (molten surface)' },
     { code: 13, description: 'Gas giant core' }
-  ]
+  ],
+  special: (star: Star, size: number, hydrosphere: number) => {
+    if (size < 2) return hydrosphere
+    const magma = (size - 2) ** 2 + 2
+    if (star.age * 1000 < magma) return 12
+    return hydrosphere
+  }
 }

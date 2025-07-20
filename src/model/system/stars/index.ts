@@ -15,7 +15,13 @@ const spectralAttributes: Record<Star['spectralClass'], { color: string; range: 
   F: { color: '#fffcd3', range: [6, 8] },
   G: { color: '#fff772', range: [8, 10] },
   K: { color: '#ffc37f', range: [10, 12] },
-  M: { color: '#ff9719', range: [12, 14] }
+  M: { color: '#ff9719', range: [12, 14] },
+  L: { color: '#e06f67', range: [14, 16] },
+  T: { color: '#963f3f', range: [16, 18] },
+  Y: { color: '#82779b', range: [18, 20] },
+  D: { color: '#b2bdff', range: [20, 22] },
+  NS: { color: '#002aff', range: [22, 24] },
+  BH: { color: '#000000', range: [24, 26] }
 }
 
 const starMass: Record<Star['luminosityClass'], number[]> = {
@@ -24,12 +30,16 @@ const starMass: Record<Star['luminosityClass'], number[]> = {
   II: [130, 40, 30, 20, 14, 11, 10, 8, 8, 10, 10, 12, 14, 16, 18],
   III: [110, 30, 20, 10, 8, 6, 4, 3, 2.5, 2.4, 1.1, 1.5, 1.8, 2.4, 8],
   IV: [20, 20, 20, 10, 4, 2.3, 2, 1.5, 1.7, 1.2, 1.5, 1.5, 1.5, 1.5, 1.5],
-  V: [90, 60, 18, 5, 2.2, 1.8, 1.5, 1.3, 1.1, 0.9, 0.8, 0.7, 0.5, 0.16, 0.08],
+  V: [
+    90, 60, 18, 5, 2.2, 1.8, 1.5, 1.3, 1.1, 0.9, 0.8, 0.7, 0.5, 0.16, 0.08, 0.06, 0.05, 0.04, 0.025,
+    0.013, 0.01
+  ],
   VI: [2, 1.5, 0.5, 0.4, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.12, 0.075]
 }
 
 const starTemp = [
-  50000, 40000, 30000, 15000, 10000, 8000, 7500, 6500, 6000, 5600, 5200, 4400, 3700, 3000, 2400
+  50000, 40000, 30000, 15000, 10000, 8000, 7500, 6500, 6000, 5600, 5200, 4400, 3700, 3000, 2400,
+  1850, 1300, 900, 550, 300
 ]
 
 const starDiameter: Record<Star['luminosityClass'], number[]> = {
@@ -38,8 +48,40 @@ const starDiameter: Record<Star['luminosityClass'], number[]> = {
   II: [22, 18, 12, 14, 30, 45, 50, 66, 77, 90, 110, 160, 230, 350, 500],
   III: [21, 15, 10, 6, 5, 5, 5, 5, 10, 15, 20, 40, 60, 100, 200],
   IV: [8, 8, 8, 5, 4, 3, 3, 2, 3, 4, 6, 6, 6, 6, 6],
-  V: [20, 12, 7, 3.5, 2.2, 2, 1.7, 1.5, 1.1, 0.95, 0.9, 0.8, 0.7, 0.2, 0.1],
+  V: [
+    20, 12, 7, 3.5, 2.2, 2, 1.7, 1.5, 1.1, 0.95, 0.9, 0.8, 0.7, 0.2, 0.1, 0.08, 0.09, 0.11, 0.1, 0.1
+  ],
   VI: [0.18, 0.18, 0.2, 0.5, 0.5, 0.6, 0.6, 0.8, 0.8, 0.7, 0.6, 0.5, 0.4, 0.1, 0.08]
+}
+
+const whiteDwarfs = {
+  mass: (parent?: Star) =>
+    Math.min(
+      (window.dice.roll(2, 6) - 1) / 10 + window.dice.roll(1, 10) / 100,
+      (parent?.mass ?? Infinity) * 0.9
+    ),
+  diameter: (mass: number) => (1 / mass) * 0.01,
+  temperature: (mass: number) => (window.dice.randint(40e3, 1000) * mass) / 0.6
+}
+
+const neutronStars = {
+  mass: (): number => {
+    const mass = window.dice.roll(1, 6)
+    const extra = mass === 6 ? (window.dice.roll(1, 6) - 1) / 10 : 0
+    return 1 + mass / 10 + extra
+  },
+  diameter: () => (19 + window.dice.roll(1, 6)) / 1.4e6,
+  temperature: (mass: number) => (window.dice.randint(40e3, 1000) * mass) / 0.6
+}
+
+const blackHoles = {
+  mass: (): number => {
+    const mass = window.dice.roll(1, 6)
+    const total = mass + (mass === 6 ? blackHoles.mass() : 0)
+    return 2.1 + total - 1 + window.dice.roll(1, 10) / 10
+  },
+  diameter: (mass: number) => (5.9 / 1.4e6) * mass,
+  temperature: () => 0
 }
 
 const starClass = (parent?: Star, homeworld?: boolean) => {
@@ -81,16 +123,63 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
   if (spectralClass === 'M' && parentClass === 'M')
     subtype = window.dice.randint((parent?.subtype ?? 0) + 1, 9)
 
+  const whiteDwarfParent = parent?.spectralClass === 'D'
+  const brownDwarfParent = parent?.spectralClass === 'L' || parent?.spectralClass === 'T'
+
+  if (whiteDwarfParent || brownDwarfParent || (parent && window.dice.random > 0.85)) {
+    spectralClass = window.dice.weightedChoice([
+      { v: 'L', w: parent?.spectralClass === 'L' || parent?.spectralClass === 'T' ? 0 : 0.4 },
+      { v: 'T', w: parent?.spectralClass === 'T' ? 0 : 0.3 },
+      { v: 'Y', w: 0.3 },
+      { v: 'D', w: whiteDwarfParent ? 1 : 0 }
+    ])
+    luminosityClass = 'V'
+    subtype = window.dice.randint(0, 9)
+  }
+
+  if (window.dice.random > 0.95 && !parent && !homeworld) {
+    spectralClass = window.dice.weightedChoice([
+      { v: window.dice.choice(['L', 'T', 'Y']), w: 0.1 },
+      { v: 'D', w: 0.5 },
+      { v: 'NS', w: parent ? 0 : 0.1 },
+      { v: 'BH', w: parent ? 0 : 0.1 }
+    ])
+    luminosityClass = 'V'
+    subtype = window.dice.randint(0, 9)
+  }
+  if (spectralClass === 'Y' && subtype > 5) subtype = window.dice.randint(0, 5)
+  const whiteDwarf = spectralClass === 'D'
+  const neutronStar = spectralClass === 'NS'
+  const blackHole = spectralClass === 'BH'
   const { range: r } = spectralAttributes[spectralClass]
-  const domain = range(15)
+  const domain = range(luminosityClass === 'V' ? 20 : 15)
   const idx = scaleLinear([0, 9], r)(subtype)
-  const mass = scaleLinear(domain, starMass[luminosityClass])(idx)
-  const temperature = scaleLinear(domain, starTemp)(idx)
-  const diameter = scaleLinear(domain, starDiameter[luminosityClass])(idx)
+  const mass = whiteDwarf
+    ? whiteDwarfs.mass(parent)
+    : neutronStar
+    ? neutronStars.mass()
+    : blackHole
+    ? blackHoles.mass()
+    : scaleLinear(domain, starMass[luminosityClass])(idx)
+  const temperature = whiteDwarf
+    ? whiteDwarfs.temperature(mass)
+    : neutronStar
+    ? neutronStars.temperature(mass)
+    : blackHole
+    ? blackHoles.temperature()
+    : scaleLinear(domain, starTemp)(idx)
+  const diameter = whiteDwarf
+    ? whiteDwarfs.diameter(mass)
+    : neutronStar
+    ? neutronStars.diameter()
+    : blackHole
+    ? blackHoles.diameter(mass)
+    : scaleLinear(domain, starDiameter[luminosityClass])(idx)
   const luminosity = diameter ** 2 * (temperature / 5772) ** 4
 
   let age = parent?.age ?? 0
   if (!parent) {
+    const deadStar = whiteDwarf || neutronStar || blackHole
     const mainSequenceMass = scaleLinear(domain, starMass.V)(idx)
     const mainSequenceLifespan = 10 / mainSequenceMass ** 2.5
     const subgiantMass = scaleLinear(domain, starMass.IV)(idx)
@@ -98,13 +187,23 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
     const giantLifespan = mainSequenceLifespan / (10 * mass ** 3)
 
     age = window.dice.roll(1, 6) * 2 + window.dice.roll(1, 3) - 2 + window.dice.uniform(0.1, 0.9)
-    if (mass > 0.9) age = mainSequenceLifespan * window.dice.uniform(0.1, 0.9)
+    if (mass > 0.9 && !deadStar) age = mainSequenceLifespan * window.dice.uniform(0.1, 0.9)
     if (luminosityClass == 'IV')
       age = mainSequenceLifespan + subgiantLifespan * window.dice.uniform(0.1, 0.9)
     else if (luminosityClass == 'III')
       age = mainSequenceLifespan + subgiantLifespan + giantLifespan * window.dice.uniform(0.1, 0.9)
+
+    if (deadStar)
+      age +=
+        window.dice.roll(1, 6) * 2 +
+        window.dice.roll(2, 3) * mass -
+        2 +
+        window.dice.uniform(0.1, 0.9)
     if (age > 14) age = window.dice.uniform(13, 14)
   }
+  const proto = parent?.proto ?? false
+  const primordial = parent?.primordial ?? false
+  const eccentricity = parent ? ORBIT.eccentricity({ star: true, proto, primordial }) : 0
   return {
     spectralClass,
     luminosityClass,
@@ -114,7 +213,7 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
     diameter,
     luminosity,
     age,
-    eccentricity: parent ? ORBIT.eccentricity({ star: true }) : 0
+    eccentricity
   }
 }
 
@@ -127,7 +226,7 @@ const isGiant = (luminosityClass: Star['luminosityClass']) =>
 export const STAR = {
   classes: spectralAttributes,
   color: (star: Star): string =>
-    isGiant(star.luminosityClass) ? '#ff4500' : spectralAttributes[star.spectralClass].color,
+    isGiant(star.luminosityClass) ? '#F60000' : spectralAttributes[star.spectralClass].color,
   name: (star: Star) => {
     if (!star.name) {
       const system = window.galaxy.systems[star.system]
@@ -168,16 +267,32 @@ export const STAR = {
       zone,
       au,
       orbits: [],
-      r: parent ? 30 : 40
+      r: parent ? 30 : 40,
+      proto: classAttributes.age < 0.01 && classAttributes.mass < 8,
+      primordial: classAttributes.age < 0.1,
+      postStellar:
+        classAttributes.spectralClass === 'D' ||
+        classAttributes.spectralClass === 'NS' ||
+        classAttributes.spectralClass === 'BH'
     }
-    if (parent) star.distance += star.r
+    const brownDwarf = STAR.isBrownDwarf(star)
+    const whiteDwarf = star.spectralClass === 'D'
+    const neutronStar = star.spectralClass === 'NS'
+    const blackHole = star.spectralClass === 'BH'
+    if (brownDwarf) star.r = parent ? 20 : 25
+    if (whiteDwarf || neutronStar) star.r = parent ? 10 : 15
+    if (parent) {
+      star.distance += star.r
+      star.temperature = Math.max(star.temperature, TEMPERATURE.base(deviation ?? 0))
+    }
     window.galaxy.stars.push(star)
     if (star.zone !== 'epistellar') {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const giant = isGiant(star.luminosityClass)
         const companions: StarCompanionTemplate[] = []
-        const companionOdds = 11
+        const noCompanions = neutronStar || blackHole || star.spectralClass === 'Y'
+        const companionOdds = noCompanions ? Infinity : 11
         const epistellarCompanion = !giant && window.dice.roll(2, 6) >= companionOdds
         if (epistellarCompanion) {
           companions.push({
@@ -215,20 +330,27 @@ export const STAR = {
         }
         const mClass = star.spectralClass === 'M'
         const secondaryNoPlanets = parent && window.dice.random > 0.5
+        const deadStar = whiteDwarf || neutronStar || blackHole
+        const deadSystem = deadStar && window.dice.random > 0.6
+        const noPlanets = secondaryNoPlanets || deadSystem || blackHole
         const maxEpistellar =
-          epistellarCompanion || secondaryNoPlanets ? 0 : star.zone === 'inner' ? 1 : 2
+          epistellarCompanion || brownDwarf || deadStar || noPlanets
+            ? 0
+            : star.zone === 'inner'
+            ? 1
+            : 2
         const epistellar = Math.min(maxEpistellar, window.dice.randint(0, mClass ? 1 : 2))
         const maxInner =
-          innerCompanion || secondaryNoPlanets || star.zone === 'inner'
+          innerCompanion || star.zone === 'inner' || noPlanets || neutronStar
             ? 0
-            : star.zone === 'outer'
+            : star.zone === 'outer' || brownDwarf || deadStar
             ? 1
             : 3
         const inner = Math.min(maxInner, window.dice.randint(1, mClass ? 4 : 5))
         const maxOuter =
-          outerCompanion || secondaryNoPlanets || star.zone === 'inner'
+          outerCompanion || star.zone === 'inner' || noPlanets
             ? 0
-            : star.zone === 'outer'
+            : star.zone === 'outer' || brownDwarf || deadStar
             ? 2
             : 5
         const outer = Math.min(
@@ -266,20 +388,24 @@ export const STAR = {
           const primary = satellites.slice(1).reduce((min, satellite) => {
             return Math.abs(min.deviation) > Math.abs(satellite.deviation) ? satellite : min
           }, satellites[0])
-          if (primary.zone === 'inner') {
+          if (primary.zone === 'inner' && !blackHole && !neutronStar) {
             primary.primary = true
             if (Math.abs(primary.deviation) > 1) {
               primary.deviation = window.dice.choice([-0.5, 0, 0.75])
             }
           }
         }
-        if (satellites.length === 0 && !parent) continue
+        if (satellites.length === 0 && !parent && !noPlanets) continue
         const orbitals = [...companions, ...satellites]
         orbitals.sort((a, b) => b.deviation - a.deviation)
         let angle = incrementAngle()
         let distance = star.r + 10
         let impactZone = giant ? window.dice.randint(1, 2) : 0
         orbitals.forEach(template => {
+          const deviation = window.dice.uniform(
+            template.deviation - 0.25,
+            template.deviation + 0.25
+          )
           const obj =
             template.type === 'star'
               ? STAR.spawn({
@@ -296,10 +422,7 @@ export const STAR = {
                   zone: template.zone,
                   angle,
                   distance,
-                  deviation: window.dice.uniform(
-                    template.deviation - 0.25,
-                    template.deviation + 0.25
-                  ),
+                  deviation,
                   impactZone: impactZone > 0,
                   unary: companions.length === 0,
                   designation: template.homeworld
@@ -321,5 +444,7 @@ export const STAR = {
       }
     }
     return star
-  }
+  },
+  isBrownDwarf: (star: Star) =>
+    star.spectralClass === 'L' || star.spectralClass === 'T' || star.spectralClass === 'Y'
 }

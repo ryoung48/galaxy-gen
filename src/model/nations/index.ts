@@ -136,7 +136,16 @@ const spawn = (origin: number) => {
       ])
     },
     capital: origin,
-    systems: [origin]
+    systems: [origin],
+    government: window.dice.weightedChoice([
+      { v: 'fragmented', w: 0.1 },
+      { v: 'confederation', w: 0.2 },
+      { v: 'oligarchy', w: 0.2 },
+      { v: 'republic', w: 0.2 },
+      { v: 'autocracy', w: 0.2 },
+      { v: 'theocracy', w: 0.1 },
+      { v: 'hivemind', w: 0.1 }
+    ])
   }
   window.galaxy.nations.push(nation)
   return nation
@@ -190,7 +199,7 @@ export const NATION = {
         [5, 14],
         [15, 29],
         [30, 60],
-        [61, 150]
+        [61, 200]
       ],
       neighbors: SOLAR_SYSTEM.neighbors
     })

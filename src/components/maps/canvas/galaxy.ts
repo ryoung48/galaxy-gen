@@ -267,6 +267,8 @@ export const GALAXY_MAP = {
           ? METRICS.orbits.color(orbits.length - 1)
           : mapMode === 'population'
           ? METRICS.population.color(population)
+          : mapMode === 'government'
+          ? METRICS.government.colors[nation.government]
           : nation.flag.color.replace('%)', `%, ${opacity})`)
       let path = cellPathCache.get(system.idx)
       if (!path) {
@@ -284,7 +286,7 @@ export const GALAXY_MAP = {
         ? SOLAR_SYSTEM.nation(solarSystem)
         : null
     const lineGenerator = d3Line()
-    if (window.galaxy?.diagram && mapMode === 'nations') {
+    if (window.galaxy?.diagram && (mapMode === 'nations' || mapMode === 'government')) {
       if (!edgeMapCache) edgeMapCache = VORONOI.edgeMap(window.galaxy.diagram)
       window.galaxy.nations.forEach(nation => {
         let paths = nationBoundaryCache.get(nation.idx)
@@ -302,7 +304,7 @@ export const GALAXY_MAP = {
           nationBoundaryCache.set(nation.idx, paths)
         }
 
-        ctx.strokeStyle = nation.flag.color
+        ctx.strokeStyle = mapMode === 'government' ? 'rgba(0, 0, 0, 0.6)' : nation.flag.color
         ctx.lineWidth = (selectedNation?.idx === nation.idx ? 3 : 1.5) * 3
         paths.forEach(p => {
           ctx.save()
@@ -313,7 +315,7 @@ export const GALAXY_MAP = {
         })
       })
     }
-    if (mapMode === 'nations') {
+    if (mapMode === 'nations' || mapMode === 'government') {
       // hyper-lanes
       window.galaxy?.mst.forEach(([p1, p2]) => {
         CANVAS.line({
@@ -375,13 +377,34 @@ export const GALAXY_MAP = {
 
       const focused = system.idx === solarSystem?.idx
 
-      CANVAS.sun({
-        ctx,
-        x: system.x,
-        y: system.y,
-        radius: 0.7,
-        fill: STAR.color(stars[0])
-      })
+      // Render primary and companion stars clustered around the system centre.
+      const starRadius = 0.6
+      const clusterRadius = starRadius * 1.3 // distance of companions from primary
+
+      if (stars.length === 1) {
+        // Single star: just render at centre
+        CANVAS.sun({
+          ctx,
+          x: system.x,
+          y: system.y,
+          radius: starRadius,
+          fill: STAR.color(stars[0])
+        })
+      } else {
+        // Distribute all stars evenly around a circle – none occupy the exact centre
+        stars.forEach((s, idx) => {
+          const angle = (idx / stars.length) * Math.PI * 2
+          const x = system.x + clusterRadius * Math.cos(angle)
+          const y = system.y + clusterRadius * Math.sin(angle)
+          CANVAS.sun({
+            ctx,
+            x,
+            y,
+            radius: starRadius,
+            fill: STAR.color(s)
+          })
+        })
+      }
 
       if (drawSystemNames) {
         CANVAS.text({
@@ -393,11 +416,13 @@ export const GALAXY_MAP = {
         })
       }
       if (focused) {
+        // Expand the highlight radius so the entire star cluster fits inside.
+        const highlightRadius = stars.length > 1 ? clusterRadius + starRadius : 1.25
         CANVAS.circle({
           ctx,
           x: system.x,
           y: system.y,
-          radius: 1.25,
+          radius: highlightRadius,
           fill: 'transparent',
           border: { color: COLORS.accent, width: 0.15 }
         })

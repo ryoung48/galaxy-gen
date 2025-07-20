@@ -1,7 +1,7 @@
 import { Orbit } from '../orbits/types'
 
 interface StarAttributes {
-  spectralClass: 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M'
+  spectralClass: 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'L' | 'T' | 'Y' | 'D' | 'NS' | 'BH'
   luminosityClass: 'Ia' | 'Ib' | 'II' | 'III' | 'IV' | 'V' | 'VI'
   subtype: number
   mass: number
@@ -24,6 +24,9 @@ export interface Star extends StarAttributes {
   period: number
   au: number
   orbits: (Orbit | Star)[]
+  proto?: boolean
+  primordial?: boolean
+  postStellar?: boolean
   // display
   r: number
   fullR?: number

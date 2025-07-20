@@ -162,11 +162,13 @@ const GalaxyMap = () => {
           borderRadius: 0
         }}
       >
-        {['nations', 'biosphere', 'orbits', 'habitability', 'population'].map(label => (
-          <ToggleButton key={label} value={label}>
-            {label}
-          </ToggleButton>
-        ))}
+        {['nations', 'biosphere', 'orbits', 'habitability', 'population', 'government'].map(
+          label => (
+            <ToggleButton key={label} value={label}>
+              {label}
+            </ToggleButton>
+          )
+        )}
       </ToggleButtonGroup>
       <canvas
         ref={canvasRef}

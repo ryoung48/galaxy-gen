@@ -144,6 +144,8 @@ export interface EccentricityParams {
   tidalLocked?: boolean
   homeworld?: boolean
   moon?: Omit<MoonOrbit, 'period'>
+  proto?: boolean
+  primordial?: boolean
 }
 
 export type PopulateOrbitParams = {

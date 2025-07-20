@@ -68,5 +68,22 @@ export const METRICS = {
           color: METRICS.tech.color(tech),
           text: tech.toString()
         }))
+  },
+  government: {
+    colors: {
+      autocracy: 'hsl(0, 100%, 87%)',
+      republic: 'hsl(217, 100%, 87%)',
+      oligarchy: 'hsl(133, 100.00%, 87.10%)',
+      confederation: 'hsl(28, 100%, 86%)',
+      fragmented: 'hsl(195, 43%, 89%)',
+      theocracy: 'hsl(45, 77%, 95%)',
+      hivemind: 'hsl(162, 100%, 81.60%)'
+    },
+    legend: () => [
+      ...Object.entries(METRICS.government.colors).map(([k, v]) => ({
+        color: v,
+        text: k
+      }))
+    ]
   }
 }

@@ -20,6 +20,7 @@ import { ASTEROID_BELT } from './asteroids'
 import { TECHNOLOGY } from './technology'
 import { MOONS } from './moons'
 import { CONSTANTS } from '../../constants'
+import { HYDROSPHERE } from './hydrosphere'
 
 const populations: Record<string, string> = {
   '0': 'Uninhabited',
@@ -114,13 +115,23 @@ export const ORBIT = {
   populations,
   governments,
   lawLevel,
-  eccentricity: ({ star, asteroidMember, tidalLocked, moon }: EccentricityParams) => {
+  eccentricity: ({
+    star,
+    asteroidMember,
+    tidalLocked,
+    moon,
+    proto,
+    primordial
+  }: EccentricityParams) => {
     // 0 = circular
     // 1 = unbound interstellar object
     let roll = window.dice.roll(2, 6)
     if (star) roll += 2
     if (tidalLocked) roll -= 2
     if (asteroidMember) roll += 1
+
+    if (proto) roll += 2
+    else if (primordial) roll += 1
 
     if (moon?.range === 'outer') roll += 4
     else if (moon?.range === 'middle') roll += 1
@@ -270,21 +281,28 @@ export const ORBIT = {
   }: OrbitSpawnParams): Orbit => {
     const _homeworld = designation === 'homeworld' && !impactZone
     const _primary = designation === 'primary' && !impactZone
-    const selected =
+    const special = star.proto || star.primordial
+    const postStellar = star.postStellar
+    let selected =
       group ??
       (_homeworld || _primary
         ? window.dice.weightedChoice([
             { v: 'terrestrial', w: 6 },
             { v: 'helian', w: _homeworld ? 0 : 1 },
-            { v: 'jovian', w: _homeworld ? 0 : 3 }
+            { v: 'jovian', w: _homeworld ? 0 : postStellar ? 0.5 : 3 }
           ])
         : window.dice.weightedChoice<Orbit['group']>([
-            { v: 'asteroid belt', w: 2 },
+            { v: 'asteroid belt', w: star.proto ? 6 : star.primordial || postStellar ? 4 : 2 },
             { v: 'dwarf', w: 2 },
             { v: 'terrestrial', w: 3 },
             { v: 'helian', w: 1 },
-            { v: 'jovian', w: zone === 'outer' ? 2 : 0.5 }
+            { v: 'jovian', w: zone === 'outer' || postStellar ? 2 : 0.5 }
           ]))
+    if (star.age < 0.002 && selected !== 'jovian') selected = 'asteroid belt'
+    else if (star.age < 0.005 && (selected === 'terrestrial' || selected === 'helian'))
+      selected = 'dwarf'
+    else if (star.age < 0.011 && selected === 'helian')
+      selected = window.dice.choice(['terrestrial', 'dwarf'])
     const homeworld = _homeworld && selected === 'terrestrial'
     const primary = _primary && (selected === 'terrestrial' || selected === 'dwarf')
     const type = homeworld
@@ -308,8 +326,14 @@ export const ORBIT = {
     const asteroidBelt = selected === 'asteroid belt'
     const asteroidMember = parent?.group === 'asteroid belt'
     size = asteroidMember ? size : Math.max(0, Math.min((parent?.size ?? Infinity) - 1, size))
-    const { subtype, chemistry } = detail
     let hydrosphere = detail.hydrosphere
+    if (special && selected !== 'asteroid belt' && selected !== 'jovian') {
+      hydrosphere = HYDROSPHERE.special(star, size, hydrosphere)
+      detail.atmosphere = ATMOSPHERE.special(star, size)
+      detail.subtype = undefined
+      detail.chemistry = undefined
+    }
+    const { subtype, chemistry } = detail
     const kelvin = TEMPERATURE.base(deviation)
     if (hydrosphere < 10) {
       const hot = TEMPERATURE.describe(kelvin) === 'hot'
@@ -328,7 +352,9 @@ export const ORBIT = {
       : ORBIT.eccentricity({
           tidalLocked: ORBIT_CLASSIFICATION[type].tidalLock,
           asteroidMember: parent?.group === 'asteroid belt',
-          moon
+          moon,
+          proto: star.proto,
+          primordial: star.primordial
         })
     const period = parent ? parent.period : MATH.orbits.period(au, star.mass)
     const rot = rotation(size, ORBIT_CLASSIFICATION[type].tidalLock, parent)
@@ -405,7 +431,7 @@ export const ORBIT = {
       const habMoonNeeded = _primary && selected !== 'terrestrial'
       let subAngle = window.dice.randint(90, 270)
       let distance = orbit.r + 2
-      const orbits = ORBIT_GROUPS[selected].orbits({ size })
+      const orbits = star.age < 0.002 ? [] : ORBIT_GROUPS[selected].orbits({ size })
       const mor = Math.min(Math.round(hillLimit) - 2, 200 + orbits.length)
       if (habMoonNeeded && orbits.length < 1) orbits.push('dwarf')
       const habIndex = habMoonNeeded ? window.dice.randint(0, orbits.length - 1) : -1

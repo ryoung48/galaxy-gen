@@ -16,6 +16,11 @@ const NationView = (props: { nation: Nation }) => {
         <Grid container>
           <Grid item>
             <span>
+              <b>Government: </b> {TEXT.title(nation.government)}
+            </span>
+          </Grid>
+          <Grid item>
+            <span>
               <b>Systems ({systems.length}): </b>{' '}
               <StyledText
                 text={systems.map(system => TEXT.decorate({ link: system })).join(', ')}

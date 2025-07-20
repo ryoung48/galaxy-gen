@@ -52,8 +52,7 @@ export const TEMPERATURE = {
     if (
       atmosphere.type == 'gaseous' ||
       atmosphere.type == 'insidious' ||
-      atmosphere.type == 'corrosive' ||
-      hydrosphere === 12
+      atmosphere.type == 'corrosive'
     ) {
       const roll = window.dice.roll(1, 6)
       if (roll < 6) greenhouse += roll * window.dice.roll(1, 6)
@@ -62,7 +61,9 @@ export const TEMPERATURE = {
     else if (atmosphere.type == 'exotic') greenhouse *= Math.max(0.5, window.dice.roll(1, 6) - 1)
 
     // temperature
-    const mean = 279 * ((star.luminosity * (1 - albedo) * (1 + greenhouse)) / au ** 2) ** 0.25
+    const magma = hydrosphere === 12 ? 1500 : 0
+    const mean =
+      279 * ((star.luminosity * (1 - albedo) * (1 + greenhouse)) / au ** 2) ** 0.25 + magma
 
     let tiltFactor = Math.sin(MATH.angles.radians(tilt > 90 ? 180 - tilt : tilt))
     if (period < 0.1) tiltFactor *= 0.5

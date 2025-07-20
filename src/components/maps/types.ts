@@ -1,1 +1,7 @@
-export type MapModes = 'nations' | 'biosphere' | 'orbits' | 'habitability' | 'population'
+export type MapModes =
+  | 'nations'
+  | 'biosphere'
+  | 'orbits'
+  | 'habitability'
+  | 'population'
+  | 'government'

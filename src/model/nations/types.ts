@@ -12,4 +12,12 @@ export type Nation = {
   }
   capital: number
   systems: number[]
+  government:
+    | 'fragmented'
+    | 'confederation'
+    | 'oligarchy'
+    | 'republic'
+    | 'autocracy'
+    | 'theocracy'
+    | 'hivemind'
 }

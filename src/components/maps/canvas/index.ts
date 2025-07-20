@@ -127,31 +127,59 @@ export const CANVAS = {
       return color
     }
 
-    // The gradient will make the star look like a glowing ball of light.
-    const gradient = ctx.createRadialGradient(x, y, radius * 0.1, x, y, radius)
+    // Check if this is a black hole (black color indicates BH)
+    const isBlackHole = fill === '#000000'
 
-    // Color stops: from a white center, to the star's color, to a faint glow.
-    gradient.addColorStop(0, 'white')
-    gradient.addColorStop(0.5, fill)
-    gradient.addColorStop(1, alphaColor(fill, 0.5))
+    if (isBlackHole) {
+      // Add an outer glow for black holes
+      const outerGlow = ctx.createRadialGradient(x, y, radius, x, y, radius * 1.5)
+      outerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.2)')
+      outerGlow.addColorStop(1, 'rgba(255, 255, 255, 0)')
 
-    // Draw the star core
-    ctx.beginPath()
-    ctx.arc(x, y, radius, 0, Math.PI * 2)
-    ctx.fillStyle = gradient
-    ctx.fill()
-    ctx.closePath()
+      ctx.beginPath()
+      ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2)
+      ctx.fillStyle = outerGlow
+      ctx.fill()
+      ctx.closePath()
+      // Special gradient for black holes: black center to white edge
+      const gradient = ctx.createRadialGradient(x, y, radius * 0.5, x, y, radius)
+      gradient.addColorStop(0.5, 'black')
+      gradient.addColorStop(0.9, '#333333')
+      gradient.addColorStop(1, 'white')
 
-    // Optional: add an outer, more transparent glow
-    const outerGlow = ctx.createRadialGradient(x, y, radius, x, y, radius * 1.5)
-    outerGlow.addColorStop(0, alphaColor(fill, 0.3))
-    outerGlow.addColorStop(1, alphaColor(fill, 0))
+      // Draw the black hole core
+      ctx.beginPath()
+      ctx.arc(x, y, radius, 0, Math.PI * 2)
+      ctx.fillStyle = gradient
+      ctx.fill()
+      ctx.closePath()
+    } else {
+      // Regular star gradient
+      const gradient = ctx.createRadialGradient(x, y, radius * 0.1, x, y, radius)
 
-    ctx.beginPath()
-    ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2)
-    ctx.fillStyle = outerGlow
-    ctx.fill()
-    ctx.closePath()
+      // Color stops: from a white center, to the star's color, to a faint glow.
+      gradient.addColorStop(0, 'white')
+      gradient.addColorStop(0.5, fill)
+      gradient.addColorStop(1, alphaColor(fill, 0.5))
+
+      // Draw the star core
+      ctx.beginPath()
+      ctx.arc(x, y, radius, 0, Math.PI * 2)
+      ctx.fillStyle = gradient
+      ctx.fill()
+      ctx.closePath()
+
+      // Optional: add an outer, more transparent glow
+      const outerGlow = ctx.createRadialGradient(x, y, radius, x, y, radius * 1.5)
+      outerGlow.addColorStop(0, alphaColor(fill, 0.3))
+      outerGlow.addColorStop(1, alphaColor(fill, 0))
+
+      ctx.beginPath()
+      ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2)
+      ctx.fillStyle = outerGlow
+      ctx.fill()
+      ctx.closePath()
+    }
   },
   coordinates: (orbit: Orbit | Star): Point => {
     const system = window.galaxy.systems[orbit.system]

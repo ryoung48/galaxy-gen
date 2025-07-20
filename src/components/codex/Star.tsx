@@ -28,7 +28,7 @@ const formatters = {
     unit: 'celsius',
     notation: 'compact'
   }),
-  luminosity: new Intl.NumberFormat('en-US', { notation: 'compact', minimumFractionDigits: 5 })
+  luminosity: new Intl.NumberFormat('en-US', { notation: 'compact', minimumFractionDigits: 8 })
 }
 
 // Temperature color gradient (cold to hot)
@@ -49,6 +49,8 @@ const StarView = (props: { star: Star }) => {
       : star.age >= 1000
       ? `${(star.age / 1000).toFixed(2)} trillion years`
       : `${star.age.toFixed(2)} billion years`
+  const brownDwarf = STAR.isBrownDwarf(star)
+  const postStellar = star.postStellar
   return (
     <CodexPage
       title={STAR.name(star)}
@@ -61,8 +63,8 @@ const StarView = (props: { star: Star }) => {
             style={{ verticalAlign: 'middle', marginRight: 4, marginBottom: 3 }}
           />
           <StyledText
-            text={`Star (${star.spectralClass}${star.subtype}-${
-              star.luminosityClass
+            text={`Star (${star.spectralClass}${postStellar ? '' : star.subtype}${
+              brownDwarf || postStellar ? '' : `-${star.luminosityClass}`
             }), ${TEXT.decorate({
               link: window.galaxy.systems[star.system],
               color: COLORS.subtitle
@@ -88,7 +90,7 @@ const StarView = (props: { star: Star }) => {
               color='black'
               style={{ verticalAlign: 'middle', marginRight: 4 }}
             />
-            <b>Distance: </b> {MATH.orbits.fromAU(star.au).toFixed(2)} ({star.au.toFixed(2)} AU)
+            <b>Distance: </b> {MATH.orbits.fromAU(star.au).toFixed(3)} ({star.au.toFixed(2)} AU)
           </Grid>
           <Grid item xs={12}>
             <Icon

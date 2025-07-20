@@ -68,13 +68,15 @@ export const LEGEND = {
         ? METRICS.orbits.legend()
         : mode === 'population'
         ? METRICS.population.legend()
+        : mode === 'government'
+        ? METRICS.government.legend()
         : []
     drawLegend({
       ctx,
       items,
       alignment: 'left',
       position: { x: width, y: height },
-      width: 6
+      width: mode === 'government' ? 10 : 6
     })
     ctx.restore()
   }

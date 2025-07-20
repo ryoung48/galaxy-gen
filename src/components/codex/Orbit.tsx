@@ -208,7 +208,7 @@ const OrbitView = (props: { orbit: Orbit }) => {
             <b>Distance: </b>{' '}
             {orbit.moon
               ? `${orbit.moon.pd.toFixed(2)} PD`
-              : `${MATH.orbits.fromAU(orbit.au).toFixed(2)} (${orbit.au.toFixed(2)} AU)`}
+              : `${MATH.orbits.fromAU(orbit.au).toFixed(3)} (${orbit.au.toFixed(3)} AU)`}
           </Grid>
           <Grid item xs={12}>
             <Icon

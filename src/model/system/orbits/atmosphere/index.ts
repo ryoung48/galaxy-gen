@@ -1,3 +1,4 @@
+import { Star } from '../../stars/types'
 import { Orbit } from '../types'
 import { Atmosphere } from './types'
 
@@ -149,5 +150,12 @@ export const ATMOSPHERE = {
     if (code === 13) return '#d68910' // unusual - orange
     if (code === 14) return '#e8daef' // hydrogen - light purple
     return '#95a5a6' // fallback - gray
+  },
+  special: (star: Star, size: number) => {
+    const atmosphereMod = star.proto ? 4 : 2
+    const atmosphere = window.dice.roll(2, 6) - 7 + size + atmosphereMod
+    if (atmosphere >= 2 && atmosphere <= (star.proto ? 5 : 7)) return 10
+    if (atmosphere >= (star.proto ? 6 : 8) && atmosphere <= 11) return 12
+    return Math.min(Math.max(0, atmosphere), 14)
   }
 }
