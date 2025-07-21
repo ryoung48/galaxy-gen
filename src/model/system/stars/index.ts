@@ -48,6 +48,7 @@ export const STAR = {
     if (!star.name) {
       const system = window.galaxy.systems[star.system]
       const nation = window.galaxy.nations[system.nation]
+      if (!nation) return '???'
       star.name = LANGUAGE.word.unique({ key: 'star', lang: nation.language })
     }
     return star.name

@@ -6,9 +6,10 @@ import { PlanetFrequency } from './Planets'
 import { MoonFrequency } from './Moons'
 import { SystemSizes } from './Systems'
 import { SizeDistribution } from './Size'
+import { ResourceDistribution } from './Resources'
 
 export function StatisticsView() {
-  const modes = ['stars', 'planets', 'moons', 'size', 'orbits'] as Stat[]
+  const modes = ['stars', 'planets', 'moons', 'size', 'orbits', 'resources'] as Stat[]
   return (
     <Grid container pt={12}>
       <ToggleButtons
@@ -19,6 +20,7 @@ export function StatisticsView() {
           if (mode === 'moons') return <MoonFrequency></MoonFrequency>
           if (mode === 'orbits') return <SystemSizes></SystemSizes>
           if (mode === 'size') return <SizeDistribution></SizeDistribution>
+          if (mode === 'resources') return <ResourceDistribution></ResourceDistribution>
           return <span></span>
         }}
       ></ToggleButtons>

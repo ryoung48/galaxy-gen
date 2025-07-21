@@ -1,3 +1,4 @@
+import PriorityQueue from 'js-priority-queue'
 import { NATION } from '../nations'
 import { SOLAR_SYSTEM } from '../system'
 import { DICE } from '../utilities/dice'
@@ -48,7 +49,10 @@ export const GALAXY = {
       uniqueNames: {},
       nations: [],
       stars: [],
-      orbits: []
+      orbits: [],
+      time: 0,
+      futures: new PriorityQueue({ comparator: (a, b) => a.time - b.time }),
+      past: []
     }
     const systems = finalPoints.map(SOLAR_SYSTEM.spawn)
     const mst = MINIMUM_SPANNING_TREE.build(

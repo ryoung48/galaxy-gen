@@ -3,6 +3,7 @@ export type Stat =
   | 'planets'
   | 'moons'
   | 'orbits'
+  | 'resources'
   | 'biosphere'
   | 'relations'
   | 'hydrosphere'

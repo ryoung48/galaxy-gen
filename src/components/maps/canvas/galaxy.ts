@@ -1,6 +1,5 @@
 import jdenticon from 'jdenticon/standalone'
-import { curveCatmullRom, line as d3Line } from 'd3-shape'
-import { Delaunay } from 'd3-delaunay'
+import { line as d3Line } from 'd3-shape'
 import { CONSTANTS } from '../../../model/constants'
 import { GALAXY } from '../../../model/galaxy'
 import { SOLAR_SYSTEM } from '../../../model/system'
@@ -12,7 +11,6 @@ import { VORONOI } from '../../../model/utilities/voronoi'
 import { scaleLinear } from 'd3'
 import { COLORS } from '../../../theme/colors'
 import { drawResourceIconWithText, RESOURCE_ICONS } from './resourceIcons'
-import { MATH } from '../../../model/utilities/math'
 import { Star } from '../../../model/system/stars/types'
 import { EdgeMap } from '../../../model/utilities/voronoi/types'
 
@@ -37,9 +35,9 @@ const drawSystemResources = ({
   if (entries.length === 0) return
 
   // Layout constants (world-units)
-  const iconRenderSize = 0.45
-  const iconSpacing = 0.25
-  const textSize = 0.22
+  const iconRenderSize = 0.65
+  const iconSpacing = 0.3
+  const textSize = 0.3
 
   const iconRowY = system.y + 1.0
   // (text y handled by shared helper)
@@ -67,147 +65,16 @@ const identiconCache = new Map<number, HTMLCanvasElement>()
 let edgeMapCache: EdgeMap | null = null
 const nationBoundaryCache = new Map<number, Path2D[]>()
 
-// Cache for expensive trade route calculations
-let tradeRoutesCache: number[][] | null = null
-
 // Cache for pre-rendered shield + identicon composites (one per nation)
 const heraldryCompositeCache = new Map<number, HTMLCanvasElement>()
 
-// A* path-finding across the hyper-lane network (system.lanes)
-const shortestPath = (startIdx: number, goalIdx: number): number[] | null => {
-  if (startIdx === goalIdx) return [startIdx]
-  const systems = window.galaxy.systems
-
-  const openSet = new Set<number>([startIdx])
-  const cameFrom = new Map<number, number>()
-
-  const gScore = new Map<number, number>()
-  gScore.set(startIdx, 0)
-
-  const fScore = new Map<number, number>()
-  const goalPos = systems[goalIdx]
-  const heuristic = (idx: number) =>
-    MATH.distance([systems[idx].x, systems[idx].y], [goalPos.x, goalPos.y])
-
-  fScore.set(startIdx, heuristic(startIdx))
-
-  while (openSet.size) {
-    // find node in openSet with lowest fScore
-    let current = -1
-    let lowest = Infinity
-    openSet.forEach(idx => {
-      const f = fScore.get(idx) ?? Infinity
-      if (f < lowest) {
-        lowest = f
-        current = idx
-      }
-    })
-
-    if (current === -1) break // should not happen
-
-    if (current === goalIdx) {
-      const path: number[] = [current]
-      while (cameFrom.has(current)) {
-        current = cameFrom.get(current)!
-        path.push(current)
-      }
-      return path.reverse()
-    }
-
-    openSet.delete(current)
-    const currentG = gScore.get(current) ?? Infinity
-
-    systems[current].lanes.forEach(neiIdx => {
-      const tentativeG =
-        currentG +
-        MATH.distance(
-          [systems[current].x, systems[current].y],
-          [systems[neiIdx].x, systems[neiIdx].y]
-        )
-      if (tentativeG < (gScore.get(neiIdx) ?? Infinity)) {
-        cameFrom.set(neiIdx, current)
-        gScore.set(neiIdx, tentativeG)
-        fScore.set(neiIdx, tentativeG + heuristic(neiIdx))
-        openSet.add(neiIdx)
-      }
-    })
-  }
-  return null // no path
-}
-
-const getTradeRoutes = (): number[][] => {
-  if (tradeRoutesCache) return tradeRoutesCache
-
-  const largeNations = window.galaxy.nations.filter(n => n.systems.length >= 25)
-  const systems = window.galaxy.systems
-
-  // Build points array of capitals
-  const points = largeNations.map(n => {
-    const cap = systems[n.capital]
-    return { x: cap.x, y: cap.y, nationIdx: n.idx }
-  })
-
-  // Create Delaunay triangulation
-  const delaunay = Delaunay.from(
-    points,
-    p => p.x,
-    p => p.y
-  )
-  const { triangles } = delaunay
-
-  // Build edge set according to Urquhart graph
-  const edgeKeys = new Set<string>()
-  const addEdge = (i: number, j: number) => {
-    const a = points[i].nationIdx
-    const b = points[j].nationIdx
-    if (a === b) return
-    const key = [a, b].sort((x, y) => x - y).join('-')
-    edgeKeys.add(key)
-  }
-
-  for (let t = 0; t < triangles.length; t += 3) {
-    const ai = triangles[t]
-    const bi = triangles[t + 1]
-    const ci = triangles[t + 2]
-
-    const edges = [
-      [ai, bi],
-      [bi, ci],
-      [ci, ai]
-    ] as [number, number][]
-
-    // compute lengths
-    const lengths = edges.map(([i, j]) =>
-      MATH.distance([points[i].x, points[i].y], [points[j].x, points[j].y])
-    )
-
-    // find index of longest edge
-    const longestIdx = lengths.indexOf(Math.max(...lengths))
-
-    // add the other two edges
-    edges.forEach((e, idx) => {
-      if (idx !== longestIdx) addEdge(e[0], e[1])
-    })
-  }
-
-  const routes: number[][] = []
-
-  edgeKeys.forEach(key => {
-    const [aIdxStr, bIdxStr] = key.split('-')
-    const aIdx = Number(aIdxStr)
-    const bIdx = Number(bIdxStr)
-
-    const path = shortestPath(
-      window.galaxy.nations[aIdx].capital,
-      window.galaxy.nations[bIdx].capital
-    )
-    if (path && path.length > 1) {
-      routes.push(path)
-    }
-  })
-
-  tradeRoutesCache = routes
-  return routes
+// Function to clear caches when galaxy state changes
+const clearCaches = () => {
+  cellPathCache.clear()
+  identiconCache.clear()
+  edgeMapCache = null
+  nationBoundaryCache.clear()
+  heraldryCompositeCache.clear()
 }
 
 // Pre-render static background (core, nebulae, outer rim) once
@@ -281,7 +148,17 @@ const getBackgroundCanvas = (): HTMLCanvasElement => {
 }
 
 export const GALAXY_MAP = {
-  paint: ({ ctx, selected, solarSystem, mapMode }: PaintGalaxyParams) => {
+  paint: ({
+    ctx,
+    selected,
+    solarSystem,
+    mapMode,
+    clearCache = false
+  }: PaintGalaxyParams & { clearCache?: boolean }) => {
+    // Clear caches if requested (e.g., when galaxy state changes)
+    if (clearCache) {
+      clearCaches()
+    }
     // Draw pre-rendered galaxy background (auto-scaled with current transform)
     ctx.drawImage(getBackgroundCanvas(), 0, 0, CONSTANTS.W, CONSTANTS.H)
 
@@ -294,6 +171,7 @@ export const GALAXY_MAP = {
     const systems = GALAXY.worlds()
     systems.forEach(system => {
       const nation = SOLAR_SYSTEM.nation(system)
+      if (!nation) return
       const opacity = 0.25
       ctx.strokeStyle = `rgba(0, 0, 0, 0.1)`
       ctx.lineWidth = 0.15
@@ -355,41 +233,6 @@ export const GALAXY_MAP = {
           width: 0.25,
           color: 'rgba(255, 255, 255, 0.5)'
         })
-      })
-      // trade routes – highlighted links between neighboring large nations
-      const lineGen = d3Line().curve(curveCatmullRom.alpha(0.5))
-      const routes = getTradeRoutes()
-      const drawnEdges = new Set<string>()
-      const drawSegment = (segmentIndices: number[]) => {
-        const coords = segmentIndices.map(idx => [
-          window.galaxy.systems[idx].x,
-          window.galaxy.systems[idx].y
-        ])
-        if (coords.length < 2) return
-        const d = lineGen(coords as [number, number][])
-        if (!d) return
-        const p2d = new Path2D(d)
-        ctx.strokeStyle = 'rgba(111, 226, 255, 0.8)'
-        ctx.lineWidth = 0.75
-        ctx.stroke(p2d)
-      }
-
-      routes.forEach(pathIndices => {
-        let segment: number[] = [pathIndices[0]]
-        for (let i = 0; i < pathIndices.length - 1; i++) {
-          const a = pathIndices[i]
-          const b = pathIndices[i + 1]
-          const edgeKey = [a, b].sort((x, y) => x - y).join('-')
-          if (drawnEdges.has(edgeKey)) {
-            // flush current segment if it has length >1
-            if (segment.length > 1) drawSegment(segment)
-            segment = [b]
-            continue
-          }
-          drawnEdges.add(edgeKey)
-          segment.push(b)
-        }
-        if (segment.length > 1) drawSegment(segment)
       })
     }
     ctx.restore()

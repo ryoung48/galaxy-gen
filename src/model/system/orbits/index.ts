@@ -41,6 +41,7 @@ export const ORBIT = {
     if (!orbit.name) {
       const system = window.galaxy.systems[orbit.system]
       const nation = window.galaxy.nations[system.nation]
+      if (!nation) return '???'
       orbit.name = LANGUAGE.word.unique({ key: 'orbit', lang: nation.language })
     }
     return orbit.name

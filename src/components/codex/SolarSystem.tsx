@@ -8,17 +8,21 @@ import { SolarSystem } from '../../model/system/types'
 
 const SolarSystemView = (props: { system: SolarSystem }) => {
   const system = props.system
-  console.log(system)
+  const nation = SOLAR_SYSTEM.nation(system)
   return (
     <CodexPage
       title={system.name}
       subtitle={
-        <StyledText
-          text={`Solar System (#${system.idx ?? ''}), ${TEXT.decorate({
-            link: SOLAR_SYSTEM.nation(system),
-            color: COLORS.subtitle
-          })}`}
-        ></StyledText>
+        nation ? (
+          <StyledText
+            text={`Solar System (#${system.idx ?? ''}), ${TEXT.decorate({
+              link: nation,
+              color: COLORS.subtitle
+            })}`}
+          ></StyledText>
+        ) : (
+          ''
+        )
       }
       content={
         <Grid container>

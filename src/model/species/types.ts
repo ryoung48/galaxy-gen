@@ -1,10 +1,8 @@
-import { Language } from '../languages/types'
 import { BiologicalTraits } from './traits/biological/types'
 import { MechanicalTraits } from './traits/mechanical/types'
 
 export type Species = {
   idx: number
-  name: string
   archetype: 'biological' | 'mechanical' | 'lithic'
   preferences: {
     climate: 'dry' | 'wet' | 'cold'
@@ -35,6 +33,5 @@ export type Species = {
     | 'machine'
     | 'mechanical'
   preSapient: boolean
-  language: Language
   traits: (BiologicalTraits | MechanicalTraits)[]
 }

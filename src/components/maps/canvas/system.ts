@@ -131,6 +131,17 @@ export const SYSTEM_MAP = {
               })
             }
           })
+        } else if (object.type === 'asteroid' || object.type === 'ice asteroid') {
+          const orbit = object
+          DICE.swap(solarSystem.seed, () => {
+            CANVAS.asteroid({
+              ctx,
+              x: center.x,
+              y: center.y,
+              radius: orbit.r * mod,
+              fill: ORBIT.color(orbit)
+            })
+          })
         } else {
           const orbit = object
           CANVAS.sphere({

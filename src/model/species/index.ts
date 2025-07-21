@@ -1,5 +1,4 @@
 import { Species } from './types'
-import { LANGUAGE } from '../languages'
 import { BiologicalTraits } from './traits/biological/types'
 import { MechanicalTraits } from './traits/mechanical/types'
 import { BIOLOGICAL_TRAITS } from './traits/biological'
@@ -131,7 +130,6 @@ const SPECIES_CLASSES = {
     'molluscoid',
     'fungoid',
     'plantoid',
-    'lithoid',
     'necroid',
     'aquatic',
     'toxoid'
@@ -155,12 +153,12 @@ export const SPECIES = {
     // Determine archetype
     const archetype = window.dice.weightedChoice([
       { v: 'biological', w: 0.8 },
-      { v: 'mechanical', w: 0.1 },
-      { v: 'lithic', w: 0.1 }
+      { v: 'mechanical', w: 0 },
+      { v: 'lithic', w: 0 }
     ]) as 'biological' | 'mechanical' | 'lithic'
 
     // Determine trait points based on archetype
-    const traitPoints = archetype === 'biological' ? 5 : 4
+    const traitPoints = archetype === 'biological' || archetype === 'lithic' ? 5 : 4
 
     // Select species class
     const availableClasses = SPECIES_CLASSES[archetype]
@@ -171,15 +169,6 @@ export const SPECIES = {
 
     // Determine world preference (optional)
     let world = archetype !== 'mechanical' ? window.dice.choice(WORLD_TYPES[climate]) : undefined
-
-    // Generate language
-    const language = LANGUAGE.spawn()
-
-    // Generate species name
-    const name = LANGUAGE.word.unique({
-      lang: language,
-      key: 'species_name'
-    })
 
     // Select traits based on archetype
     let traits: (BiologicalTraits | MechanicalTraits)[] = []
@@ -204,7 +193,6 @@ export const SPECIES = {
 
     return {
       idx: window.dice.randint(1, 999999),
-      name,
       archetype,
       preferences: {
         climate,
@@ -212,9 +200,11 @@ export const SPECIES = {
       },
       class: class_,
       preSapient: false,
-      language,
       traits
     }
+  },
+  getTraitsInfo: (traits: (BiologicalTraits | MechanicalTraits)[]) => {
+    return traits.map(trait => TRAITS[trait])
   }
 }
 
@@ -224,31 +214,21 @@ function selectTraits(
   existingTraits: Species['traits'],
   type: 'biological' | 'mechanical'
 ): Species['traits'] {
-  let traits: Species['traits'] = [...existingTraits]
-  const originalTraits = [...traits]
-  const originalPoints = availablePoints
-  let remainingPoints = availablePoints
-
-  // Set maximum number of traits based on type
   const maxTraits = type === 'biological' ? 5 : 4
+  const allPossibleTraits = (type === 'biological' ? biological : mechanical) as (
+    | BiologicalTraits
+    | MechanicalTraits
+  )[]
 
-  const raw = type === 'biological' ? biological : mechanical
-
-  // If starting with 0 points, 50% chance to add a negative trait for variety
-  if (availablePoints === 0 && window.dice.random < 0.5) {
-    const negativeTraitOptions = raw.filter(trait => {
+  const getAffordableTraits = (
+    currentTraits: (BiologicalTraits | MechanicalTraits)[],
+    remainingPoints: number
+  ) => {
+    return allPossibleTraits.filter(trait => {
       const traitData = TRAITS[trait]
-
-      // Only consider negative traits
-      if (traitData.traitPoints >= 0) return false
-
-      // Check if we already have it
-      if (traits.includes(trait)) return false
-
-      // Check for conflicts with existing traits
-      if (hasConflictingTrait(traits, trait)) return false
-
-      // Check class restrictions
+      if (remainingPoints - traitData.traitPoints < 0) return false
+      if (currentTraits.includes(trait)) return false
+      if (hasConflictingTrait(currentTraits, trait)) return false
       if (
         traitData.restrictions.speciesClass &&
         !traitData.restrictions.speciesClass.includes(speciesClass)
@@ -257,69 +237,44 @@ function selectTraits(
       }
       return true
     })
-
-    if (negativeTraitOptions.length > 0) {
-      const selectedNegativeTrait = window.dice.choice(negativeTraitOptions)
-      traits.push(selectedNegativeTrait)
-      remainingPoints -= TRAITS[selectedNegativeTrait].traitPoints
-    }
   }
 
-  // Convert trait costs to weighted distribution
-  const traitOptions = raw.map(trait => ({
-    trait,
-    cost: TRAITS[trait].traitPoints,
-    weight: TRAITS[trait].traitPoints > 0 ? 1 : 0.5 // Negative traits are less likely
-  }))
+  const baseTraits: (BiologicalTraits | MechanicalTraits)[] = [...existingTraits]
+  const basePoints = availablePoints
 
-  // Try to select traits until we run out of points, can't afford anything, or reach max traits
+  let bestSelection = {
+    traits: [...baseTraits],
+    remainingPoints: basePoints
+  }
+
   const maxAttempts = 20
-  let attempts = 0
+  for (let i = 0; i < maxAttempts; i++) {
+    const currentTraits: (BiologicalTraits | MechanicalTraits)[] = [...baseTraits]
+    let remainingPoints = basePoints
 
-  while (remainingPoints > 0 && attempts < maxAttempts) {
-    // Filter traits we can afford, haven't selected, don't conflict, and meet class restrictions
-    const affordableTraits = traitOptions.filter(({ trait, cost }) => {
-      const traitData = TRAITS[trait]
+    while (remainingPoints > 0 && currentTraits.length < maxTraits) {
+      const affordableTraits = getAffordableTraits(currentTraits, remainingPoints)
 
-      // Check if we can afford it
-      if (remainingPoints - cost < 0) return false
+      if (affordableTraits.length === 0) break
 
-      // Check if we already have it
-      if (traits.includes(trait)) return false
+      const weightedTraits = affordableTraits.map(trait => ({
+        v: trait,
+        w: TRAITS[trait].traitPoints > 0 ? 1 : 2
+      }))
 
-      // Check for conflicts with existing traits
-      if (hasConflictingTrait(traits, trait)) return false
-
-      // Check class restrictions
-      if (
-        traitData.restrictions.speciesClass &&
-        !traitData.restrictions.speciesClass.includes(speciesClass)
-      ) {
-        return false
-      }
-
-      return true
-    })
-
-    if (affordableTraits.length === 0) break
-
-    // Weight by cost (cheaper traits more likely) and whether it's positive/negative
-    const weightedTraits = affordableTraits.map(({ trait, weight }) => ({
-      v: trait,
-      w: weight
-    }))
-
-    const selectedTrait = window.dice.weightedChoice(weightedTraits)
-    traits.push(selectedTrait)
-    remainingPoints -= TRAITS[selectedTrait].traitPoints
-    if (traits.length >= maxTraits && remainingPoints > 0) {
-      traits = originalTraits
-      remainingPoints = originalPoints
+      const selectedTrait = window.dice.weightedChoice(weightedTraits)
+      currentTraits.push(selectedTrait)
+      remainingPoints -= TRAITS[selectedTrait].traitPoints
     }
-    attempts++
+
+    if (remainingPoints < bestSelection.remainingPoints) {
+      bestSelection = { traits: currentTraits, remainingPoints }
+    }
+
+    if (bestSelection.remainingPoints === 0) break
   }
 
-  return traits
+  return bestSelection.traits
 }
 
 function hasConflictingTrait(
