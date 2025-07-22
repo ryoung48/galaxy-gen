@@ -400,7 +400,8 @@ export const STAR = {
         orbitals.sort((a, b) => b.deviation - a.deviation)
         let angle = incrementAngle()
         let distance = star.r + 10
-        let impactZone = giant ? window.dice.randint(1, 2) : 0
+        let impactZone =
+          star.luminosityClass === 'III' || whiteDwarf ? window.dice.randint(1, 3) : 0
         orbitals.forEach(template => {
           const deviation = window.dice.uniform(
             template.deviation - 0.25,
