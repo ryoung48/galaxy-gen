@@ -116,6 +116,22 @@ export type OrbitTypeDetails = {
   tidalFlex?: boolean
   biosphere?: boolean
   subtypes?: Record<string, { description?: string; composition?: Orbit['composition'] }>
+  resources?: {
+    type:
+      | 'food'
+      | 'minerals'
+      | 'energy'
+      | 'alloys'
+      | 'consumer goods'
+      | 'research'
+      | 'trade'
+      | 'exotic gas'
+      | 'rare crystals'
+      | 'volatile motes'
+      | 'zro'
+      | 'dark matter'
+    weight: number
+  }[]
   roll: (_params: {
     star: Star
     zone: Orbit['zone']

@@ -279,8 +279,11 @@ export const STAR = {
     const whiteDwarf = star.spectralClass === 'D'
     const neutronStar = star.spectralClass === 'NS'
     const blackHole = star.spectralClass === 'BH'
+    const giant = isGiant(star.luminosityClass)
     if (brownDwarf) star.r = parent ? 20 : 25
-    if (whiteDwarf || neutronStar) star.r = parent ? 10 : 15
+    else if (whiteDwarf || neutronStar) star.r = parent ? 10 : 15
+    else if (giant || star.spectralClass === 'O' || star.spectralClass === 'B')
+      star.r = parent ? 40 : 50
     if (parent) {
       star.distance += star.r
       star.temperature = Math.max(star.temperature, TEMPERATURE.base(deviation ?? 0))
@@ -289,7 +292,6 @@ export const STAR = {
     if (star.zone !== 'epistellar') {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const giant = isGiant(star.luminosityClass)
         const companions: StarCompanionTemplate[] = []
         const noCompanions = neutronStar || blackHole || star.spectralClass === 'Y'
         const companionOdds = noCompanions ? Infinity : 11
