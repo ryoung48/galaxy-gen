@@ -9,7 +9,6 @@ import {
   OrbitTypeDetails
 } from './types'
 import { LANGUAGE } from '../../languages'
-import { DICE } from '../../utilities/dice'
 import { ORBIT_CLASSIFICATION } from './classification'
 import { ORBIT_GROUPS } from './groups'
 import { ATMOSPHERE } from './atmosphere'
@@ -80,8 +79,6 @@ const garden = (): ReturnType<OrbitTypeDetails['roll']> => {
   }
 }
 
-const _colors: Record<string, string> = {}
-
 const rotation = (size: number, locked?: boolean, parent?: Orbit) => {
   if (locked) return 0
   if (parent && parent.group !== 'asteroid belt' && window.dice.random < 0.6) return 0
@@ -144,16 +141,12 @@ export const ORBIT = {
     else if (roll <= 11) return window.dice.uniform(0.15, 0.65)
     return window.dice.uniform(0.4, 0.9)
   },
-  colors: {
-    set: () => {
-      DICE.swap('planet', () => {
-        window.galaxy.orbits.forEach(orbit => {
-          if (!_colors[orbit.type]) _colors[orbit.type] = ORBIT_CLASSIFICATION[orbit.type].color
-        })
-      })
-    },
-    get: () => _colors
-  },
+  colors: (orbit: Orbit) =>
+    orbit.type === 'asteroid'
+      ? orbit.subtype === 'ice'
+        ? '#ADD8E6'
+        : '#778899'
+      : ORBIT_CLASSIFICATION[orbit.type].color,
   describe: (orbit: Orbit) => ORBIT_CLASSIFICATION[orbit.type].description,
   name: (orbit: Orbit) => {
     if (!orbit.name) {
@@ -389,7 +382,7 @@ export const ORBIT = {
       period,
       size,
       ...physique,
-      composition,
+      composition: { type: composition, description: physique.description },
       atmosphere,
       temperature,
       hydrosphere: { code: hydrosphere, distribution: window.dice.roll(2, 6) - 2 },
@@ -423,15 +416,16 @@ export const ORBIT = {
     if (asteroidBelt) orbit.belt = ASTEROID_BELT.spawn({ star, au })
     orbit.resources = DESIRABILITY.resources(orbit, parent)
     if (selected === 'jovian') orbit.rings = window.dice.roll(1, 6) <= 4 ? 'minor' : 'complex'
-    if (!parent && orbit.size > 0 && !asteroidBelt) {
+    if (!parent && (orbit.size > 0 || asteroidBelt)) {
       const hillSphere =
         au * (1 - eccentricity) * ((orbit.mass * 0.000003) / (star.mass * 3)) ** (1 / 3)
       const hillPD = (hillSphere * 149597870.9) / (orbit.diameter * CONSTANTS.ED)
       const hillLimit = hillPD / 2
-      const habMoonNeeded = _primary && selected !== 'terrestrial'
+      const habMoonNeeded = _primary && selected !== 'terrestrial' && !asteroidBelt
       let subAngle = window.dice.randint(90, 270)
-      let distance = orbit.r + 2
-      const orbits = star.age < 0.002 ? [] : ORBIT_GROUPS[selected].orbits({ size })
+      let distance = asteroidBelt ? 0 : orbit.r + 2
+      const orbits =
+        star.age < 0.002 && !asteroidBelt ? [] : ORBIT_GROUPS[selected].orbits({ size })
       const mor = Math.min(Math.round(hillLimit) - 2, 200 + orbits.length)
       if (habMoonNeeded && orbits.length < 1) orbits.push('dwarf')
       const habIndex = habMoonNeeded ? window.dice.randint(0, orbits.length - 1) : -1
@@ -447,15 +441,15 @@ export const ORBIT = {
           angle: subAngle,
           unary,
           deviation,
-          moon: { ...lunarOrbits[i] },
+          moon: asteroidBelt ? undefined : { ...lunarOrbits[i] },
           designation: habIndex === i ? 'primary' : undefined
         })
         subAngle += window.dice.randint(90, 270)
-        distance = moon.distance + moon.r + 1
+        distance = asteroidBelt ? 0 : moon.distance + moon.r + 1
         return moon
       })
       orbit.fullR = distance
-      orbit.distance += orbit.fullR - orbit.r
+      if (!asteroidBelt) orbit.distance += orbit.fullR - orbit.r
     }
     if (asteroidBelt) orbit.fullR = 10
     return orbit

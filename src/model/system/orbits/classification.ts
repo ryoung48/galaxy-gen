@@ -72,7 +72,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     }
   },
   asteroid: {
-    color: '#808080',
+    color: '#778899',
     description:
       'These are bodies too small to sustain hydrostatic equilibrium; nearly all asteroids and comets are small bodies.',
     roll: ({ deviation }) => {
@@ -82,12 +82,9 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
         hydrosphere: 0,
         composition: 'rocky',
         subtype: window.dice.weightedChoice([
-          { v: 'vulcanoidal', w: deviation >= 1.5 ? 1 : 0 },
-          { v: 'metallic', w: 0.5 },
-          { v: 'silicaceous', w: 1 },
-          { v: 'carbonaceous', w: 1 },
-          { v: 'gelidaceous', w: deviation < -1.5 ? 1 : 0 },
-          { v: 'aggregate', w: 1 }
+          { v: 'metallic', w: deviation >= 1.5 ? 1 : 0 },
+          { v: 'rocky', w: 3 },
+          { v: 'ice', w: deviation < -1.5 ? 6 : 0 }
         ])
       }
     }

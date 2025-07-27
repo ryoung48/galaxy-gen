@@ -189,7 +189,9 @@ const GalaxyMap = () => {
           const solar = window.galaxy.systems[point]
           const local = transform.scale > 30
           if (local || !solar.edge) {
-            const objects = SOLAR_SYSTEM.orbits(system ?? solar)
+            const objects = SOLAR_SYSTEM.orbits(system ?? solar).filter(
+              orbit => orbit.tag !== 'orbit' || orbit.type !== 'asteroid belt'
+            )
             const closest = MATH.findClosest(
               cursor,
               objects.map((obj, i) => ({ ...CANVAS.coordinates(obj), i }))

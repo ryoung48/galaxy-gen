@@ -2,7 +2,7 @@ import { Star } from '../../stars/types'
 import { Orbit } from '../types'
 
 export type FinalizeTemperatureParams = {
-  composition: Orbit['composition']
+  composition: Orbit['composition']['type']
   au: number
   star: Star
   atmosphere: Orbit['atmosphere']

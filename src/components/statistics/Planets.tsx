@@ -1,5 +1,6 @@
 import { CustomPieChart } from './pie'
 import { ORBIT } from '../../model/system/orbits'
+import { Orbit } from '../../model/system/orbits/types'
 
 export const PlanetFrequency = () => {
   const planets = window.galaxy.orbits.filter(
@@ -17,7 +18,7 @@ export const PlanetFrequency = () => {
         id: k,
         label: k,
         value: v,
-        color: ORBIT.colors.get()[k]
+        color: ORBIT.colors(k as unknown as Orbit)
       }
     })
     .sort((a, b) => b.value - a.value)

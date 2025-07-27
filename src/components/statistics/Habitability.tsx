@@ -4,9 +4,6 @@ import { METRICS } from '../maps/legend/metrics'
 
 export const HabitabilityDistribution = () => {
   const getHabitabilityCategory = (rating: number): string => {
-    if (rating <= -8) return 'Lethal (-8)'
-    if (rating <= -5) return 'Deadly (-5)'
-    if (rating <= -2) return 'Hazardous (-2)'
     if (rating <= 0) return 'Hostile (0)'
     if (rating <= 2) return 'Barely Habitable (2)'
     if (rating <= 4) return 'Marginally Survivable (4)'
@@ -25,7 +22,9 @@ export const HabitabilityDistribution = () => {
     const orbits = SOLAR_SYSTEM.orbits(system)
     const maxHab =
       orbits.length > 0
-        ? Math.max(...orbits.map(orbit => (orbit.tag === 'star' ? -10 : orbit.habitability)))
+        ? Math.max(
+            ...orbits.filter(orbit => orbit.tag === 'orbit').map(orbit => orbit.habitability)
+          )
         : -10 // Systems with no habitable orbits get very low score
     dict[system.idx] = maxHab
     return dict

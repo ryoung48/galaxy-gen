@@ -30,8 +30,8 @@ import {
   mdiAccountGroup,
   mdiGrass,
   mdiEarth,
-  mdiCog,
-  mdiTerrain
+  mdiCog
+  // mdiTerrain
 } from '@mdi/js'
 import { SIZE } from '../../model/system/orbits/groups'
 import { BIOSPHERE } from '../../model/system/orbits/biosphere'
@@ -155,13 +155,13 @@ const getHydrosphereIconPath = (code: number) => {
   return mdiWeatherHurricane // gas-giant core or exotic cases
 }
 
-// Color mapping for composition types
-const compositionColor: Record<Orbit['composition'], string> = {
-  rocky: '#c2a679', // tan / rock
-  ice: '#a2d6f8', // light blue ice
-  metallic: '#c0c0c0', // silver
-  gas: '#e8daef' // pale yellow
-}
+// // Color mapping for composition types
+// const compositionColor: Record<Orbit['composition']['type'], string> = {
+//   rocky: '#c2a679', // tan / rock
+//   ice: '#a2d6f8', // light blue ice
+//   metallic: '#c0c0c0', // silver
+//   gas: '#e8daef' // pale yellow
+// }
 
 const OrbitView = (props: { orbit: Orbit }) => {
   const orbit = props.orbit
@@ -178,7 +178,7 @@ const OrbitView = (props: { orbit: Orbit }) => {
           <Icon
             path={mdiSphere}
             size={0.5}
-            color={ORBIT.colors.get()[orbit.type]}
+            color={ORBIT.colors(orbit)}
             style={{ verticalAlign: 'middle', marginRight: 4, marginBottom: 1 }}
           />
           <StyledText
@@ -261,16 +261,16 @@ const OrbitView = (props: { orbit: Orbit }) => {
             <b>Size: </b>({orbit.size}) {orbit.diameter.toFixed(2)}⊕ (D), {orbit.mass.toFixed(3)}⊕
             (M), {orbit.gravity.toFixed(2)} (G)
           </Grid>
-          <Grid item xs={12}>
+          {/* <Grid item xs={12}>
             <Icon
               path={mdiTerrain}
               size={0.7}
-              color={compositionColor[orbit.composition]}
+              color={compositionColor[orbit.composition.type]}
               style={{ verticalAlign: 'middle', marginRight: 4 }}
             />
             <b>Composition: </b>{' '}
-            {orbit.composition.charAt(0).toUpperCase() + orbit.composition.slice(1)}
-          </Grid>
+            {TEXT.title(orbit.composition.description ?? orbit.composition.type)}
+          </Grid> */}
           <Grid item xs={12}>
             <Icon
               path={mdiCloudOutline}

@@ -26,10 +26,10 @@ export const METRICS = {
         }))
   },
   habitability: {
-    scale: scaleLinear([-10, 10], [0, 1]),
+    scale: scaleLinear([0, 10], [0, 1]).clamp(true),
     color: (heat: number) => interpolateSpectral(METRICS.habitability.scale(heat)),
     legend: () =>
-      range(-10, 11, 2)
+      range(0, 11)
         .reverse()
         .map(habitability => ({
           color: METRICS.habitability.color(habitability),

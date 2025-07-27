@@ -45,7 +45,7 @@ export interface Orbit {
   mass: number
   gravity: number
   density: number
-  composition: 'rocky' | 'ice' | 'metallic' | 'gas'
+  composition: { type: 'rocky' | 'ice' | 'metallic' | 'gas'; description?: string }
   atmosphere: Atmosphere
   hydrosphere: { code: number; distribution: number }
   biosphere: number
@@ -105,8 +105,8 @@ export type OrbitGroupDetails = {
   orbits: ({ size }: { size: number }) => Orbit['group'][]
   size: (_params: {
     size: number
-    composition: Orbit['composition']
-  }) => Pick<Orbit, 'diameter' | 'mass' | 'gravity' | 'density'>
+    composition: Orbit['composition']['type']
+  }) => Pick<Orbit, 'diameter' | 'mass' | 'gravity' | 'density'> & { description?: string }
 }
 
 export type OrbitTypeDetails = {
@@ -142,7 +142,7 @@ export type OrbitTypeDetails = {
     size: number
     atmosphere: number
     hydrosphere: number
-    composition: Orbit['composition']
+    composition: Orbit['composition']['type']
     chemistry?: Orbit['chemistry']
     subtype?: string
     eccentric?: boolean

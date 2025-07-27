@@ -16,19 +16,25 @@ function getDensityFromTable(densityRoll: number, composition: string): number {
   return densityValues[densityRoll - 2] // 2D roll ranges from 2 to 12
 }
 
-function calculateDensity(composition: Orbit['composition']) {
+function calculateDensity(composition: Orbit['composition']['type']) {
   // Determine composition from modified roll
-  const detailed = window.dice.weightedChoice([
+  const description = window.dice.weightedChoice([
     { v: 'Exotic Ice', w: composition === 'ice' ? 1 : 0 },
     { v: 'Mostly Ice', w: composition === 'ice' ? 5 : 0 },
-    { v: 'Mostly Rock', w: composition === 'rocky' ? 5 : 0 },
-    { v: 'Rock and Metal', w: composition === 'metallic' || composition === 'rocky' ? 1 : 0 },
+    { v: 'Mostly Rock', w: composition === 'rocky' ? 3 : 0 },
+    {
+      v: 'Rock and Metal',
+      w: composition === 'metallic' || composition === 'rocky' ? 4 : 0
+    },
     { v: 'Mostly Metal', w: composition === 'metallic' ? 5 : 0 },
     { v: 'Compressed Metal', w: composition === 'metallic' ? 1 : 0 }
   ])
   // Get the density using the second roll
   const densityRoll = window.dice.roll(2, 6) // Roll 2D6 for density
-  return getDensityFromTable(densityRoll, detailed)
+  return {
+    density: getDensityFromTable(densityRoll, description),
+    description
+  }
 }
 
 const diameterEstimate = (size: number) => {
@@ -60,10 +66,10 @@ const calculateGravity = (density: number, diameter: number) => {
 
 const calculateSize: OrbitGroupDetails['size'] = ({ size, composition }) => {
   const diameter = diameterEstimate(size)
-  const density = calculateDensity(composition)
+  const { density, description } = calculateDensity(composition)
   const mass = density * diameter ** 3
   const gravity = calculateGravity(density, diameter)
-  return { diameter, mass, gravity, density }
+  return { diameter, mass, gravity, density, description }
 }
 function getRareDwarfType() {
   const randomRoll = window.dice.roll(1, 6)
@@ -82,8 +88,12 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
   'asteroid belt': {
     type: ({ parent }) => (parent ? 'asteroid' : 'asteroid belt'),
     orbits: () => {
-      const roll = window.dice.roll(1, 6)
-      return roll <= 4 ? ['asteroid belt'] : ['dwarf']
+      return range(window.dice.roll(1, 3)).map(() =>
+        window.dice.weightedChoice([
+          { v: 'asteroid belt', w: 5 },
+          { v: 'dwarf', w: 1 }
+        ])
+      )
     },
     size: calculateSize
   },

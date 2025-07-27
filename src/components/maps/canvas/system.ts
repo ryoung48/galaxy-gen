@@ -98,21 +98,34 @@ export const SYSTEM_MAP = {
             }
           })
         }
+        if (object.type === 'asteroid belt') return
         const orbit = object
-        CANVAS.sphere({
-          ctx,
-          x: center.x,
-          y: center.y,
-          radius: orbit.r * mod,
-          fill:
-            mapMode === 'habitability'
-              ? METRICS.habitability.color(orbit.habitability)
-              : mapMode === 'biosphere'
-              ? METRICS.biosphere.color(orbit.biosphere)
-              : mapMode === 'population'
-              ? METRICS.population.color(orbit.population?.code ?? 0)
-              : ORBIT.colors.get()[orbit.type]
-        })
+        if (object.type === 'asteroid') {
+          DICE.swap(solarSystem.seed, () => {
+            CANVAS.asteroid({
+              ctx,
+              x: center.x,
+              y: center.y,
+              radius: orbit.r * mod,
+              fill: ORBIT.colors(orbit)
+            })
+          })
+        } else {
+          CANVAS.sphere({
+            ctx,
+            x: center.x,
+            y: center.y,
+            radius: orbit.r * mod,
+            fill:
+              mapMode === 'habitability'
+                ? METRICS.habitability.color(orbit.habitability)
+                : mapMode === 'biosphere'
+                ? METRICS.biosphere.color(orbit.biosphere)
+                : mapMode === 'population'
+                ? METRICS.population.color(orbit.population?.code ?? 0)
+                : ORBIT.colors(orbit)
+          })
+        }
         CANVAS.text({
           ctx,
           x: center.x,

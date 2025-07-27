@@ -252,7 +252,9 @@ export const GALAXY_MAP = {
       const opacity = 0.25
       ctx.strokeStyle = `rgba(0, 0, 0, 0.1)`
       ctx.lineWidth = 0.15
-      const orbits = SOLAR_SYSTEM.orbits(system)
+      const orbits = SOLAR_SYSTEM.orbits(system).filter(
+        o => o.tag !== 'orbit' || o.type !== 'asteroid belt'
+      )
       const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere)))
       const population = Math.max(
         ...orbits.map(o => (o.tag === 'star' ? 0 : o.population?.code ?? 0))
@@ -305,7 +307,8 @@ export const GALAXY_MAP = {
         }
 
         ctx.strokeStyle = mapMode === 'government' ? 'rgba(0, 0, 0, 0.6)' : nation.flag.color
-        ctx.lineWidth = (selectedNation?.idx === nation.idx ? 3 : 1.5) * 3
+        ctx.lineWidth =
+          (selectedNation?.idx === nation.idx ? 3 : 1.5) * (mapMode === 'nations' ? 3 : 1.5)
         paths.forEach(p => {
           ctx.save()
           ctx.clip(p)
