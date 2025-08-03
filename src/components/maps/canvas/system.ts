@@ -101,7 +101,7 @@ export const SYSTEM_MAP = {
         if (object.type === 'asteroid belt') return
         const orbit = object
         if (object.type === 'asteroid') {
-          DICE.swap(solarSystem.seed, () => {
+          DICE.swap(object.idx.toString() + solarSystem.seed, () => {
             CANVAS.asteroid({
               ctx,
               x: center.x,
