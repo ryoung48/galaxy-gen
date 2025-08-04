@@ -141,12 +141,14 @@ export const ORBIT = {
     else if (roll <= 11) return window.dice.uniform(0.15, 0.65)
     return window.dice.uniform(0.4, 0.9)
   },
-  colors: (orbit: Orbit) =>
-    orbit.type === 'asteroid'
-      ? orbit.subtype === 'ice'
+  colors: (orbit: Orbit | Orbit['type']) => {
+    const type = typeof orbit === 'string' ? orbit : orbit.type
+    return type === 'asteroid'
+      ? typeof orbit !== 'string' && orbit.subtype === 'ice'
         ? '#ADD8E6'
         : '#778899'
-      : ORBIT_CLASSIFICATION[orbit.type].color,
+      : ORBIT_CLASSIFICATION[type].color
+  },
   describe: (orbit: Orbit) => ORBIT_CLASSIFICATION[orbit.type].description,
   name: (orbit: Orbit) => {
     if (!orbit.name) {
@@ -302,23 +304,34 @@ export const ORBIT = {
       ? 'tectonic'
       : primary
       ? selected === 'terrestrial'
-        ? window.dice.choice<Orbit['type']>([
-            'tectonic',
-            star.spectralClass === 'M' && !parent ? 'vesperian' : 'tectonic',
-            'arid',
-            'oceanic'
-          ])
+        ? star.spectralClass === 'M' && !parent && deviation > 0.5
+          ? 'vesperian'
+          : window.dice.choice<Orbit['type']>(['tectonic', 'arid', 'oceanic'])
         : window.dice.choice<Orbit['type']>(['geo-tidal'])
-      : ORBIT_GROUPS[selected].type({ zone, impactZone, parent, star })
+      : ORBIT_GROUPS[selected].type({ zone, impactZone, parent, star, deviation })
     const detail = homeworld
       ? garden()
       : ORBIT_CLASSIFICATION[type].roll({ star, zone, primary, parent, deviation })
     let { size } = detail
-    const composition = detail.composition
-    const physique = ORBIT_GROUPS[selected].size({ size, composition })
     const asteroidBelt = selected === 'asteroid belt'
     const asteroidMember = parent?.group === 'asteroid belt'
-    size = asteroidMember ? size : Math.max(0, Math.min((parent?.size ?? Infinity) - 1, size))
+    const jovian = selected === 'jovian'
+    size = asteroidMember
+      ? size
+      : Math.max(
+          0,
+          Math.min(
+            (parent?.size ?? Infinity) -
+              window.dice.weightedChoice([
+                { w: jovian ? 1 : 0, v: 0 },
+                { w: jovian ? 0 : 1, v: 1 },
+                { w: jovian ? 0 : 5, v: 2 }
+              ]),
+            size
+          )
+        )
+    const composition = detail.composition
+    const physique = ORBIT_GROUPS[selected].size({ size, composition })
     let hydrosphere = detail.hydrosphere
     if (special && selected !== 'asteroid belt' && selected !== 'jovian') {
       hydrosphere = HYDROSPHERE.special(star, size, hydrosphere)
@@ -327,7 +340,10 @@ export const ORBIT = {
       detail.chemistry = undefined
     }
     const { subtype, chemistry } = detail
-    const kelvin = TEMPERATURE.base(deviation)
+    const { tidalLock: tidalLocked } = ORBIT_CLASSIFICATION[type]
+    const moddedDeviation =
+      deviation - (type === 'vesperian' ? 1 : type === 'jani-lithic' ? 0.5 : 0)
+    const kelvin = TEMPERATURE.base(moddedDeviation)
     if (hydrosphere < 10) {
       const hot = TEMPERATURE.describe(kelvin) === 'hot'
       const burning = TEMPERATURE.describe(kelvin) === 'burning'
@@ -335,9 +351,15 @@ export const ORBIT = {
       else if (hot) hydrosphere -= 2
       hydrosphere = Math.max(hydrosphere, 0)
     }
-    const atmosphere = ATMOSPHERE.finalize(detail.atmosphere, size, deviation, hydrosphere, type)
-    const au = MATH.orbits.distance(kelvin, star.luminosity)
-    const tilt = axialTilt({ tidalLocked: ORBIT_CLASSIFICATION[type].tidalLock, homeworld })
+    const atmosphere = ATMOSPHERE.finalize(
+      detail.atmosphere,
+      size,
+      moddedDeviation,
+      hydrosphere,
+      type
+    )
+    const au = MATH.orbits.distance(TEMPERATURE.base(deviation), star.luminosity)
+    const tilt = axialTilt({ tidalLocked, homeworld })
     const eccentricity = asteroidBelt
       ? 0
       : detail.eccentric
@@ -354,7 +376,7 @@ export const ORBIT = {
     const temperature = TEMPERATURE.finalize({
       atmosphere,
       hydrosphere,
-      au,
+      au: MATH.orbits.distance(TEMPERATURE.base(moddedDeviation), star.luminosity),
       star,
       composition,
       tilt,
@@ -390,19 +412,15 @@ export const ORBIT = {
         ? BIOSPHERE.get({ atmosphere, hydrosphere, temperature, star, type, size })
         : 0,
       chemistry,
-      habitability: DESIRABILITY.habitability({
-        type,
-        hydrosphere,
-        atmosphere,
-        size,
-        temperature,
-        gravity: physique.gravity
-      }),
+      habitability: -100,
       resources: 0,
       orbits: [],
       r,
       parent: parent ? { type: 'orbit', idx: parent.idx } : { type: 'star', idx: star.idx }
     }
+    const { score, trace } = DESIRABILITY.habitability({ orbit, parent })
+    orbit.habitability = score
+    orbit.habitabilityTrace = trace
     if ((impactZone || window.dice.random < 0.05) && orbit.biosphere > 0) {
       orbit.biosphere = -1
     } else if (orbit.biosphere < 7 && window.dice.random > 0.998 && orbit.atmosphere.code > 0) {

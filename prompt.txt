@@ -196,3 +196,14 @@ space: deep-space station|asteroid base|remote moon base|ancient orbital ruin|re
 
 disasters: seismic|volcanic|pirates|plague|meteor showers
 factions: military|aristocrats|peasants|clergy|industrialists|intelligentsia|criminals
+
+
+:::tags:::
+ - farming|mining|industrial|paradise|prison|tomb|hive|machine :: world
+ - exotic gas|rare crystals|volatile motes|zro
+ - alien ruins|failed outpost|ship junkyard|ancient orbital ruin
+ - research|robotics|medical|cloning|shipyards|cultural|academic|pilgrimage|military|corsairs|trade hub|mega-corporation
+ - refugees|civil war|holy war|revolutionaries|warlords|sectarians|battleground
+ - criminal underworld|gang wars|mob rule|drug trade
+ - storms|seismic|meteor showers|raiders|plague|dangerous wildlife
+ - primitives|observation post

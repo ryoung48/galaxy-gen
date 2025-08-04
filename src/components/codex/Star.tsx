@@ -8,7 +8,8 @@ import {
   mdiWeight,
   mdiRulerSquare,
   mdiBrightness5,
-  mdiFire
+  mdiFire,
+  mdiMinusCircleOutline
 } from '@mdi/js'
 
 import { TEXT } from '../../model/utilities/text'
@@ -49,7 +50,7 @@ const StarView = (props: { star: Star }) => {
       : star.age >= 1000
       ? `${(star.age / 1000).toFixed(2)} trillion years`
       : `${star.age.toFixed(2)} billion years`
-  const brownDwarf = STAR.isBrownDwarf(star)
+  const brownDwarf = STAR.isBrownDwarf(star.spectralClass)
   const postStellar = star.postStellar
   return (
     <CodexPage
@@ -91,6 +92,16 @@ const StarView = (props: { star: Star }) => {
               style={{ verticalAlign: 'middle', marginRight: 4 }}
             />
             <b>Distance: </b> {MATH.orbits.fromAU(star.au).toFixed(3)} ({star.au.toFixed(2)} AU)
+          </Grid>
+          <Grid item xs={12}>
+            <Icon
+              path={mdiMinusCircleOutline}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Minimum Orbit: </b> {star.mao.toFixed(3)} ({MATH.orbits.toAU(star.mao).toFixed(2)}{' '}
+            AU)
           </Grid>
           <Grid item xs={12}>
             <Icon

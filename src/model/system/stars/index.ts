@@ -54,6 +54,16 @@ const starDiameter: Record<Star['luminosityClass'], number[]> = {
   VI: [0.18, 0.18, 0.2, 0.5, 0.5, 0.6, 0.6, 0.8, 0.8, 0.7, 0.6, 0.5, 0.4, 0.1, 0.08]
 }
 
+const starMAO: Record<Star['luminosityClass'], number[]> = {
+  Ia: [0.63, 0.55, 0.5, 1.67, 3.34, 4.17, 4.42, 5.0, 5.21, 5.34, 5.59, 6.17, 6.8, 7.2, 7.8],
+  Ib: [0.6, 0.5, 0.35, 0.63, 1.4, 2.17, 2.5, 3.25, 3.59, 3.84, 4.17, 4.84, 5.42, 6.17, 6.59],
+  II: [0.55, 0.45, 0.3, 0.35, 0.75, 1.17, 1.33, 1.87, 2.24, 2.67, 3.17, 4.0, 4.59, 5.3, 5.92],
+  III: [0.53, 0.38, 0.25, 0.15, 0.13, 0.13, 0.13, 0.13, 0.25, 0.38, 0.5, 1.0, 1.68, 3.0, 4.34],
+  IV: [0.2, 0.2, 0.2, 0.13, 0.1, 0.07, 0.07, 0.06, 0.07, 0.1, 0.15, 0.15, 0.15, 0.15, 0.15],
+  V: [0.5, 0.3, 0.18, 0.09, 0.06, 0.05, 0.04, 0.03, 0.03, 0.02, 0.02, 0.02, 0.02, 0.01, 0.01],
+  VI: [0.01, 0.01, 0.01, 0.01, 0.015, 0.015, 0.015, 0.015, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01]
+}
+
 const whiteDwarfs = {
   mass: (parent?: Star) =>
     Math.min(
@@ -151,6 +161,7 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
   const whiteDwarf = spectralClass === 'D'
   const neutronStar = spectralClass === 'NS'
   const blackHole = spectralClass === 'BH'
+  const brownDwarf = STAR.isBrownDwarf(spectralClass)
   const { range: r } = spectralAttributes[spectralClass]
   const domain = range(luminosityClass === 'V' ? 20 : 15)
   const idx = scaleLinear([0, 9], r)(subtype)
@@ -176,6 +187,12 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
     ? blackHoles.diameter(mass)
     : scaleLinear(domain, starDiameter[luminosityClass])(idx)
   const luminosity = diameter ** 2 * (temperature / 5772) ** 4
+
+  const mao = brownDwarf
+    ? 0.005
+    : whiteDwarf || neutronStar || blackHole
+    ? 0.001
+    : scaleLinear(range(15), starMAO[luminosityClass])(idx)
 
   let age = parent?.age ?? 0
   if (!parent) {
@@ -213,7 +230,8 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
     diameter,
     luminosity,
     age,
-    eccentricity
+    eccentricity,
+    mao
   }
 }
 
@@ -275,7 +293,7 @@ export const STAR = {
         classAttributes.spectralClass === 'NS' ||
         classAttributes.spectralClass === 'BH'
     }
-    const brownDwarf = STAR.isBrownDwarf(star)
+    const brownDwarf = STAR.isBrownDwarf(star.spectralClass)
     const whiteDwarf = star.spectralClass === 'D'
     const neutronStar = star.spectralClass === 'NS'
     const blackHole = star.spectralClass === 'BH'
@@ -294,7 +312,18 @@ export const STAR = {
       while (true) {
         const companions: StarCompanionTemplate[] = []
         const noCompanions = neutronStar || blackHole || star.spectralClass === 'Y'
-        const companionOdds = noCompanions ? Infinity : 11
+        let companionMods = 0
+        if (star.luminosityClass !== 'V' && star.luminosityClass !== 'VI') companionMods += 1
+        else if (
+          star.spectralClass === 'O' ||
+          star.spectralClass === 'B' ||
+          star.spectralClass === 'A' ||
+          star.spectralClass === 'F'
+        )
+          companionMods += 1
+        else if (star.spectralClass === 'M' || whiteDwarf || brownDwarf || neutronStar || blackHole)
+          companionMods -= 1
+        const companionOdds = noCompanions ? Infinity : 11 + companionMods
         const epistellarCompanion = !giant && window.dice.roll(2, 6) >= companionOdds
         if (epistellarCompanion) {
           companions.push({
@@ -333,7 +362,7 @@ export const STAR = {
         const mClass = star.spectralClass === 'M'
         const secondaryNoPlanets = parent && window.dice.random > 0.5
         const deadStar = whiteDwarf || neutronStar || blackHole
-        const deadSystem = deadStar && window.dice.random > 0.6
+        const deadSystem = deadStar && window.dice.random > 0.8
         const noPlanets = secondaryNoPlanets || deadSystem || blackHole
         const maxEpistellar =
           epistellarCompanion || brownDwarf || deadStar || noPlanets
@@ -448,6 +477,6 @@ export const STAR = {
     }
     return star
   },
-  isBrownDwarf: (star: Star) =>
-    star.spectralClass === 'L' || star.spectralClass === 'T' || star.spectralClass === 'Y'
+  isBrownDwarf: (spectralClass: Star['spectralClass']) =>
+    spectralClass === 'L' || spectralClass === 'T' || spectralClass === 'Y'
 }

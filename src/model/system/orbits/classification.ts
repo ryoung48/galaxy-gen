@@ -204,8 +204,8 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     color: '#FFDAB9',
     description:
       'These are huge worlds with helium-hydrogen envelopes and compressed cores; the largest emit more heat than they absorb.',
-    roll: ({ star, deviation }) => {
-      const size = gasGiantSizes(star)
+    roll: ({ star, deviation, parent }) => {
+      const size = Math.min((parent?.size ?? Infinity) - 1, gasGiantSizes(star))
       let subtype = 'unknown'
       if (size === 16) {
         if (deviation >= 1) {
@@ -240,7 +240,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     }
   },
   meltball: {
-    color: '#FF4500',
+    color: '#FF625D',
     description:
       'These are dwarfs with molten or semi-molten surfaces, either from extreme tidal flexing, or extreme approach to a star.',
     tidalFlex: true,
@@ -353,13 +353,7 @@ export const ORBIT_CLASSIFICATION: Record<Orbit['type'], OrbitTypeDetails> = {
     roll: ({ zone }) => {
       const size = window.dice.roll(1, 5) - 1
       const atmosphere = window.dice.roll(1, 6) <= 4 ? 0 : 1
-      const hydrosphere =
-        window.dice.roll(1, 6) <= 2
-          ? window.dice.weightedChoice([
-              { v: 10, w: 9 },
-              { v: 11, w: 1 }
-            ])
-          : Math.max(1, window.dice.roll(2, 6) - 2)
+      const hydrosphere = window.dice.roll(1, 6) <= 2 ? 10 : Math.max(1, window.dice.roll(2, 6) - 2)
       let chemRoll = window.dice.roll(1, 6)
       if (zone === 'outer') chemRoll += 2
       const chemistry = chemRoll <= 4 ? 'water' : chemRoll <= 6 ? 'ammonia' : 'methane'

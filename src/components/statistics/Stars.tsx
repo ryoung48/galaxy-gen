@@ -12,7 +12,7 @@ export const StarFrequency = () => {
         .filter(orbit => orbit.tag === 'star')
         .forEach(star => {
           const { spectralClass, luminosityClass } = star
-          const brownDwarf = STAR.isBrownDwarf(star)
+          const brownDwarf = STAR.isBrownDwarf(star.spectralClass)
           const postStellar = star.postStellar
           const code = `${spectralClass}${brownDwarf || postStellar ? '' : `-${luminosityClass}`}`
           if (!dict[code])

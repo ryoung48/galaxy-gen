@@ -56,6 +56,7 @@ export interface Orbit {
   axialTilt: number
   period: number
   habitability: number
+  habitabilityTrace?: HabitabilityTrace
   resources: number
   population?: { code: number; size: number }
   settlement?:
@@ -101,6 +102,7 @@ export type OrbitGroupDetails = {
     impactZone: boolean
     parent?: Orbit
     star: Star
+    deviation: number
   }) => Orbit['type']
   orbits: ({ size }: { size: number }) => Orbit['group'][]
   size: (_params: {
@@ -170,4 +172,11 @@ export type PopulateOrbitParams = {
   maxTech?: number
   capital?: boolean
   mainworld?: boolean
+}
+
+export interface HabitabilityTrace {
+  adjustments: {
+    value: number
+    description: string
+  }[]
 }

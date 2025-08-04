@@ -33,7 +33,7 @@ export const SYSTEM_MAP = {
               : zone === 'epistellar'
               ? 'orange'
               : 'lightgray',
-          width: mod * 0.25
+          width: mod * 0.05
         }
       })
     })
@@ -107,11 +107,45 @@ export const SYSTEM_MAP = {
               x: center.x,
               y: center.y,
               radius: orbit.r * mod,
-              fill: ORBIT.colors(orbit)
+              fill:
+                mapMode === 'habitability'
+                  ? METRICS.habitability.color(orbit.habitability)
+                  : mapMode === 'biosphere'
+                  ? METRICS.biosphere.color(orbit.biosphere)
+                  : mapMode === 'population'
+                  ? METRICS.population.color(orbit.population?.code ?? 0)
+                  : ORBIT.colors(orbit)
             })
           })
         } else {
-          CANVAS.sphere({
+          // Draw back portion of rings for gas giants
+          if (orbit.type === 'jovian' && orbit.rings === 'complex') {
+            const ringRadius = orbit.r * mod * 1.8
+            const ringWidth = orbit.r * mod * 0.3
+            const tiltAngle = (orbit.axialTilt * Math.PI) / 180
+
+            // Draw back half of rings (behind planet)
+            ctx.save()
+            ctx.translate(center.x, center.y)
+            ctx.rotate(tiltAngle)
+            ctx.scale(1, 0.3)
+
+            ctx.lineWidth = ringWidth
+            ctx.strokeStyle = 'rgba(200, 180, 150, 0.4)' // Darker for back portion
+            ctx.beginPath()
+            ctx.arc(0, 0, ringRadius, Math.PI, 2 * Math.PI) // Bottom half
+            ctx.stroke()
+
+            // Inner ring back half
+            ctx.lineWidth = ringWidth * 0.6
+            ctx.strokeStyle = 'rgba(180, 160, 130, 0.3)'
+            ctx.beginPath()
+            ctx.arc(0, 0, ringRadius * 0.7, Math.PI, 2 * Math.PI)
+            ctx.stroke()
+
+            ctx.restore()
+          }
+          CANVAS.texturedSphere({
             ctx,
             x: center.x,
             y: center.y,
@@ -123,8 +157,37 @@ export const SYSTEM_MAP = {
                 ? METRICS.biosphere.color(orbit.biosphere)
                 : mapMode === 'population'
                 ? METRICS.population.color(orbit.population?.code ?? 0)
-                : ORBIT.colors(orbit)
+                : ORBIT.colors(orbit),
+            orbit,
+            seed: solarSystem.seed + orbit.idx
           })
+          // Draw front portion of rings for gas giants
+          if (orbit.type === 'jovian' && orbit.rings === 'complex') {
+            const ringRadius = orbit.r * mod * 1.8
+            const ringWidth = orbit.r * mod * 0.3
+            const tiltAngle = (orbit.axialTilt * Math.PI) / 180
+
+            // Draw front half of rings (in front of planet)
+            ctx.save()
+            ctx.translate(center.x, center.y)
+            ctx.rotate(tiltAngle)
+            ctx.scale(1, 0.3)
+
+            ctx.lineWidth = ringWidth
+            ctx.strokeStyle = 'rgba(200, 180, 150, 0.7)' // Brighter for front portion
+            ctx.beginPath()
+            ctx.arc(0, 0, ringRadius, 0, Math.PI) // Top half
+            ctx.stroke()
+
+            // Inner ring front half
+            ctx.lineWidth = ringWidth * 0.6
+            ctx.strokeStyle = 'rgba(180, 160, 130, 0.5)'
+            ctx.beginPath()
+            ctx.arc(0, 0, ringRadius * 0.7, 0, Math.PI)
+            ctx.stroke()
+
+            ctx.restore()
+          }
         }
         CANVAS.text({
           ctx,

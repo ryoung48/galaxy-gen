@@ -10,6 +10,7 @@ interface StarAttributes {
   luminosity: number
   age: number
   eccentricity: number
+  mao: number
 }
 
 export interface Star extends StarAttributes {

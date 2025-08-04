@@ -1,6 +1,6 @@
-import { Grid } from '@mui/material'
+import { Grid, Tooltip, Box } from '@mui/material'
 import { CodexPage } from '../common/CodexPage'
-import { Orbit } from '../../model/system/orbits/types'
+import { Orbit, HabitabilityTrace } from '../../model/system/orbits/types'
 import { ORBIT } from '../../model/system/orbits'
 import { TEXT } from '../../model/utilities/text'
 import { Fragment } from 'react'
@@ -54,10 +54,8 @@ function describeEccentricity(eccentricity: number): string {
   return 'parabolic orbit'
 }
 
-function describeAxialTilt(axialTilt: number): string {
-  const retrograde = axialTilt > 90
-  const tilt = retrograde ? 180 - axialTilt : axialTilt
-  let desc = ''
+function describeAxialTilt(tilt: number): string {
+  let desc = 'unknown'
   if (tilt === 0) {
     desc = 'no seasons'
   } else if (tilt > 0 && tilt <= 5) {
@@ -69,7 +67,7 @@ function describeAxialTilt(axialTilt: number): string {
   } else {
     desc = 'extreme seasons'
   }
-  return `${desc}${retrograde ? ', retrograde' : ''}`
+  return desc
 }
 
 function describeRotation(rotationHours: number): string {
@@ -121,6 +119,75 @@ const formatters = {
   population: new Intl.NumberFormat('en-US', { notation: 'compact' })
 }
 
+const getValueColor = (value: number): string => {
+  if (value > 0) {
+    // Green for positive values
+    const intensity = Math.min(Math.abs(value) / 5, 1) // Scale based on magnitude
+    return `rgb(${Math.round(255 - intensity * 255)}, 255, ${Math.round(255 - intensity * 255)})`
+  } else {
+    // Red for negative values
+    const intensity = Math.min(Math.abs(value) / 12, 1) // Scale based on magnitude (max negative is -12)
+    return `rgb(255, ${Math.round(255 - intensity * 255)}, ${Math.round(255 - intensity * 255)})`
+  }
+}
+
+const HabitabilityTooltip = ({
+  trace,
+  finalValue
+}: {
+  trace: HabitabilityTrace
+  finalValue: number
+}) => {
+  // Sort adjustments with worst (most negative) at the bottom
+  const sortedAdjustments = [...trace.adjustments].sort((a, b) => b.value - a.value)
+
+  return (
+    <Box sx={{ p: 1, maxWidth: 350 }}>
+      <Box>Habitability Factors</Box>
+      {sortedAdjustments.length > 0 ? (
+        <Box component='ul' sx={{ m: 0, pl: 0, listStyle: 'none', mt: 1 }}>
+          {sortedAdjustments.map((adj, idx) => (
+            <Box component='li' key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: getValueColor(adj.value),
+                  mr: 1,
+                  flexShrink: 0
+                }}
+              />
+              <span>{`${adj.value > 0 ? '+' : ''}${adj.value}: ${adj.description}`}</span>
+            </Box>
+          ))}
+        </Box>
+      ) : (
+        <Box sx={{ mt: 1 }}>
+          <span>No adjustments applied</span>
+        </Box>
+      )}
+      <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid #ccc' }}>
+        <Box component='ul' sx={{ m: 0, pl: 0, listStyle: 'none', mt: 0 }}>
+          <Box component='li' sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: METRICS.habitability.color(finalValue),
+                mr: 1,
+                flexShrink: 0
+              }}
+            />
+            <span>{`Final Habitability: ${finalValue}`}</span>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
 // Temperature color gradient (cold to hot)
 const getTemperatureColor = (celsius: number): string => {
   if (celsius < -50) return '#a2d6f8' // very cold
@@ -170,6 +237,8 @@ const OrbitView = (props: { orbit: Orbit }) => {
   const asteroid = orbit.group === 'asteroid belt'
   const { atmosphere } = orbit
   const hydro = HYDROSPHERE.labels.find(h => h.code === orbit.hydrosphere.code)
+  const retrograde = orbit.axialTilt > 90
+  const tilt = MATH.tilt.absolute(orbit.axialTilt)
   return (
     <CodexPage
       title={ORBIT.name(orbit)}
@@ -185,6 +254,8 @@ const OrbitView = (props: { orbit: Orbit }) => {
             text={`${orbit.type}${asteroid ? '' : moon ? ' moon' : ' planet'}${
               orbit.subtype
                 ? ` (${orbit.subtype}${orbit.chemistry ? `, ${orbit.chemistry}` : ''})`
+                : orbit.chemistry
+                ? ` (${orbit.chemistry})`
                 : ''
             }, ${TEXT.decorate({
               link: window.galaxy.systems[orbit.system],
@@ -230,7 +301,8 @@ const OrbitView = (props: { orbit: Orbit }) => {
               style={{ verticalAlign: 'middle', marginRight: 4 }}
             />
             <b>Rotation: </b> {isFinite(orbit.rotation) ? `${orbit.rotation} hours` : 'Infinite'} (
-            {describeRotation(orbit.rotation)})
+            {describeRotation(orbit.rotation)}
+            {orbit.rotation > 0 && retrograde ? ', retrograde' : ''})
           </Grid>
           <Grid item xs={12}>
             <Icon
@@ -249,7 +321,7 @@ const OrbitView = (props: { orbit: Orbit }) => {
               color='black'
               style={{ verticalAlign: 'middle', marginRight: 4 }}
             />
-            <b>Axial Tilt: </b> {orbit.axialTilt.toFixed(2)}° ({describeAxialTilt(orbit.axialTilt)})
+            <b>Axial Tilt: </b> {tilt.toFixed(2)}° ({describeAxialTilt(tilt)})
           </Grid>
           <Grid item xs={12}>
             <Icon
@@ -282,9 +354,7 @@ const OrbitView = (props: { orbit: Orbit }) => {
             {atmosphere.subtype
               ? `(${atmosphere.subtype}${
                   atmosphere.tainted ? `, ${atmosphere.code === 10 ? 'irritant' : 'tainted'}` : ''
-                }${atmosphere.hazard ? `, ${atmosphere.hazard}` : ''}${
-                  atmosphere.unusual ? `, ${atmosphere.unusual}` : ''
-                })`
+                }${atmosphere.unusual ? `, ${atmosphere.unusual}` : ''})`
               : ''}
           </Grid>
           <Grid item xs={12}>
@@ -300,11 +370,7 @@ const OrbitView = (props: { orbit: Orbit }) => {
               )
             })()}
             <b>Temperature: </b> {MATH.temperature.celsius(orbit.temperature.mean).toFixed(2)}°C (
-            {TEMPERATURE.describe(orbit.temperature.mean)}){' '}
-            <span style={{ color: COLORS.subtitle }}>
-              [{MATH.temperature.celsius(orbit.temperature.low).toFixed(1)}°C,{' '}
-              {MATH.temperature.celsius(orbit.temperature.high).toFixed(1)}°C]
-            </span>
+            {TEMPERATURE.describe(orbit.temperature.mean)})
           </Grid>
           <Grid item xs={12}>
             <Icon
@@ -332,7 +398,31 @@ const OrbitView = (props: { orbit: Orbit }) => {
               color={METRICS.habitability.color(orbit.habitability)}
               style={{ verticalAlign: 'middle', marginRight: 4 }}
             />
-            <b>Habitability: </b> ({orbit.habitability}) {describeHabitability(orbit.habitability)}
+            <b>Habitability: </b> (
+            {orbit.habitabilityTrace ? (
+              <Tooltip
+                title={
+                  <HabitabilityTooltip
+                    trace={orbit.habitabilityTrace}
+                    finalValue={orbit.habitability}
+                  />
+                }
+                placement='right'
+                arrow
+              >
+                <span
+                  style={{
+                    cursor: 'pointer',
+                    borderBottom: '1px dotted black'
+                  }}
+                >
+                  {orbit.habitability}
+                </span>
+              </Tooltip>
+            ) : (
+              orbit.habitability
+            )}
+            ) {describeHabitability(orbit.habitability)}
           </Grid>
           {orbit.technology !== undefined && (
             <Grid item xs={12}>

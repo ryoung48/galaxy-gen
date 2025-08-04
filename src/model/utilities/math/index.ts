@@ -121,6 +121,9 @@ export const MATH = {
     celsius: (kelvin: number) => kelvin - 273.15,
     kelvin: (celsius: number) => celsius + 273.15
   },
+  tilt: {
+    absolute: (tilt: number) => (tilt > 90 ? 180 - tilt : tilt)
+  },
   time: {
     convertYears: (inputYears: number): string => {
       const daysInYear = 365.25 // Accounts for leap years

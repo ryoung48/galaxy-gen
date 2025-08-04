@@ -3,12 +3,8 @@ import { Star } from '../../stars/types'
 import { Orbit } from '../types'
 
 export type HabitabilityParams = {
-  type: Orbit['type']
-  hydrosphere: number
-  atmosphere: Orbit['atmosphere']
-  temperature: Orbit['temperature']
-  size: number
-  gravity: number
+  orbit: Orbit
+  parent?: Orbit
 }
 
 export type DesirabilityParams = {

@@ -89,6 +89,202 @@ export const CANVAS = {
       ctx.stroke()
     }
   },
+  texturedSphere: ({
+    ctx,
+    x,
+    y,
+    radius,
+    fill,
+    border,
+    seed,
+    orbit
+  }: DrawCircleParams & { seed?: string; orbit: Orbit }) => {
+    const width = border?.width ?? 0
+
+    // Base gradient
+    const gradient = ctx.createRadialGradient(
+      x - radius / 2,
+      y - radius / 2,
+      radius / 4,
+      x,
+      y,
+      radius * 1.5
+    )
+    gradient.addColorStop(0, COLORS.lighten(fill, 20))
+    gradient.addColorStop(0.5, fill)
+    gradient.addColorStop(1, COLORS.darken(fill, 60))
+
+    // Draw base sphere
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.fillStyle = gradient
+    ctx.fill()
+    ctx.closePath()
+
+    // Add texture patterns based on planet type
+    if (seed) {
+      ctx.save()
+
+      // Create clipping mask for sphere
+      ctx.beginPath()
+      ctx.arc(x, y, radius, 0, Math.PI * 2)
+      ctx.clip()
+
+      // Use seed for consistent patterns
+      const seedNum = parseInt(seed.slice(-6), 16) || 123456
+
+      switch (orbit.type) {
+        case 'jovian': {
+          // Draw tilted atmospheric bands
+          const tiltAngle = ((orbit.axialTilt % 360) * Math.PI) / 180
+
+          ctx.save()
+          ctx.translate(x, y)
+          ctx.rotate(tiltAngle)
+
+          for (let i = 0; i < 6; i++) {
+            const bandY = -radius + (i * radius * 2) / 5
+            const bandHeight = radius * 0.35
+
+            ctx.globalAlpha = 0.2 + (i % 2) * 0.1
+            ctx.fillStyle = i % 2 === 0 ? COLORS.lighten(fill, 15) : COLORS.darken(fill, 15)
+
+            // Draw curved band using multiple segments
+            ctx.beginPath()
+            const segments = 20
+            for (let j = 0; j <= segments; j++) {
+              const segmentX = -radius + (j * radius * 2) / segments
+              const distFromCenter = Math.abs(segmentX)
+              const curveHeight = Math.sqrt(radius * radius - distFromCenter * distFromCenter)
+              const curveOffset = (1 - curveHeight / radius) * radius * 0.4
+
+              const topY = bandY - curveOffset
+
+              if (j === 0) {
+                ctx.moveTo(segmentX, topY)
+              } else {
+                ctx.lineTo(segmentX, topY)
+              }
+            }
+            for (let j = segments; j >= 0; j--) {
+              const segmentX = -radius + (j * radius * 2) / segments
+              const distFromCenter = Math.abs(segmentX)
+              const curveHeight = Math.sqrt(radius * radius - distFromCenter * distFromCenter)
+              const curveOffset = (1 - curveHeight / radius) * radius * 0.4
+
+              const bottomY = bandY + bandHeight - curveOffset
+              ctx.lineTo(segmentX, bottomY)
+            }
+            ctx.closePath()
+            ctx.fill()
+          }
+
+          ctx.restore()
+          break
+        }
+        default: {
+          // Determine if this planet should have swirl texture
+          const { atmosphere } = orbit
+          const hasSwirls =
+            atmosphere?.subtype !== 'low' &&
+            atmosphere?.subtype !== 'very thin' &&
+            atmosphere?.type !== 'trace' &&
+            atmosphere?.type !== 'vacuum'
+
+          if (hasSwirls) {
+            // Draw thin tilted atmospheric bands
+            const tiltAngle = ((orbit.axialTilt % 360) * Math.PI) / 180
+
+            ctx.save()
+            ctx.translate(x, y)
+            ctx.rotate(tiltAngle)
+
+            for (let i = 0; i < 8; i++) {
+              const bandY = -radius + (i * radius * 2) / 7
+              const bandHeight = radius * 0.08
+
+              ctx.globalAlpha = 0.15 + (i % 2) * 0.1 + (orbit.type === 'tectonic' ? 0.2 : 0)
+              ctx.fillStyle = i % 2 === 0 ? COLORS.lighten(fill, 20) : COLORS.darken(fill, 25)
+
+              // Draw curved band using multiple segments
+              ctx.beginPath()
+              const segments = 20
+              for (let j = 0; j <= segments; j++) {
+                const segmentX = -radius + (j * radius * 2) / segments
+                const distFromCenter = Math.abs(segmentX)
+                const curveHeight = Math.sqrt(radius * radius - distFromCenter * distFromCenter)
+                const curveOffset = (1 - curveHeight / radius) * radius * 0.3
+
+                const topY = bandY - curveOffset
+
+                if (j === 0) {
+                  ctx.moveTo(segmentX, topY)
+                } else {
+                  ctx.lineTo(segmentX, topY)
+                }
+              }
+              for (let j = segments; j >= 0; j--) {
+                const segmentX = -radius + (j * radius * 2) / segments
+                const distFromCenter = Math.abs(segmentX)
+                const curveHeight = Math.sqrt(radius * radius - distFromCenter * distFromCenter)
+                const curveOffset = (1 - curveHeight / radius) * radius * 0.3
+
+                const bottomY = bandY + bandHeight - curveOffset
+                ctx.lineTo(segmentX, bottomY)
+              }
+              ctx.closePath()
+              ctx.fill()
+            }
+
+            ctx.restore()
+          } else {
+            // Add noise-based texture for all other planets
+            const noiseScale = radius * 0.1
+            const noiseIntensity =
+              orbit.type === 'meltball'
+                ? 0.5
+                : orbit.type === 'tectonic'
+                ? 0.35
+                : orbit.type === 'geo-cyclic' || orbit.type === 'hebean'
+                ? 0.25
+                : 0.15
+
+            for (let i = 0; i < 120; i++) {
+              const angle = (((seedNum + i * 137) % 360) * Math.PI) / 180
+              const distance = (((seedNum + i * 73) % 100) / 100) * radius * 0.9
+              const noiseX = x + Math.cos(angle) * distance
+              const noiseY = y + Math.sin(angle) * distance
+              const noiseSize = noiseScale * (0.3 + ((seedNum + i * 91) % 70) / 100)
+
+              // Vary the noise intensity based on position
+              const distanceFromCenter = Math.sqrt((noiseX - x) ** 2 + (noiseY - y) ** 2) / radius
+              const alpha = noiseIntensity * (1 - distanceFromCenter * 0.5)
+
+              ctx.globalAlpha = alpha * (0.5 + ((seedNum + i * 59) % 50) / 100)
+
+              // Alternate between lighter and darker noise
+              const isLight = (seedNum + i * 43) % 3 > 0
+              ctx.fillStyle = isLight ? COLORS.lighten(fill, 20) : COLORS.darken(fill, 25)
+
+              ctx.beginPath()
+              ctx.arc(noiseX, noiseY, noiseSize, 0, Math.PI * 2)
+              ctx.fill()
+            }
+          }
+          break
+        }
+      }
+
+      ctx.globalAlpha = 1
+      ctx.restore()
+    }
+
+    if (width > 0) {
+      ctx.lineWidth = width
+      ctx.strokeStyle = border?.color ?? 'black'
+      ctx.stroke()
+    }
+  },
   sun: ({ ctx, x, y, radius, fill }: Omit<DrawCircleParams, 'border'>) => {
     // Helper to add alpha to hex or rgb colors
     const alphaColor = (color: string, alpha: number) => {

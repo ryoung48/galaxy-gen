@@ -135,18 +135,17 @@ export const ORBIT_GROUPS: Record<Orbit['group'], OrbitGroupDetails> = {
     size: calculateSize
   },
   terrestrial: {
-    type: ({ zone, impactZone, parent, star }) => {
+    type: ({ zone, impactZone, parent, star, deviation }) => {
       const mClass = star.spectralClass === 'M' && star.luminosityClass === 'V'
       if (impactZone) return 'acheronian'
       switch (zone) {
         case 'epistellar': {
           const roll = window.dice.roll(1, 6)
-          if (roll <= 4 && !parent) return 'jani-lithic'
-          if (roll <= 5 && !parent) return 'vesperian'
+          if (roll <= 5 && !parent) return deviation > 1.85 ? 'jani-lithic' : 'vesperian'
           return 'telluric'
         }
         case 'inner': {
-          if (mClass && !parent && window.dice.random < 0.5) return 'vesperian'
+          if (mClass && !parent && deviation > 0.5) return 'vesperian'
           const roll = window.dice.roll(2, 6)
           if (roll <= 4) return 'telluric'
           if (roll <= 6) return 'arid'
