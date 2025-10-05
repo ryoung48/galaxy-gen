@@ -15,6 +15,7 @@ export type Galaxy = {
   uniqueNames: Record<string, boolean>
   stars: Star[]
   orbits: Orbit[]
+  routes: number[][]
 }
 
 export type GalaxySpawnParams = {

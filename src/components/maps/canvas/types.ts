@@ -28,6 +28,7 @@ export type DrawTextParams = {
   y: number
   text: string
   color?: string
+  align?: CanvasTextAlign
   size: number
 }
 
@@ -43,4 +44,12 @@ export type DrawCurveParams = DrawLineParams & {
    * Curveness factor – roughly the fraction of the segment length used as orthogonal offset for the control point (default 0.2)
    */
   curveness?: number
+}
+
+export type StripePatternParams = {
+  ctx: CanvasRenderingContext2D
+  scale: number
+  color: string
+  width?: number
+  spacing?: number
 }

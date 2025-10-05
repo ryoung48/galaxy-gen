@@ -1,6 +1,6 @@
 import { VIEW } from '../../context'
 import NationView from './Nation'
-import OrbitView from './Orbit'
+import OrbitView from './orbit'
 import SolarSystemView from './SolarSystem'
 import StarView from './Star'
 

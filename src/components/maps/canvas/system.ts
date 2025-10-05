@@ -8,6 +8,50 @@ import { PaintGalaxyParams } from './types'
 import { ORBIT } from '../../../model/system/orbits'
 import { METRICS } from '../legend/metrics'
 import { MATH } from '../../../model/utilities/math'
+import { TEXT } from '../../../model/utilities/text'
+// import { drawTagIconWithText } from './tags'
+
+// Helper function to draw resource icons and values
+// const drawResources = ({
+//   ctx,
+//   object,
+//   center,
+//   mod
+// }: {
+//   ctx: CanvasRenderingContext2D
+//   object: Orbit
+//   center: { x: number; y: number }
+//   mod: number
+// }) => {
+//   if (object.tags.length === 0) return
+
+//   // Layout variables
+//   const iconHalf = 0.35 * mod // moderately sized icon reference
+//   const iconRenderSize = iconHalf * 2 // rendered size (0.7 * mod)
+//   const iconSpacing = 0.3 * mod // balanced spacing
+//   const textSize = 0.7 * mod // text balanced with icon
+
+//   // Y positions for icon row and number row
+//   const iconRowY = center.y + (object.r + 3) * mod
+//   // (text y handled by shared helper)
+
+//   // Calculate horizontal centering
+//   const totalWidth = object.tags.length * iconRenderSize + (object.tags.length - 1) * iconSpacing
+//   const startX = center.x - totalWidth / 2
+
+//   object.tags.forEach((tag, index) => {
+//     const iconLeftX = startX + index * (iconRenderSize + iconSpacing)
+
+//     drawTagIconWithText({
+//       ctx,
+//       tag,
+//       x: iconLeftX,
+//       y: iconRowY,
+//       iconSize: iconRenderSize,
+//       textSize
+//     })
+//   })
+// }
 
 export const SYSTEM_MAP = {
   paint: ({ ctx, selected, solarSystem, mapMode }: PaintGalaxyParams) => {
@@ -53,13 +97,6 @@ export const SYSTEM_MAP = {
               : mapMode === 'population'
               ? METRICS.population.color(0)
               : STAR.color(star)
-        })
-        CANVAS.text({
-          ctx,
-          x: center.x,
-          y: center.y + (star.r + 5) * mod,
-          text: STAR.name(star),
-          size: 0.05
         })
       } else {
         if (object.type === 'asteroid belt') {
@@ -109,9 +146,9 @@ export const SYSTEM_MAP = {
               radius: orbit.r * mod,
               fill:
                 mapMode === 'habitability'
-                  ? METRICS.habitability.color(orbit.habitability)
+                  ? METRICS.habitability.color(orbit.habitability.score)
                   : mapMode === 'biosphere'
-                  ? METRICS.biosphere.color(orbit.biosphere)
+                  ? METRICS.biosphere.color(orbit.biosphere.code)
                   : mapMode === 'population'
                   ? METRICS.population.color(orbit.population?.code ?? 0)
                   : ORBIT.colors(orbit)
@@ -119,10 +156,10 @@ export const SYSTEM_MAP = {
           })
         } else {
           // Draw back portion of rings for gas giants
-          if (orbit.type === 'jovian' && orbit.rings === 'complex') {
+          if (orbit.type === 'jovian' && (orbit.rings === 'complex' || orbit.rings === 'minor')) {
             const ringRadius = orbit.r * mod * 1.8
-            const ringWidth = orbit.r * mod * 0.3
-            const tiltAngle = (orbit.axialTilt * Math.PI) / 180
+            const ringWidth = orbit.rings === 'minor' ? orbit.r * mod * 0.1 : orbit.r * mod * 0.3
+            const tiltAngle = (orbit.tilt * Math.PI) / 180
 
             // Draw back half of rings (behind planet)
             ctx.save()
@@ -130,18 +167,33 @@ export const SYSTEM_MAP = {
             ctx.rotate(tiltAngle)
             ctx.scale(1, 0.3)
 
-            ctx.lineWidth = ringWidth
-            ctx.strokeStyle = 'rgba(200, 180, 150, 0.4)' // Darker for back portion
-            ctx.beginPath()
-            ctx.arc(0, 0, ringRadius, Math.PI, 2 * Math.PI) // Bottom half
-            ctx.stroke()
+            if (orbit.rings === 'complex') {
+              ctx.lineWidth = ringWidth
+              ctx.strokeStyle = 'rgba(200, 180, 150, 0.4)' // Darker for back portion
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius, Math.PI, 2 * Math.PI) // Bottom half
+              ctx.stroke()
 
-            // Inner ring back half
-            ctx.lineWidth = ringWidth * 0.6
-            ctx.strokeStyle = 'rgba(180, 160, 130, 0.3)'
-            ctx.beginPath()
-            ctx.arc(0, 0, ringRadius * 0.7, Math.PI, 2 * Math.PI)
-            ctx.stroke()
+              // Inner ring back half
+              ctx.lineWidth = ringWidth * 0.6
+              ctx.strokeStyle = 'rgba(180, 160, 130, 0.3)'
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius * 0.7, Math.PI, 2 * Math.PI)
+              ctx.stroke()
+            } else if (orbit.rings === 'minor') {
+              ctx.lineWidth = ringWidth
+              ctx.strokeStyle = 'rgba(200, 180, 150, 0.3)' // Lighter for minor rings
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius, Math.PI, 2 * Math.PI) // Bottom half
+              ctx.stroke()
+
+              // Inner ring back half
+              ctx.lineWidth = ringWidth * 0.6
+              ctx.strokeStyle = 'rgba(180, 160, 130, 0.25)'
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius * 0.85, Math.PI, 2 * Math.PI)
+              ctx.stroke()
+            }
 
             ctx.restore()
           }
@@ -152,9 +204,9 @@ export const SYSTEM_MAP = {
             radius: orbit.r * mod,
             fill:
               mapMode === 'habitability'
-                ? METRICS.habitability.color(orbit.habitability)
+                ? METRICS.habitability.color(orbit.habitability.score)
                 : mapMode === 'biosphere'
-                ? METRICS.biosphere.color(orbit.biosphere)
+                ? METRICS.biosphere.color(orbit.biosphere.code)
                 : mapMode === 'population'
                 ? METRICS.population.color(orbit.population?.code ?? 0)
                 : ORBIT.colors(orbit),
@@ -162,10 +214,10 @@ export const SYSTEM_MAP = {
             seed: solarSystem.seed + orbit.idx
           })
           // Draw front portion of rings for gas giants
-          if (orbit.type === 'jovian' && orbit.rings === 'complex') {
+          if (orbit.type === 'jovian' && (orbit.rings === 'complex' || orbit.rings === 'minor')) {
             const ringRadius = orbit.r * mod * 1.8
-            const ringWidth = orbit.r * mod * 0.3
-            const tiltAngle = (orbit.axialTilt * Math.PI) / 180
+            const ringWidth = orbit.rings === 'minor' ? orbit.r * mod * 0.1 : orbit.r * mod * 0.3
+            const tiltAngle = (orbit.tilt * Math.PI) / 180
 
             // Draw front half of rings (in front of planet)
             ctx.save()
@@ -173,29 +225,82 @@ export const SYSTEM_MAP = {
             ctx.rotate(tiltAngle)
             ctx.scale(1, 0.3)
 
-            ctx.lineWidth = ringWidth
-            ctx.strokeStyle = 'rgba(200, 180, 150, 0.7)' // Brighter for front portion
-            ctx.beginPath()
-            ctx.arc(0, 0, ringRadius, 0, Math.PI) // Top half
-            ctx.stroke()
+            if (orbit.rings === 'complex') {
+              ctx.lineWidth = ringWidth
+              ctx.strokeStyle = 'rgba(200, 180, 150, 0.7)' // Brighter for front portion
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius, 0, Math.PI) // Top half
+              ctx.stroke()
 
-            // Inner ring front half
-            ctx.lineWidth = ringWidth * 0.6
-            ctx.strokeStyle = 'rgba(180, 160, 130, 0.5)'
-            ctx.beginPath()
-            ctx.arc(0, 0, ringRadius * 0.7, 0, Math.PI)
-            ctx.stroke()
+              // Inner ring front half
+              ctx.lineWidth = ringWidth * 0.6
+              ctx.strokeStyle = 'rgba(180, 160, 130, 0.5)'
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius * 0.7, 0, Math.PI)
+              ctx.stroke()
+            } else if (orbit.rings === 'minor') {
+              ctx.lineWidth = ringWidth
+              ctx.strokeStyle = 'rgba(200, 180, 150, 0.5)' // Lighter for minor rings
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius, 0, Math.PI) // Top half
+              ctx.stroke()
+
+              // Inner ring front half
+              ctx.lineWidth = ringWidth * 0.6
+              ctx.strokeStyle = 'rgba(180, 160, 130, 0.4)'
+              ctx.beginPath()
+              ctx.arc(0, 0, ringRadius * 0.85, 0, Math.PI)
+              ctx.stroke()
+            }
 
             ctx.restore()
           }
         }
+      }
+    })
+    objects.forEach(object => {
+      const center = CANVAS.coordinates(object)
+      if (object.tag === 'star' || object.type !== 'asteroid belt') {
+        const distance =
+          object.tag === 'star' || !object.moon
+            ? `${TEXT.formatters.compact(object.au)} AU`
+            : `${TEXT.formatters.compact(object.moon.pd)} PD`
+        CANVAS.text({
+          ctx,
+          x: center.x,
+          y: center.y - (object.r + 0.5) * mod,
+          text: distance,
+          size: 0.015
+        })
+      }
+      if (object.tag === 'star') {
+        const star = object
+        CANVAS.text({
+          ctx,
+          x: center.x,
+          y: center.y + (star.r + 5) * mod,
+          text: STAR.name(star),
+          size: 0.05
+        })
+      } else {
+        if (object.type === 'asteroid belt') return
+        const orbit = object
         CANVAS.text({
           ctx,
           x: center.x,
           y: center.y + (orbit.r + 1.5) * mod,
-          text: ORBIT.code(orbit),
+          text: ORBIT.name(orbit),
           size: 0.025
         })
+        CANVAS.text({
+          ctx,
+          x: center.x,
+          y: center.y + (orbit.r + 2.5) * mod,
+          text: ORBIT.code(orbit),
+          size: 0.015
+        })
+        // Draw orbit resources
+        // drawResources({ ctx, object: orbit, center, mod })
       }
     })
     if (selected?.tag === 'star' || selected?.tag === 'orbit') {

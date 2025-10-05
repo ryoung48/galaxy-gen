@@ -7,6 +7,8 @@ import { SOLAR_SYSTEM } from '../system'
 import { GALAXY } from '../galaxy'
 import { MATH } from '../utilities/math'
 import { STAR } from '../system/stars'
+import { getTradeRoutes } from '../galaxy/trade'
+import { ORBIT_TAGS } from '../system/orbits/tags'
 
 const distribute = <Item>(params: {
   items: Item[]
@@ -253,11 +255,84 @@ export const NATION = {
     })
 
     // Populate every system with settlements/resources
+    window.galaxy.routes = getTradeRoutes()
+    NATION.setWars()
     window.galaxy.nations.forEach(nation => {
       nation.systems
         .map(idx => window.galaxy.systems[idx])
         .forEach(system => SOLAR_SYSTEM.populate(system))
     })
+    window.galaxy.orbits.forEach(orbit => {
+      ORBIT_TAGS.spawn(orbit)
+    })
   },
-  systems: (nation: Nation) => nation.systems.map(idx => window.galaxy.systems[idx])
+  systems: (nation: Nation) => nation.systems.map(idx => window.galaxy.systems[idx]),
+  isSystemUnderAttack: (systemIdx: number) => {
+    const system = window.galaxy.systems[systemIdx]
+    const nation = window.galaxy.nations[system.nation]
+
+    if (!nation?.wars) return false
+
+    // Check if this system borders any attacking nation
+    return nation.wars.some(war => {
+      const attackerNation = window.galaxy.nations[war.attacker]
+      return SOLAR_SYSTEM.neighbors(system).some(neighbor => neighbor.nation === attackerNation.idx)
+    })
+  },
+  setWars: () => {
+    // Calculate border lengths between nations
+    const borderCounts = new Map<string, number>()
+
+    window.galaxy.systems.forEach(system => {
+      if (system.nation === -1) return
+
+      const systemNation = system.nation
+      const neighbors = SOLAR_SYSTEM.neighbors(system)
+
+      neighbors.forEach(neighbor => {
+        if (neighbor.nation !== -1 && neighbor.nation !== systemNation) {
+          const key = [systemNation, neighbor.nation].sort().join('-')
+          borderCounts.set(key, (borderCounts.get(key) || 0) + 1)
+        }
+      })
+    })
+
+    // Sort nation pairs by border length (descending)
+    const sortedBorders = Array.from(borderCounts.entries())
+      .map(([key, count]) => {
+        const [nation1, nation2] = key.split('-').map(Number)
+        return { nation1, nation2, borderLength: count }
+      })
+      .sort((a, b) => b.borderLength - a.borderLength)
+
+    // Set wars for top border pairs with some randomness
+    const numWars = Math.min(
+      Math.floor(window.galaxy.nations.length * 0.1), // ~10% of nations
+      Math.floor(sortedBorders.length * 0.15) // ~15% of border pairs
+    )
+
+    const usedNations = new Set<number>()
+    let warsCreated = 0
+
+    for (const { nation1, nation2, borderLength } of sortedBorders) {
+      if (warsCreated >= numWars) break
+      if (usedNations.has(nation1) || usedNations.has(nation2)) continue
+
+      // Higher chance for larger borders, but some randomness
+      const warChance = Math.min(0.8, borderLength / 10)
+      if (window.dice.random > warChance) continue
+
+      // Randomly assign attacker and defender
+      const [attacker, defender] = window.dice.flip ? [nation1, nation2] : [nation2, nation1]
+
+      // Add war to defender's wars array
+      const defenderNation = window.galaxy.nations[defender]
+      if (!defenderNation.wars) defenderNation.wars = []
+      defenderNation.wars.push({ attacker, defender })
+
+      usedNations.add(nation1)
+      usedNations.add(nation2)
+      warsCreated++
+    }
+  }
 }

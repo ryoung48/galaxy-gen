@@ -21,16 +21,17 @@ export const SOLAR_SYSTEM = {
     const capital = window.galaxy.systems[nation.capital]
     const isCapital = system === capital
     const [main, ...orbits] = STAR.orbits(system.star)
+      .filter(orbit => orbit.tag === 'orbit' && orbit.type !== 'asteroid belt')
       .filter(orbit => orbit.tag === 'orbit')
       .sort((a, b) => DESIRABILITY.get(b) - DESIRABILITY.get(a))
     if (!main) return
     ORBIT.populate({ orbit: main, capital: isCapital, mainworld: true })
+    const maxTech = main.technology.score ?? 0
     const maxPop = (main.population?.code ?? 0) - window.dice.roll(1, 6)
-    const settlements = maxPop > 0 ? window.dice.randint(0, 3) : 0
-    const maxTech = main.technology
+    const settlements = maxPop > 0 && maxTech > 8 ? window.dice.randint(0, 6) : 0
     orbits.slice(0, settlements).forEach(orbit => ORBIT.populate({ orbit, maxPop, maxTech }))
     orbits
-      .filter(orbit => !orbit.population && orbit.biosphere === 12)
+      .filter(orbit => !orbit.population && orbit.biosphere.code === 10)
       .forEach(orbit => ORBIT.populate({ orbit, maxPop, maxTech }))
   },
   spawn: (params: SolarSystemSpawnParams): SolarSystem => {
@@ -55,6 +56,8 @@ export const SOLAR_SYSTEM = {
         temperature: 0,
         diameter: 0,
         luminosity: 0,
+        mao: 0,
+        hzco: 0,
         orbits: [],
         r: 40
       },

@@ -10,15 +10,15 @@ import {
 
 export const METRICS = {
   biosphere: {
-    scale: scaleLinear([0, 12], [0, 1]),
+    scale: scaleLinear([0, 10], [0, 1]),
     color: (heat: number) =>
       heat === -1
         ? '#d6d6d6'
-        : heat > 12
+        : heat > 10
         ? '#8268ed'
         : interpolateGreens(METRICS.biosphere.scale(heat)),
     legend: () =>
-      range(0, 13)
+      range(0, 11)
         .reverse()
         .map(biosphere => ({
           color: METRICS.biosphere.color(biosphere),

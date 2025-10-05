@@ -18,35 +18,40 @@ export const MOONS = {
     return Math.max(roll, 0)
   },
   size: (orbit: Orbit) => {
-    const roll = window.dice.roll(1, 6)
+    const roll = window.dice.roll(2, 4) - 2
     let size: number = 0
-    if (roll <= 1 || orbit.group === 'asteroid belt') size = 0
-    else if (roll <= 5) size = Math.min(window.dice.roll(1, 3) - 1, orbit.size - 1)
+    if (roll <= 0 || orbit.group === 'asteroid belt') size = 0
+    else if (roll <= 4) size = Math.min(window.dice.roll(1, 5) - 1, Math.max(orbit.size - 2, 0))
     else {
-      if (orbit.group === 'terrestrial') {
+      if (orbit.group !== 'jovian') {
         size = orbit.size - 1 - window.dice.roll(1, 6)
         if (size === orbit.size - 2) {
           const roll2 = window.dice.roll(2, 6)
-          if (roll2 == 2) size = orbit.size - 1
-          else if (roll2 == 12) size = orbit.size
+          if (roll2 <= 4) size = orbit.size - 1
+          else if (roll2 >= 10) size = orbit.size
         }
-      } else if (orbit.group === 'jovian') {
+      } else {
         const roll2 = window.dice.roll(1, 6)
-        if (roll2 <= 3) size = window.dice.roll(1, 6)
-        else if (roll2 <= 5) size = window.dice.roll(2, 6) - 2
+        if (roll2 <= 2) size = window.dice.roll(1, 6)
+        else if (roll2 <= 4) size = window.dice.roll(2, 6) - 2
         else size = window.dice.roll(2, 6) + 4
-        if (size === 16 && orbit.size === 18 && window.dice.roll(2, 6) === 12) size = 17
+        if (size === 16 && orbit.size === 18 && window.dice.roll(2, 6) >= 11) size = 17
       }
     }
     return Math.max(0, size)
   },
   orbit: ({ count, mor }: MoonOrbitParams) => {
+    const mod = mor < 60 ? 1 : 0
+    const roche = 2
     const pd = range(count).map(() => {
-      const base = (window.dice.roll(2, 6) - 2) * mor
-      const roll = window.dice.roll(1, 6) + (mor < 60 ? 1 : 0)
-      if (roll <= 3) return { range: 'inner', pd: base / 60 + 2 }
-      else if (roll <= 5) return { range: 'middle', pd: base / 30 + mor / 6 + 3 }
-      else return { range: 'outer', pd: base / 20 + mor / 2 + 4 }
+      const roll = window.dice.roll(1, 6) + mod
+      if (roll <= 3) return { range: 'inner', pd: roche + mor * window.dice.uniform(0, 0.16) }
+      else if (roll <= 5)
+        return { range: 'middle', pd: roche + mor * window.dice.uniform(0.16, 0.5) }
+      else {
+        const mod = window.dice.uniform(0.5, 1.1)
+        return { range: mod > 1 ? 'extreme' : 'outer', pd: roche + mor * mod }
+      }
     })
     return pd.sort((a, b) => a.pd - b.pd) as Omit<MoonOrbit, 'period'>[]
   },

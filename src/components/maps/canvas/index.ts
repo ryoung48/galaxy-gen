@@ -136,7 +136,7 @@ export const CANVAS = {
       switch (orbit.type) {
         case 'jovian': {
           // Draw tilted atmospheric bands
-          const tiltAngle = ((orbit.axialTilt % 360) * Math.PI) / 180
+          const tiltAngle = ((orbit.tilt % 360) * Math.PI) / 180
 
           ctx.save()
           ctx.translate(x, y)
@@ -186,14 +186,13 @@ export const CANVAS = {
           // Determine if this planet should have swirl texture
           const { atmosphere } = orbit
           const hasSwirls =
-            atmosphere?.subtype !== 'low' &&
             atmosphere?.subtype !== 'very thin' &&
             atmosphere?.type !== 'trace' &&
             atmosphere?.type !== 'vacuum'
 
           if (hasSwirls) {
             // Draw thin tilted atmospheric bands
-            const tiltAngle = ((orbit.axialTilt % 360) * Math.PI) / 180
+            const tiltAngle = ((orbit.tilt % 360) * Math.PI) / 180
 
             ctx.save()
             ctx.translate(x, y)
@@ -412,8 +411,8 @@ export const CANVAS = {
     ctx.quadraticCurveTo(cpX, cpY, x2, y2)
     ctx.stroke()
   },
-  text: ({ ctx, x, y, text, color, size }: DrawTextParams) => {
-    ctx.textAlign = 'center'
+  text: ({ ctx, x, y, text, color, size, align }: DrawTextParams) => {
+    ctx.textAlign = align ?? 'center'
     ctx.font = `${size}px Michroma`
     ctx.fillStyle = color ?? 'black'
     ctx.fillText(text, x, y)

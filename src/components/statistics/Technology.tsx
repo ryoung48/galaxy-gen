@@ -14,9 +14,9 @@ const getTechnologyRange = (tech: number) => {
 
 export const TechnologyDistribution = () => {
   const techFreq = window.galaxy.orbits
-    .filter(orbit => orbit.technology !== undefined && orbit?.population!.code > 0)
+    .filter(orbit => orbit?.population !== undefined && orbit.population.code > 0)
     .reduce((dict: Record<number, number>, orbit) => {
-      const tech = getTechnologyRange(orbit.technology!)
+      const tech = getTechnologyRange(orbit.technology.score)
       if (!dict[tech]) dict[tech] = 0
       dict[tech] += 1
       return dict

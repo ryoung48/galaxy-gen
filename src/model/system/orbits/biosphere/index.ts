@@ -1,81 +1,161 @@
+import { TEMPERATURE } from '../temperature'
+import { Orbit } from '../types'
 import { BiosphereParams } from './types'
 
 const biospheres: Record<string, string> = {
-  '-1': 'Remnants',
-  '0': 'Sterile',
-  '1': 'Building Blocks (amino acids, or equivalent)',
-  '2': 'Single-celled organisms',
-  '3': 'Producers (atmosphere begins to transform)',
-  '4': 'Multi-cellular organisms',
-  '5': 'Complex single-celled life',
-  '6': 'Complex multi-cellular life',
-  '7': 'Small macroscopic life',
-  '8': 'Large macroscopic life',
-  '9': 'Simple global ecology',
-  '10': 'Complex global ecology',
-  '11': 'Proto-sapience',
-  '12': 'Full sapience',
-  '13': 'Engineered'
+  '-1': 'remnants',
+  '0': 'sterile',
+  '1': 'prebiotic chemistry',
+  '2': 'simple microbes',
+  '3': 'complex microbes',
+  '4': 'multicellular beginnings',
+  '5': 'small macroscopic life',
+  '6': 'large macroscopic life',
+  '7': 'complex ecosystems',
+  '8': 'social species',
+  '9': 'proto-sapience',
+  '10': 'full sapience',
+  '11': 'bio-engineered life'
 }
 
 export const BIOSPHERE = {
   get: (params: BiosphereParams) => {
-    const { chemistry, star, type, atmosphere, size, temperature, hydrosphere } = params
+    const { star, orbit, impactZone, primary } = params
+    const { atmosphere, temperature, hydrosphere, type } = orbit
     let modifier = 0
-    if (chemistry === 'ammonia') modifier += 1
-    else if (chemistry === 'methane') modifier += 3
+    const base = window.dice.roll(2, 6) - 2
+    const adjustments: Orbit['biosphere']['trace'] = [
+      {
+        value: base, // 2d6 average
+        description: 'base roll (2d6-2)'
+      }
+    ]
 
-    let complexity = 0
-    if (type === 'geo-cyclic') {
-      complexity =
-        star.age >= 4 + modifier && atmosphere.code === 10
-          ? window.dice.roll(1, 6) + size - 2
-          : star.age >= window.dice.roll(1, 3) + modifier
-          ? atmosphere.code === 10
-            ? window.dice.roll(1, 3)
-            : window.dice.roll(1, 6) - 4
-          : 0
-    } else if (type === 'snowball') {
-      const subsurface = hydrosphere < 10
-      complexity =
-        subsurface && star.age >= 6 + modifier
-          ? window.dice.roll(1, 6) + size - 2
-          : subsurface && star.age >= window.dice.roll(1, 6)
-          ? window.dice.roll(1, 6) - 3
-          : 0
-    } else {
-      complexity =
-        star.age >= 4 + modifier
-          ? window.dice.roll(2, 6)
-          : star.age >= window.dice.roll(1, 3) + modifier
-          ? window.dice.roll(1, 3)
-          : 0
-    }
-    if (type !== 'snowball') {
-      // temperature
-      if (temperature.high > 353) complexity -= 2
-      if (temperature.low < 273) complexity -= 4
-      if (temperature.mean > 353) complexity -= 4
-      if (temperature.mean < 273) complexity -= 2
-      if (temperature.mean > 279 && temperature.mean < 303) complexity += 2
-    }
-
-    // hydrosphere
-    if (hydrosphere <= 3) complexity -= 1
-    else if (hydrosphere >= 6 && hydrosphere <= 10) complexity += 1
-
-    if (atmosphere.hazard === 'low oxygen') complexity -= 2
-    complexity = Math.max(atmosphere.hazard === 'biologic' ? 1 : 0, complexity)
-
-    if (type !== 'snowball' && type !== 'geo-cyclic') {
-      if (complexity > 0 && window.dice.random > 0.8 && complexity < 7)
-        complexity += window.dice.randint(1, 5)
+    // Atmosphere modifiers
+    if (atmosphere.code === 0) {
+      modifier -= 6
+      adjustments.push({ value: -6, description: 'vacuum' })
+    } else if (atmosphere.code === 1) {
+      modifier -= 4
+      adjustments.push({ value: -4, description: 'trace atmosphere' })
+    } else if ([2, 3, 14].includes(atmosphere.code)) {
+      modifier -= 3
+      adjustments.push({ value: -3, description: 'very thin atmosphere' })
+    } else if ([4, 5].includes(atmosphere.code)) {
+      modifier -= 2
+      adjustments.push({ value: -2, description: 'thin atmosphere' })
+    } else if ([8, 9, 13].includes(atmosphere.code)) {
+      modifier += 2
+      adjustments.push({ value: 2, description: 'dense atmosphere' })
+    } else if (atmosphere.code === 10) {
+      modifier -= 3
+      adjustments.push({ value: -3, description: 'exotic atmosphere' })
+    } else if (atmosphere.code === 11) {
+      modifier -= 5
+      adjustments.push({ value: -5, description: 'hostile atmosphere' })
+    } else if (atmosphere.code === 12) {
+      modifier -= 6
+      adjustments.push({ value: -7, description: 'very hostile atmosphere' })
+    } else if (atmosphere.code >= 15) {
+      modifier -= 5
+      adjustments.push({ value: -5, description: 'unusual or gaseous atmosphere' })
     }
 
-    if (complexity === 13) complexity = 12
-    else if (complexity >= 14) complexity = 13
+    // Hydrographic modifiers
+    if (hydrosphere.code === 0) {
+      modifier -= 4
+      adjustments.push({ value: -4, description: 'lack of accessible water' })
+    } else if (hydrosphere.code >= 1 && hydrosphere.code <= 3) {
+      modifier -= 2
+      adjustments.push({ value: -2, description: 'desert conditions prevalent' })
+    } else if (hydrosphere.code >= 6 && hydrosphere.code <= 8) {
+      modifier += 1
+      adjustments.push({ value: 1, description: 'ocean-dominated' })
+    } else if (hydrosphere.code >= 9 && hydrosphere.code < 12) {
+      modifier += 2
+      adjustments.push({ value: 2, description: 'no continents' })
+    } else if (hydrosphere.code === 13) {
+      modifier -= 4
+      adjustments.push({ value: -3, description: 'gas giant core' })
+    }
 
-    return complexity
+    // System age modifiers
+    if (star.age < 1) {
+      modifier -= 10
+      adjustments.push({ value: -10, description: 'system age less than 1 Gyr' })
+    } else if (star.age < 2) {
+      modifier -= 8
+      adjustments.push({ value: -8, description: 'system age less than 2 Gyrs' })
+    } else if (star.age < 3) {
+      modifier -= 4
+      adjustments.push({ value: -4, description: 'system age less than 3 Gyrs' })
+    } else if (star.age < 4) {
+      modifier -= 2
+      adjustments.push({ value: -2, description: 'system age less than 4 Gyrs' })
+    }
+
+    // Temperature modifiers
+    const climate = TEMPERATURE.describe(temperature.mean)
+    if (climate === 'burning') {
+      modifier -= 6
+      adjustments.push({ value: -6, description: 'burning conditions' })
+    } else if (climate === 'temperate') {
+      modifier += 2
+      adjustments.push({ value: 2, description: 'temperate conditions' })
+    } else if (climate === 'cold') {
+      modifier -= 2
+      adjustments.push({ value: -2, description: 'cold conditions' })
+    } else if (climate === 'frozen') {
+      modifier -= 6
+      adjustments.push({ value: -6, description: 'frozen conditions' })
+    }
+
+    if (climate === 'frozen' && hydrosphere.code < 10 && hydrosphere.code > 1) {
+      modifier += 2
+      adjustments.push({ value: 2, description: 'subsurface oceans' })
+    }
+    let value = Math.max(0, base + modifier)
+
+    if (value > 10) value = window.dice.roll(2, 6) - 2
+
+    const hostile =
+      climate === 'burning' ||
+      climate === 'frozen' ||
+      atmosphere.code === 11 ||
+      atmosphere.code === 12 ||
+      atmosphere.code === 0 ||
+      atmosphere.code === 1
+    if (hostile && value > 5) {
+      value = window.dice.roll(2, 4) - 2
+    }
+
+    if (star.age < 0.1 || type === 'asteroid belt') value = 0
+
+    const oxygen =
+      (atmosphere.code >= 2 && atmosphere.code <= 9) ||
+      atmosphere.code === 13 ||
+      atmosphere.code === 14
+    if (oxygen && primary) value = Math.max(1, value)
+    if (oxygen && value <= 0 && window.dice.random <= 0.8) {
+      atmosphere.code = 10
+      atmosphere.type = 'exotic'
+      adjustments.push({ value: 0, description: 'breathable converted to exotic' })
+    }
+
+    orbit.biosphere = { code: value, trace: adjustments }
+
+    if ((impactZone || window.dice.random < 0.05) && orbit.biosphere.code > 0) {
+      orbit.biosphere.affix = 'remnants'
+    } else if (orbit.biosphere.code < 7 && window.dice.random > 0.998) {
+      orbit.biosphere.code = window.dice.randint(2, 10)
+      orbit.biosphere.trace = [
+        {
+          value: orbit.biosphere.code,
+          description: 'bio-engineered life'
+        }
+      ]
+      orbit.biosphere.affix = 'bio-engineered'
+    }
   },
   labels: biospheres
 }

@@ -48,7 +48,8 @@ export const GALAXY = {
       uniqueNames: {},
       nations: [],
       stars: [],
-      orbits: []
+      orbits: [],
+      routes: []
     }
     const systems = finalPoints.map(SOLAR_SYSTEM.spawn)
     const mst = MINIMUM_SPANNING_TREE.build(

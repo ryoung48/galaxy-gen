@@ -14,7 +14,7 @@ const NationView = (props: { nation: Nation }) => {
       subtitle={`Nation (#${nation.idx})`}
       content={
         <Grid container>
-          <Grid item>
+          <Grid item xs={12}>
             <span>
               <b>Government: </b> {TEXT.title(nation.government)}
             </span>

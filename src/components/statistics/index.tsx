@@ -10,10 +10,16 @@ import { BioRelations } from './Relations'
 import { HydrosphereDistribution } from './Hydrosphere'
 import { AtmosphereDistribution } from './Atmosphere'
 import { HabitabilityDistribution } from './Habitability'
+import { RotationDistribution } from './Rotation'
+import { AxialTiltDistribution } from './AxialTilt'
+import { EccentricityDistribution } from './Eccentricity'
 import { SizeDistribution } from './Size'
 import { PopulationDistribution } from './Population'
 import { TechnologyDistribution } from './Technology'
+import { LawDistribution } from './Law'
+import { StarportDistribution } from './Starport'
 import { GovernmentDistribution } from './Government'
+import { OrbitCodeDistribution } from './OrbitCodes'
 
 export function StatisticsView() {
   const modes = [
@@ -21,13 +27,18 @@ export function StatisticsView() {
     'planets',
     'moons',
     'size',
-    'hydrosphere',
+    'eccentricity',
+    'axial tilt',
+    'rotation',
     'atmosphere',
+    'hydrosphere',
     'biosphere',
     'habitability',
     'population',
+    'government',
+    'law',
     'industry',
-    'government'
+    'starport'
   ] as Stat[]
   return (
     <Grid container pt={12}>
@@ -43,9 +54,15 @@ export function StatisticsView() {
           if (mode === 'atmosphere') return <AtmosphereDistribution></AtmosphereDistribution>
           if (mode === 'hydrosphere') return <HydrosphereDistribution></HydrosphereDistribution>
           if (mode === 'habitability') return <HabitabilityDistribution></HabitabilityDistribution>
+          if (mode === 'rotation') return <RotationDistribution></RotationDistribution>
+          if (mode === 'axial tilt') return <AxialTiltDistribution></AxialTiltDistribution>
+          if (mode === 'eccentricity') return <EccentricityDistribution></EccentricityDistribution>
           if (mode === 'size') return <SizeDistribution></SizeDistribution>
           if (mode === 'population') return <PopulationDistribution></PopulationDistribution>
+          if (mode === 'codes') return <OrbitCodeDistribution></OrbitCodeDistribution>
           if (mode === 'industry') return <TechnologyDistribution></TechnologyDistribution>
+          if (mode === 'law') return <LawDistribution></LawDistribution>
+          if (mode === 'starport') return <StarportDistribution></StarportDistribution>
           if (mode === 'government') return <GovernmentDistribution></GovernmentDistribution>
           return <span></span>
         }}

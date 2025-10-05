@@ -1,4 +1,4 @@
-import { Grid } from '@mui/material'
+import { Grid, Tooltip } from '@mui/material'
 import Icon from '@mdi/react'
 import {
   mdiTimerSand,
@@ -9,7 +9,8 @@ import {
   mdiRulerSquare,
   mdiBrightness5,
   mdiFire,
-  mdiMinusCircleOutline
+  mdiMinusCircleOutline,
+  mdiSprout
 } from '@mdi/js'
 
 import { TEXT } from '../../model/utilities/text'
@@ -19,6 +20,7 @@ import { COLORS } from '../../theme/colors'
 import { Star } from '../../model/system/stars/types'
 import { STAR } from '../../model/system/stars'
 import { MATH } from '../../model/utilities/math'
+import { CONSTANTS } from '../../model/constants'
 
 // Custom simple circle path (filled) for planet/moon icon
 const mdiSphere = 'M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2Z'
@@ -31,6 +33,8 @@ const formatters = {
   }),
   luminosity: new Intl.NumberFormat('en-US', { notation: 'compact', minimumFractionDigits: 8 })
 }
+
+const tooltipStyles = { cursor: 'pointer', borderBottom: '1px dotted black' }
 
 // Temperature color gradient (cold to hot)
 const getTemperatureColor = (celsius: number): string => {
@@ -105,6 +109,16 @@ const StarView = (props: { star: Star }) => {
           </Grid>
           <Grid item xs={12}>
             <Icon
+              path={mdiSprout}
+              size={0.7}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+            <b>Habitable Zone: </b> {star.hzco.toFixed(3)} ({MATH.orbits.toAU(star.hzco).toFixed(2)}{' '}
+            AU)
+          </Grid>
+          <Grid item xs={12}>
+            <Icon
               path={mdiOrbit}
               size={0.7}
               color='black'
@@ -137,7 +151,15 @@ const StarView = (props: { star: Star }) => {
               color='black'
               style={{ verticalAlign: 'middle', marginRight: 4 }}
             />
-            <b>Diameter: </b> {star.diameter.toFixed(2)} ☉ ({star.r})
+            <b>Diameter: </b>{' '}
+            <Tooltip
+              title={TEXT.formatters.compact((star.diameter * CONSTANTS.R * 2) / 1e3) + ' km'}
+              placement='top'
+              arrow
+            >
+              <span style={tooltipStyles}>{star.diameter.toFixed(2)}</span>
+            </Tooltip>{' '}
+            ☉ ({star.r})
           </Grid>
           <Grid item xs={12}>
             <Icon

@@ -1,7 +1,7 @@
 export type Atmosphere = {
   code: number
   bar: number
-  type: 'breathable' | 'exotic' | 'corrosive' | 'insidious' | 'trace' | 'vacuum' | 'gaseous'
+  type: 'breathable' | 'exotic' | 'corrosive' | 'insidious' | 'trace' | 'vacuum' | 'gas'
   subtype?:
     | 'very thin'
     | 'thin'
@@ -9,7 +9,6 @@ export type Atmosphere = {
     | 'dense'
     | 'very dense'
     | 'extremely dense'
-    | 'low'
     | 'unusual'
     | 'hydrogen'
     | 'helium'

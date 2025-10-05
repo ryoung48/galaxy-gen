@@ -149,7 +149,7 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
 
   if (window.dice.random > 0.95 && !parent && !homeworld) {
     spectralClass = window.dice.weightedChoice([
-      { v: window.dice.choice(['L', 'T', 'Y']), w: 0.1 },
+      { v: window.dice.choice(['L', 'T']), w: 0.1 },
       { v: 'D', w: 0.5 },
       { v: 'NS', w: parent ? 0 : 0.1 },
       { v: 'BH', w: parent ? 0 : 0.1 }
@@ -220,7 +220,7 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
   }
   const proto = parent?.proto ?? false
   const primordial = parent?.primordial ?? false
-  const eccentricity = parent ? ORBIT.eccentricity({ star: true, proto, primordial }) : 0
+  const eccentricity = parent ? MATH.orbits.eccentricity({ star: true, proto, primordial }) : 0
   return {
     spectralClass,
     luminosityClass,
@@ -231,7 +231,8 @@ const starClass = (parent?: Star, homeworld?: boolean) => {
     luminosity,
     age,
     eccentricity,
-    mao
+    mao,
+    hzco: MATH.orbits.fromAU(luminosity ** 0.5)
   }
 }
 
@@ -294,6 +295,8 @@ export const STAR = {
         classAttributes.spectralClass === 'BH'
     }
     const brownDwarf = STAR.isBrownDwarf(star.spectralClass)
+    const tBrownDwarf = star.spectralClass === 'T'
+    const yBrownDwarf = star.spectralClass === 'Y'
     const whiteDwarf = star.spectralClass === 'D'
     const neutronStar = star.spectralClass === 'NS'
     const blackHole = star.spectralClass === 'BH'
@@ -311,7 +314,7 @@ export const STAR = {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const companions: StarCompanionTemplate[] = []
-        const noCompanions = neutronStar || blackHole || star.spectralClass === 'Y'
+        const noCompanions = neutronStar || blackHole || yBrownDwarf
         let companionMods = 0
         if (star.luminosityClass !== 'V' && star.luminosityClass !== 'VI') companionMods += 1
         else if (
@@ -363,7 +366,7 @@ export const STAR = {
         const secondaryNoPlanets = parent && window.dice.random > 0.5
         const deadStar = whiteDwarf || neutronStar || blackHole
         const deadSystem = deadStar && window.dice.random > 0.8
-        const noPlanets = secondaryNoPlanets || deadSystem || blackHole
+        const noPlanets = secondaryNoPlanets || deadSystem || blackHole || yBrownDwarf
         const maxEpistellar =
           epistellarCompanion || brownDwarf || deadStar || noPlanets
             ? 0
@@ -372,12 +375,12 @@ export const STAR = {
             : 2
         const epistellar = Math.min(maxEpistellar, window.dice.randint(0, mClass ? 1 : 2))
         const maxInner =
-          innerCompanion || star.zone === 'inner' || noPlanets || neutronStar
+          innerCompanion || star.zone === 'inner' || noPlanets || neutronStar || tBrownDwarf
             ? 0
             : star.zone === 'outer' || brownDwarf || deadStar
             ? 1
             : 3
-        const inner = Math.min(maxInner, window.dice.randint(1, mClass ? 4 : 5))
+        const inner = Math.min(maxInner, window.dice.randint(1, mClass || brownDwarf ? 4 : 5))
         const maxOuter =
           outerCompanion || star.zone === 'inner' || noPlanets
             ? 0
@@ -386,7 +389,7 @@ export const STAR = {
             : 5
         const outer = Math.min(
           maxOuter,
-          window.dice.randint(innerCompanion ? 1 : 0, mClass ? 4 : 5)
+          window.dice.randint(innerCompanion ? 1 : 0, mClass || brownDwarf ? 4 : 5)
         )
         const satellites: {
           type: 'satellite'
@@ -405,7 +408,7 @@ export const STAR = {
             )
             .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'inner' as const })),
           ...window.dice
-            .sample([-1.75, -2.25, -2.75, -3.25, -3.75], outer)
+            .sample([-1.75, -2.25, -2.75, -3.25, -3.75, -4, -4.25, -4.5], outer)
             .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'outer' as const }))
         ]
         if (homeworld)
@@ -433,6 +436,9 @@ export const STAR = {
         let distance = star.r + 10
         let impactZone =
           star.luminosityClass === 'III' || whiteDwarf ? window.dice.randint(1, 3) : 0
+        if (system === 752) {
+          console.log()
+        }
         orbitals.forEach(template => {
           const deviation = window.dice.uniform(
             template.deviation - 0.25,
@@ -456,10 +462,10 @@ export const STAR = {
                   distance,
                   deviation,
                   impactZone: impactZone > 0,
-                  unary: companions.length === 0,
+                  companions: companions.length,
                   designation: template.homeworld
                     ? 'homeworld'
-                    : template.primary
+                    : template.primary && window.dice.random > 0.3
                     ? 'primary'
                     : undefined
                 })

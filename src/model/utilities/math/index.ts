@@ -1,4 +1,4 @@
-import { CartesianCoords, Point } from './types'
+import { AxialTiltParams, CartesianCoords, EccentricityParams, Point } from './types'
 import { WeightedDistribution } from '../dice/types'
 import { scaleLinear } from 'd3'
 
@@ -115,6 +115,38 @@ export const MATH = {
     },
     distance: (kelvin: number, luminosity: number) => {
       return (luminosity / (kelvin / 279) ** 4) ** 0.5
+    },
+    eccentricity: ({
+      star,
+      asteroidMember,
+      homeworld,
+      moon,
+      proto,
+      primordial,
+      locked,
+      size = 0
+    }: EccentricityParams) => {
+      let roll = window.dice.roll(2, 6)
+      if (star) roll += 2
+      if (asteroidMember) roll += 1
+      if (locked) roll -= 2
+
+      if (proto) roll += 2
+      else if (primordial) roll += 1
+      // moons
+      if (moon === 'middle') roll += 2
+      else if (moon === 'outer') roll += 4
+      else if (moon === 'extreme') roll += 6
+
+      if (moon && size > 4) roll -= 6
+      // finalize
+      if (homeworld) roll = Math.min(roll, 9)
+      if (roll <= 5) return 0
+      else if (roll <= 7) return window.dice.uniform(0.01, 0.03)
+      else if (roll <= 9) return window.dice.uniform(0.04, 0.09)
+      else if (roll <= 10) return window.dice.uniform(0.1, 0.35)
+      else if (roll <= 11) return window.dice.uniform(0.15, 0.65)
+      return window.dice.uniform(0.4, 0.9)
     }
   },
   temperature: {
@@ -122,7 +154,21 @@ export const MATH = {
     kelvin: (celsius: number) => celsius + 273.15
   },
   tilt: {
-    absolute: (tilt: number) => (tilt > 90 ? 180 - tilt : tilt)
+    absolute: (tilt: number) => (tilt > 90 ? 180 - tilt : tilt),
+    compute: ({ homeworld }: AxialTiltParams) => {
+      if (homeworld) return window.dice.uniform(0, 30)
+      const standard = window.dice.roll(2, 6)
+      if (standard <= 4) return window.dice.uniform(0.01, 0.1)
+      if (standard <= 5) return window.dice.uniform(0.2, 1.2)
+      if (standard <= 6) return window.dice.uniform(1, 6)
+      if (standard <= 7) return window.dice.uniform(7, 12)
+      if (standard <= 9) return window.dice.uniform(10, 35)
+      const extreme = window.dice.roll(1, 6)
+      if (extreme <= 2) return window.dice.uniform(20, 70) // high axial tilt
+      if (extreme <= 4) return window.dice.uniform(40, 90) // extreme axial tilt
+      if (extreme <= 5) return window.dice.uniform(91, 126) // retrograde rotation
+      return window.dice.uniform(144, 180) // extreme retrograde
+    }
   },
   time: {
     convertYears: (inputYears: number): string => {

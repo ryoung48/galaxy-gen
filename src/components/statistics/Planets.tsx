@@ -4,7 +4,7 @@ import { Orbit } from '../../model/system/orbits/types'
 
 export const PlanetFrequency = () => {
   const planets = window.galaxy.orbits.filter(
-    orbit => orbit.parent.type === 'star' && orbit.group !== 'asteroid belt'
+    orbit => orbit.parent.type === 'star' && orbit.type !== 'asteroid belt'
   )
   const total = planets.length
   const orbitFreq = planets.reduce((dict: Record<string, number>, orbit) => {

@@ -8,11 +8,17 @@ export const ATMOSPHERE = {
     size: number,
     deviation: number,
     hydrosphere: number,
-    type: Orbit['type']
+    type: Orbit['type'],
+    primary?: boolean
   ): Atmosphere => {
     const nonhabitable = deviation < -1.5 || deviation > 1.5
+
+    if (primary && (code < 4 || code > 9) && code <= 10) {
+      code = window.dice.choice([5, 6, 6, 8])
+    }
     let atmosphere: Omit<Atmosphere, 'bar'> = { code, type: 'vacuum' }
-    if (nonhabitable && code >= 2 && code <= 9) code = 10
+    if (size <= 1) code = Math.min(code, 1)
+    else if (nonhabitable && code >= 2 && code <= 9) code = 10
     if (code === 0) atmosphere = { code, type: 'vacuum' }
     else if (code === 1) atmosphere = { code, type: 'trace' }
     else if (code === 2)
@@ -26,7 +32,7 @@ export const ATMOSPHERE = {
     else if (code === 8) atmosphere = { code, type: 'breathable', subtype: 'dense' }
     else if (code === 9) atmosphere = { code, type: 'breathable', subtype: 'dense', tainted: true }
     else if (code === 10) {
-      let roll = window.dice.roll(2, 6)
+      let roll = window.dice.roll(2, 5)
       if (size <= 4) roll -= 2
       if (deviation >= 1.5) roll -= 2
       if (deviation <= -1.5) roll += 2
@@ -37,10 +43,7 @@ export const ATMOSPHERE = {
       else if (roll <= 6) atmosphere = { code, type: 'exotic', subtype: 'standard', tainted: true }
       else if (roll <= 8) atmosphere = { code, type: 'exotic', subtype: 'standard' }
       else if (roll <= 9) atmosphere = { code, type: 'exotic', subtype: 'dense', tainted: true }
-      else if (roll <= 10) atmosphere = { code, type: 'exotic', subtype: 'dense' }
-      else if (roll <= 11)
-        atmosphere = { code, type: 'exotic', subtype: 'very dense', tainted: true }
-      else atmosphere = { code, type: 'exotic', subtype: 'very dense' }
+      else atmosphere = { code, type: 'exotic', subtype: 'dense' }
     } else if (code === 11 || code === 12) {
       const insidious = code === 12
       const gas = insidious ? 'insidious' : 'corrosive'
@@ -58,36 +61,52 @@ export const ATMOSPHERE = {
       else atmosphere = { code, type: gas, subtype: 'very dense' }
     } else if (code === 13) {
       const panthalassic = type === 'panthalassic'
-      const subtype: Orbit['atmosphere']['subtype'] = window.dice.weightedChoice([
-        { v: 'very dense', w: 3 },
-        { v: 'low', w: panthalassic ? 0 : 1 },
-        { v: 'unusual', w: 0.5 },
-        { v: 'helium', w: panthalassic ? 0 : 0.25 },
-        { v: 'hydrogen', w: panthalassic ? 0 : 0.25 }
-      ])
-      const gaseous = subtype === 'helium' || subtype === 'hydrogen'
-      atmosphere = {
-        code,
-        type: gaseous
-          ? 'gaseous'
-          : window.dice.weightedChoice([
+      const subtype: Orbit['atmosphere']['subtype'] = primary
+        ? window.dice.weightedChoice([
+            { v: 'very dense', w: 1 },
+            { v: 'very thin', w: panthalassic ? 0 : 1 }
+          ])
+        : window.dice.weightedChoice([
+            { v: 'very dense', w: 1 },
+            { v: 'very thin', w: panthalassic ? 0 : 1 },
+            { v: 'unusual', w: 0.5 },
+            { v: 'helium', w: panthalassic ? 0 : 0.5 },
+            { v: 'hydrogen', w: panthalassic ? 0 : 0.25 }
+          ])
+      if (subtype === 'helium' || subtype === 'hydrogen') {
+        atmosphere = { code: subtype === 'helium' ? 16 : 17, type: 'gas', subtype }
+      } else {
+        const composition = primary
+          ? 'breathable'
+          : window.dice.weightedChoice<Orbit['atmosphere']['type']>([
               { v: 'breathable', w: nonhabitable ? 0 : 5 },
               { v: 'exotic', w: 1 }
-            ]),
-        subtype,
-        unusual:
-          subtype === 'unusual'
-            ? window.dice.weightedChoice([
-                { v: 'ellipsoid', w: 1 },
-                { v: 'layered', w: 1 },
-                { v: 'steam', w: panthalassic || hydrosphere < 5 ? 0 : 1 },
-                { v: 'storms', w: 1 },
-                { v: 'tides', w: hydrosphere < 5 ? 0 : 1 },
-                { v: 'seasonal', w: 1 }
-              ])
-            : undefined
+            ])
+        atmosphere = {
+          code:
+            composition === 'exotic'
+              ? 10
+              : subtype === 'very dense'
+              ? 13
+              : subtype === 'very thin'
+              ? 14
+              : 15,
+          type: composition,
+          subtype,
+          unusual:
+            subtype === 'unusual'
+              ? window.dice.weightedChoice([
+                  { v: 'ellipsoid', w: 1 },
+                  { v: 'layered', w: 1 },
+                  { v: 'steam', w: panthalassic || hydrosphere < 5 ? 0 : 1 },
+                  { v: 'storms', w: 1 },
+                  { v: 'tides', w: hydrosphere < 5 ? 0 : 1 },
+                  { v: 'seasonal', w: 1 }
+                ])
+              : undefined
+        }
       }
-    } else if (code === 14) atmosphere = { code, type: 'gaseous', subtype: 'hydrogen' }
+    } else if (code === 14) atmosphere = { code: 17, type: 'gas', subtype: 'hydrogen' }
     const completed: Atmosphere = {
       ...atmosphere,
       bar: ATMOSPHERE.bar(atmosphere, type === 'panthalassic')
@@ -99,7 +118,7 @@ export const ATMOSPHERE = {
     const { type, subtype, tainted } = atmosphere
     if (tainted) {
       const breathable = type === 'breathable'
-      const lifeless = type === 'vacuum' || type === 'trace' || type === 'gaseous'
+      const lifeless = type === 'vacuum' || type === 'trace' || type === 'gas'
       const extreme = !['thin', 'standard', 'dense'].includes(subtype ?? '')
       const low = breathable && subtype === 'thin'
       const high = breathable && subtype === 'dense'
@@ -127,31 +146,34 @@ export const ATMOSPHERE = {
     } else if (atmosphere.subtype === 'dense') return window.dice.uniform(1.5, 2.49)
     else if (atmosphere.subtype === 'very dense') return window.dice.uniform(2.5, 10)
     else if (atmosphere.subtype === 'extremely dense') return window.dice.uniform(10, 100)
-    else if (atmosphere.type === 'gaseous' && atmosphere.subtype === 'helium')
+    else if (atmosphere.type === 'gas' && atmosphere.subtype === 'helium')
       return window.dice.uniform(100, 1000)
-    else if (atmosphere.type === 'gaseous' && atmosphere.subtype === 'hydrogen')
+    else if (atmosphere.type === 'gas' && atmosphere.subtype === 'hydrogen')
       return window.dice.uniform(1000, 5000)
     return 0
   },
   color: (code: number): string => {
-    if (code === 0) return '#ffffff' // vacuum - deep purple (void of space)
-    if (code === 1) return '#bfbec0' // trace - lighter purple (minimal atmosphere)
-    if (code === 2) return '#7dd3d8' // breathable very thin tainted - light blue-teal
-    if (code === 3) return '#6bb6ff' // breathable very thin - medium light blue
-    if (code === 4) return '#4a9baa' // breathable thin tainted - blue-teal
-    if (code === 5) return '#357abd' // breathable thin - medium blue
-    if (code === 6) return '#2e5984' // breathable standard - darker blue
-    if (code === 7) return '#1e5572' // breathable standard tainted - dark blue-teal
-    if (code === 8) return '#0d3a5c' // breathable dense - very dark blue
-    if (code === 9) return '#0a3546' // breathable dense tainted - darkest blue-teal
-    if (code === 10) return '#9b59b6' // exotic - purple
-    if (code === 11) return '#e74c3c' // corrosive - red
-    if (code === 12) return '#8b0000' // insidious - dark red
-    if (code === 13) return '#d68910' // unusual - orange
-    if (code === 14) return '#e8daef' // hydrogen - light purple
+    if (code === 0) return '#ffffff' // Vacuum (0) - white (void of space)
+    if (code === 1) return '#bfbec0' // Trace (1) - grayish (minimal atmosphere)
+    if (code === 2) return '#7dd3d8' // Very Thin, Tainted (2) - light blue-teal
+    if (code === 3) return '#6bb6ff' // Very Thin (3) - light blue
+    if (code === 4) return '#4a9baa' // Thin, Tainted (4) - teal-blue
+    if (code === 5) return '#357abd' // Thin (5) - medium blue
+    if (code === 6) return '#2e5984' // Standard (6) - darker blue
+    if (code === 7) return '#1e5572' // Standard, Tainted (7) - dark blue-teal
+    if (code === 8) return '#0d3a5c' // Dense (8) - very dark blue
+    if (code === 9) return '#0a3546' // Dense, Tainted (9) - darkest blue-teal
+    if (code === 10) return '#9b59b6' // Exotic (A) - purple
+    if (code === 11) return '#e74c3c' // Corrosive (B) - red
+    if (code === 12) return '#8b0000' // Insidious (C) - dark red
+    if (code === 13) return '#9e6202ff' // Very Dense (D) - dark orange (new, distinct)
+    if (code === 14) return '#e0bc81ff' // Low (E) - light orange (sub-minimal)
+    if (code === 15) return '#d68910' // Unusual (F) - orange
+    if (code === 16) return '#e8daef' // Gas, Helium (G) - dark sapphire blue
+    if (code === 17) return '#e9c0e9ff' // Gas, Hydrogen (H) - deep indigo purple
     return '#95a5a6' // fallback - gray
   },
-  special: (star: Star, size: number) => {
+  youth: (star: Star, size: number) => {
     const atmosphereMod = star.proto ? 4 : 2
     const atmosphere = window.dice.roll(2, 6) - 7 + size + atmosphereMod
     if (atmosphere >= 2 && atmosphere <= (star.proto ? 5 : 7)) return 10

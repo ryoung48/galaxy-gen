@@ -21,11 +21,14 @@ export const AtmosphereDistribution = () => {
     if (code === 7) return 'Standard, Tainted (7)'
     if (code === 8) return 'Dense (8)'
     if (code === 9) return 'Dense, Tainted (9)'
-    if (code === 10) return 'Exotic (10)'
-    if (code === 11) return 'Corrosive (11)'
-    if (code === 12) return 'Insidious (12)'
-    if (code === 13) return 'Super-High Density (13)'
-    if (code === 14) return 'Gas Giant Envelope (14)'
+    if (code === 10) return 'Exotic (A)'
+    if (code === 11) return 'Corrosive (B)'
+    if (code === 12) return 'Insidious (C)'
+    if (code === 13) return 'Very Dense (D)'
+    if (code === 14) return 'Low (E)'
+    if (code === 15) return 'Unusual (F)'
+    if (code === 16) return 'Gas, Helium (G)'
+    if (code === 17) return 'Gas, Hydrogen (H)'
     return `Code ${code}`
   }
 

@@ -41,5 +41,10 @@ export const TEXT = {
     return str.replace(/[^\s-()]+/g, txt => {
       return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
     })
+  },
+  toHex: (value: number): string => {
+    if (value <= 9) return value.toString()
+    if (value >= 10 && value <= 35) return String.fromCharCode(65 + value - 10) // A-H for 10-18
+    return 'X' // fallback for values outside range
   }
 }

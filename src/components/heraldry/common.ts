@@ -100,9 +100,9 @@ export const HERALDRY = {
     ctx.fillStyle = backColor // Fill color
     ctx.fill()
     ctx.lineWidth = borderWidth // Set border width
-    ctx.strokeStyle = style === 'light chromatic' ? '#000' : '#aaaaaa'
-    ctx.stroke()
+    ctx.strokeStyle = style === 'light chromatic' ? '#000' : '#000'
 
     ctx.closePath()
+    ctx.stroke()
   }
 }

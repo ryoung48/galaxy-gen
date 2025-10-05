@@ -1,66 +1,48 @@
-import { MATH } from '../../../utilities/math'
 import { ASTEROID_BELT } from '../asteroids'
-import { ORBIT_CLASSIFICATION } from '../classification'
 import { TEMPERATURE } from '../temperature'
-import { Orbit, HabitabilityTrace } from '../types'
+import { Orbit } from '../types'
 import { HabitabilityParams } from './types'
 
 export const DESIRABILITY = {
-  get: (orbit: Orbit) => orbit.resources + orbit.habitability,
-  habitability: ({ orbit, parent }: HabitabilityParams) => {
-    const { size, atmosphere, temperature, gravity, type } = orbit
+  get: (orbit: Orbit) => orbit.resources + Math.max(orbit.habitability.score, 0) * 5,
+  habitability: ({ orbit }: HabitabilityParams) => {
+    const { size, atmosphere, temperature, gravity } = orbit
     const hydrosphere = orbit.hydrosphere.code
     let habitability = 10
-    const adjustments: HabitabilityTrace['adjustments'] = [
-      {
-        value: 10,
-        description: 'base habitability'
-      }
+    const adjustments: Orbit['habitability']['trace'] = [
+      { value: 10, description: 'base habitability' }
     ]
+
+    const locked = orbit.lock?.type === 'star'
 
     // limited surface area
     if (size <= 4 && hydrosphere < 12) {
       habitability -= 1
-      adjustments.push({
-        value: -1,
-        description: 'limited surface area'
-      })
+      adjustments.push({ value: -1, description: 'limited surface area' })
     }
     // additional surface area
     else if (size >= 9 && hydrosphere < 12) {
       habitability += 1
-      adjustments.push({
-        value: 1,
-        description: 'additional surface area'
-      })
+      adjustments.push({ value: 1, description: 'additional surface area' })
     }
 
     // very hostile atmosphere
-    if (atmosphere.code === 12 || atmosphere.type === 'gaseous') {
+    if (atmosphere.code === 12 || atmosphere.type === 'gas') {
       habitability -= 12
-      adjustments.push({
-        value: -12,
-        description: 'very hostile atmosphere'
-      })
+      adjustments.push({ value: -12, description: 'very hostile atmosphere' })
     }
     // hostile atmosphere
     else if (atmosphere.code === 11 || atmosphere.unusual) {
       habitability -= 10
-      adjustments.push({
-        value: -10,
-        description: 'hostile atmosphere'
-      })
+      adjustments.push({ value: -10, description: 'hostile atmosphere' })
     }
     // non-breathable atmosphere
-    else if ([0, 1, 10].includes(atmosphere.code) || atmosphere.type === 'exotic') {
+    else if ([0, 1, 10].includes(atmosphere.code)) {
       habitability -= 8
-      adjustments.push({
-        value: -8,
-        description: 'non-breathable atmosphere'
-      })
+      adjustments.push({ value: -8, description: 'non-breathable atmosphere' })
     }
     // tainted very thin or thin ,low atmosphere
-    else if (atmosphere.code === 2 || atmosphere.subtype === 'low') {
+    else if (atmosphere.code === 2 || atmosphere.code === 14) {
       habitability -= 4
       adjustments.push({
         value: -4,
@@ -68,61 +50,40 @@ export const DESIRABILITY = {
       })
     }
     // very thin or very dense atmosphere
-    else if (atmosphere.code === 3 || atmosphere.subtype === 'very dense') {
+    else if (atmosphere.code === 3 || atmosphere.code === 13) {
       habitability -= 3
-      adjustments.push({
-        value: -3,
-        description: 'very thin or very dense atmosphere'
-      })
+      adjustments.push({ value: -3, description: 'very thin or very dense atmosphere' })
     }
     // tainted thin or dense atmosphere
     else if (atmosphere.code === 4 || atmosphere.code === 9) {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'tainted thin or dense atmosphere'
-      })
+      adjustments.push({ value: -2, description: 'tainted thin or dense atmosphere' })
     }
     // thin, tainted (standard), dense atmospheres
     else if ([5, 7, 8].includes(atmosphere.code)) {
       habitability -= 1
-      adjustments.push({
-        value: -1,
-        description: 'thin, tainted (standard), dense atmospheres'
-      })
+      adjustments.push({ value: -1, description: 'thin, tainted (standard), dense atmospheres' })
     }
 
     // lack of accessible water
     if (hydrosphere === 0) {
       habitability -= 4
-      adjustments.push({
-        value: -4,
-        description: 'lack of accessible water'
-      })
+      adjustments.push({ value: -4, description: 'lack of accessible water' })
     }
     // desert conditions prevalent
     else if (hydrosphere <= 3) {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'desert conditions prevalent'
-      })
+      adjustments.push({ value: -2, description: 'desert conditions prevalent' })
     }
     // little usable land surface area
     else if (hydrosphere === 9) {
       habitability -= 1
-      adjustments.push({
-        value: -1,
-        description: 'little usable land surface area'
-      })
+      adjustments.push({ value: -1, description: 'little usable land surface area' })
     }
     // very little usable land surface area
     else if (hydrosphere === 10 || hydrosphere === 11) {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'very little usable land surface area'
-      })
+      adjustments.push({ value: -2, description: 'very little usable land surface area' })
     }
 
     const climate = TEMPERATURE.describe(temperature.mean)
@@ -130,99 +91,59 @@ export const DESIRABILITY = {
     // molten seas
     if (hydrosphere === 12) {
       habitability -= 12
-      adjustments.push({
-        value: -12,
-        description: 'molten surface'
-      })
+      adjustments.push({ value: -12, description: 'molten surface' })
     }
     // gas giant core
     else if (hydrosphere === 13) {
       habitability -= 10
-      adjustments.push({
-        value: -10,
-        description: 'gas giant core'
-      })
+      adjustments.push({ value: -10, description: 'gas giant core' })
     }
     // scorching hot most of the time
     else if (climate === 'burning') {
       habitability -= 4
-      adjustments.push({
-        value: -6,
-        description: 'burning conditions'
-      })
+      adjustments.push({ value: -6, description: 'burning conditions' })
     }
     // too hot most of the time
     else if (climate === 'hot') {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'hot conditions'
-      })
+      adjustments.push({ value: -2, description: 'hot conditions' })
     }
     // too cold most of the time
     else if (climate === 'cold') {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'cold conditions'
-      })
+      adjustments.push({ value: -2, description: 'cold conditions' })
     }
     // frozen most of the time
     else if (climate === 'frozen') {
       habitability -= 4
-      adjustments.push({
-        value: -6,
-        description: 'frozen conditions'
-      })
+      adjustments.push({ value: -6, description: 'frozen conditions' })
     }
-    const tilt = MATH.tilt.absolute(orbit.axialTilt)
-    if (tilt > 35 && atmosphere.code > 1) {
-      habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'extreme seasons'
-      })
-    }
-    const eccentricity = parent?.eccentricity ?? orbit.eccentricity
-    if (eccentricity > 0.2 && atmosphere.code > 1) {
-      habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'high eccentricity'
-      })
+    // temperature swings
+    const variability = Math.min(Math.floor((temperature.high - temperature.low) / 60), 2)
+    if (variability > 0 && atmosphere.code > 1 && !locked) {
+      habitability -= variability
+      adjustments.push({ value: -variability, description: 'variable conditions' })
     }
 
     // unhealthy low gravity levels
     if (gravity <= 0.2) {
       habitability -= 4
-      adjustments.push({
-        value: -4,
-        description: 'unhealthy low gravity levels'
-      })
+      adjustments.push({ value: -4, description: 'unhealthy low gravity levels' })
     }
     // very low gravity
     else if (gravity <= 0.4) {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'very low gravity'
-      })
+      adjustments.push({ value: -2, description: 'very low gravity' })
     }
     // low gravity
     else if (gravity <= 0.7) {
       habitability -= 1
-      adjustments.push({
-        value: -1,
-        description: 'low gravity'
-      })
+      adjustments.push({ value: -1, description: 'low gravity' })
     }
     // comfortable gravity
     else if (gravity <= 0.9) {
       habitability += 1
-      adjustments.push({
-        value: 1,
-        description: 'comfortable gravity'
-      })
+      adjustments.push({ value: 1, description: 'comfortable gravity' })
     }
     // standard gravity
     else if (gravity <= 1.1) {
@@ -231,51 +152,52 @@ export const DESIRABILITY = {
     // somewhat high gravity
     else if (gravity <= 1.4) {
       habitability -= 1
-      adjustments.push({
-        value: -1,
-        description: 'somewhat high gravity'
-      })
+      adjustments.push({ value: -1, description: 'somewhat high gravity' })
     }
     // uncomfortable high gravity
     else if (gravity <= 2) {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'uncomfortable high gravity'
-      })
+      adjustments.push({ value: -2, description: 'uncomfortable high gravity' })
     }
     // gravity to high for acclimation
     else {
       habitability -= 6
-      adjustments.push({
-        value: -6,
-        description: 'gravity to high for acclimation'
-      })
+      adjustments.push({ value: -6, description: 'gravity to high for acclimation' })
     }
 
     // solar tidally locke
-    if (ORBIT_CLASSIFICATION[type].tidalLock) {
+    if (locked) {
       habitability -= 2
-      adjustments.push({
-        value: -2,
-        description: 'solar tidally lock'
-      })
+      adjustments.push({ value: -2, description: 'solar tidal lock' })
     }
 
-    return { score: habitability, trace: { adjustments } }
+    // seismic activity
+    const seismic = Math.min(Math.floor(orbit.seismology.total / 100), 5)
+    if (seismic > 0) {
+      habitability -= seismic
+      adjustments.push({ value: -seismic, description: 'seismic activity' })
+    }
+    const tides = Math.min(Math.floor(orbit.seismology.tides.stress / 5), 2)
+    if (tides > 0) {
+      habitability -= tides
+      adjustments.push({ value: -tides, description: 'extreme tides' })
+    }
+
+    orbit.habitability = { score: habitability, trace: adjustments }
   },
   resources: (orbit: Orbit, parent?: Orbit) => {
     if (orbit.belt) {
       return ASTEROID_BELT.resources(orbit.belt)
     } else if (parent?.belt) {
-      return parent.resources
+      return window.dice.roll(2, 6)
     }
-    let roll = window.dice.roll(2, 6) - 7 + orbit.size
+    let roll = window.dice.roll(2, 6) - 7 + Math.min(orbit.size, 15)
     if (orbit.density > 1.12) roll += 2
     else if (orbit.density < 0.5) roll -= 2
 
-    if (orbit.biosphere > 10) roll += 2
-    else if (orbit.biosphere >= 8) roll += 1
+    if (orbit.biosphere.code >= 13) roll += 4
+    else if (orbit.biosphere.code >= 10) roll += 2
+    else if (orbit.biosphere.code >= 8) roll += 1
 
     return Math.min(Math.max(roll, 2), 12)
   }

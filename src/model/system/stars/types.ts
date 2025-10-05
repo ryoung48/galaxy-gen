@@ -11,6 +11,7 @@ interface StarAttributes {
   age: number
   eccentricity: number
   mao: number
+  hzco: number
 }
 
 export interface Star extends StarAttributes {

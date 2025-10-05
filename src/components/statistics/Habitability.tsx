@@ -19,13 +19,9 @@ export const HabitabilityDistribution = () => {
   }
   // Get max habitability for each system
   const systemMaxHab = window.galaxy.systems.reduce((dict: Record<number, number>, system) => {
-    const orbits = SOLAR_SYSTEM.orbits(system)
+    const orbits = SOLAR_SYSTEM.orbits(system).filter(orbit => orbit.tag === 'orbit')
     const maxHab =
-      orbits.length > 0
-        ? Math.max(
-            ...orbits.filter(orbit => orbit.tag === 'orbit').map(orbit => orbit.habitability)
-          )
-        : -10 // Systems with no habitable orbits get very low score
+      orbits.length > 0 ? Math.max(...orbits.map(orbit => orbit.habitability.score)) : -10 // Systems with no habitable orbits get very low score
     dict[system.idx] = maxHab
     return dict
   }, {})

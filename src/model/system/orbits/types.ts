@@ -2,6 +2,7 @@ import { Star } from '../stars/types'
 import { AsteroidBelt } from './asteroids/types'
 import { Atmosphere } from './atmosphere/types'
 import { MoonOrbit } from './moons/types'
+import { OrbitTag } from './tags/types'
 
 type DwarfType =
   | 'rockball'
@@ -25,6 +26,11 @@ type HelianType = 'helian' | 'panthalassic' | 'asphodelian'
 
 type JovianType = 'jovian' | 'chthonian'
 
+type Trace = {
+  value: number
+  description: string
+}[]
+
 export interface Orbit {
   idx: number
   tag: 'orbit'
@@ -33,6 +39,7 @@ export interface Orbit {
   parent: { type: 'star' | 'orbit'; idx: number }
   angle: number
   distance: number
+  deviation: number
   zone: 'epistellar' | 'inner' | 'outer'
   group: 'asteroid belt' | 'dwarf' | 'terrestrial' | 'helian' | 'jovian'
   type: 'asteroid belt' | 'asteroid' | DwarfType | TerrestrialType | HelianType | JovianType
@@ -48,36 +55,45 @@ export interface Orbit {
   composition: { type: 'rocky' | 'ice' | 'metallic' | 'gas'; description?: string }
   atmosphere: Atmosphere
   hydrosphere: { code: number; distribution: number }
-  biosphere: number
+  biosphere: { code: number; affix?: 'remnants' | 'bio-engineered'; trace: Trace }
   chemistry?: 'water' | 'ammonia' | 'methane' | 'sulfur' | 'chlorine'
-  temperature: { mean: number; high: number; low: number }
-  rotation: number
+  temperature: {
+    mean: number
+    high: number
+    low: number
+    trace: { greenhouse: number; albedo: number; au: number; luminosity: number }
+    delta: {
+      eccentricity: number
+      tilt: number
+      rotation: number
+      geography: number
+      atmospheric: number
+      value: number
+    }
+  }
+  rotation: { value: number; trace: Trace; roll: number }
+  lock?: { type: 'moon' | 'planet' | 'star'; idx: number }
+  direction: 'prograde' | 'retrograde' | '3:2 tidal lock' | '1:1 tidal lock'
   eccentricity: number
-  axialTilt: number
+  tilt: number
   period: number
-  habitability: number
-  habitabilityTrace?: HabitabilityTrace
+  hillSphere: number
+  mor: number
+  calendar: { day: number; year: number }
+  tides: { effect: number; type: 'star' | 'planet' | 'moon'; idx: number }[]
+  seismology: { residual: number; total: number; tides: { stress: number; heating: number } }
+  habitability: { score: number; trace: Trace }
   resources: number
   population?: { code: number; size: number }
-  settlement?:
-    | 'refueling station'
-    | 'research base'
-    | 'freeport'
-    | 'mining station'
-    | 'corporate outpost'
-    | 'colonial outpost'
-    | 'frontier world'
-    | 'prison world'
-    | 'paradise world'
-    | 'industrial world'
-    | 'agricultural world'
-    | 'capital world'
   government?: number
   law?: number
   starport?: 'X' | 'E' | 'D' | 'C' | 'B' | 'A'
-  technology?: number
+  technology: { score: number; trace: Trace }
   orbits: Orbit[]
-  rings?: 'minor' | 'complex'
+  rings?: 'none' | 'minor' | 'complex'
+  mainworld?: boolean
+  tags: { tag: OrbitTag; value: number }[]
+  codes?: string[]
   // display
   r: number
   fullR?: number
@@ -91,9 +107,10 @@ export type OrbitSpawnParams = {
   angle: number
   distance: number
   designation?: 'homeworld' | 'primary'
-  unary: boolean
+  companions: number
   deviation: number
   moon?: Omit<MoonOrbit, 'period'>
+  size?: number
 }
 
 export type OrbitGroupDetails = {
@@ -108,6 +125,8 @@ export type OrbitGroupDetails = {
   size: (_params: {
     size: number
     composition: Orbit['composition']['type']
+    star: Star
+    au: number
   }) => Pick<Orbit, 'diameter' | 'mass' | 'gravity' | 'density'> & { description?: string }
 }
 
@@ -118,28 +137,13 @@ export type OrbitTypeDetails = {
   tidalFlex?: boolean
   biosphere?: boolean
   subtypes?: Record<string, { description?: string; composition?: Orbit['composition'] }>
-  resources?: {
-    type:
-      | 'food'
-      | 'minerals'
-      | 'energy'
-      | 'alloys'
-      | 'consumer goods'
-      | 'research'
-      | 'trade'
-      | 'exotic gas'
-      | 'rare crystals'
-      | 'volatile motes'
-      | 'zro'
-      | 'dark matter'
-    weight: number
-  }[]
   roll: (_params: {
     star: Star
     zone: Orbit['zone']
     primary?: boolean
     parent?: Orbit
     deviation: number
+    sizeOverride?: number
   }) => {
     size: number
     atmosphere: number
@@ -172,11 +176,4 @@ export type PopulateOrbitParams = {
   maxTech?: number
   capital?: boolean
   mainworld?: boolean
-}
-
-export interface HabitabilityTrace {
-  adjustments: {
-    value: number
-    description: string
-  }[]
 }

@@ -1,6 +1,5 @@
 import jdenticon from 'jdenticon/standalone'
 import { curveCatmullRom, line as d3Line } from 'd3-shape'
-import { Delaunay } from 'd3-delaunay'
 import { CONSTANTS } from '../../../model/constants'
 import { GALAXY } from '../../../model/galaxy'
 import { SOLAR_SYSTEM } from '../../../model/system'
@@ -14,180 +13,113 @@ import { scaleLinear } from 'd3'
 import { COLORS } from '../../../theme/colors'
 import { Star as StarType } from '../../../model/system/stars/types'
 import { EdgeMap } from '../../../model/utilities/voronoi/types'
-import { MATH } from '../../../model/utilities/math'
+// import { OrbitTag } from '../../../model/system/orbits/tags/types'
+// import { drawTagIconWithText } from './tags'
+import { NATION } from '../../../model/nations'
+import { Nation } from '../../../model/nations/types'
+import { mdiSwordCross } from '@mdi/js'
+
+// Helper to draw MDI icons
+const drawMDIIcon = ({
+  ctx,
+  x,
+  y,
+  size,
+  path,
+  color
+}: {
+  ctx: CanvasRenderingContext2D
+  x: number
+  y: number
+  size: number
+  path: string
+  color: string
+}) => {
+  try {
+    const p2d = new Path2D(path)
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(size / 24, size / 24)
+    ctx.fillStyle = color
+    ctx.fill(p2d)
+    ctx.restore()
+  } catch {
+    // Fallback: simple circle if Path2D unsupported
+    ctx.save()
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(x + size / 2, y + size / 2, size / 2, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.restore()
+  }
+}
+
+// Aggregate resources for a solar system and draw them beneath the system icon
+// const drawSystemResources = ({
+//   ctx,
+//   system
+// }: {
+//   ctx: CanvasRenderingContext2D
+//   system: import('../../../model/system/types').SolarSystem
+// }) => {
+//   // Gather resources from star + all orbiting bodies
+//   const objects = SOLAR_SYSTEM.orbits(system).filter(system => system.tag === 'orbit')
+//   const totals: Record<string, number> = {}
+//   objects.forEach(obj => {
+//     obj.tags.forEach(res => {
+//       totals[res.tag] = (totals[res.tag] ?? 0) + res.value
+//     })
+//   })
+
+//   const entries = Object.entries(totals) as [OrbitTag, number][]
+//   if (entries.length === 0) return
+
+//   // Layout constants (world-units)
+//   const iconRenderSize = 0.65
+//   const iconSpacing = 0.3
+//   const textSize = 0.3
+
+//   const iconRowY = system.y + 1.0
+//   // (text y handled by shared helper)
+
+//   const totalWidth = entries.length * iconRenderSize + (entries.length - 1) * iconSpacing
+//   const startX = system.x - totalWidth / 2
+
+//   entries.forEach(([type, amount], idx) => {
+//     const iconX = startX + idx * (iconRenderSize + iconSpacing)
+
+//     drawTagIconWithText({
+//       ctx,
+//       tag: { tag: type, value: amount },
+//       x: iconX,
+//       y: iconRowY,
+//       iconSize: iconRenderSize,
+//       textSize
+//     })
+//   })
+// }
 
 // Caches to avoid recalculating heavy objects every frame
 const cellPathCache = new Map<number, Path2D>()
-const identiconCache = new Map<number, HTMLCanvasElement>()
 let edgeMapCache: EdgeMap | null = null
 const nationBoundaryCache = new Map<number, Path2D[]>()
 
-// Cache for expensive trade route calculations
-let tradeRoutesCache: number[][] | null = null
-
-// Cache for pre-rendered shield + identicon composites (one per nation)
-const heraldryCompositeCache = new Map<number, HTMLCanvasElement>()
-
-// A* path-finding across the hyper-lane network (system.lanes)
-const shortestPath = (startIdx: number, goalIdx: number): number[] | null => {
-  if (startIdx === goalIdx) return [startIdx]
-  const systems = window.galaxy.systems
-
-  const openSet = new Set<number>([startIdx])
-  const cameFrom = new Map<number, number>()
-
-  const gScore = new Map<number, number>()
-  gScore.set(startIdx, 0)
-
-  const fScore = new Map<number, number>()
-  const goalPos = systems[goalIdx]
-  const heuristic = (idx: number) =>
-    MATH.distance([systems[idx].x, systems[idx].y], [goalPos.x, goalPos.y])
-
-  fScore.set(startIdx, heuristic(startIdx))
-
-  while (openSet.size) {
-    // find node in openSet with lowest fScore
-    let current = -1
-    let lowest = Infinity
-    openSet.forEach(idx => {
-      const f = fScore.get(idx) ?? Infinity
-      if (f < lowest) {
-        lowest = f
-        current = idx
-      }
-    })
-
-    if (current === -1) break // should not happen
-
-    if (current === goalIdx) {
-      const path: number[] = [current]
-      while (cameFrom.has(current)) {
-        current = cameFrom.get(current)!
-        path.push(current)
-      }
-      return path.reverse()
-    }
-
-    openSet.delete(current)
-    const currentG = gScore.get(current) ?? Infinity
-
-    systems[current].lanes.forEach(neiIdx => {
-      const tentativeG =
-        currentG +
-        MATH.distance(
-          [systems[current].x, systems[current].y],
-          [systems[neiIdx].x, systems[neiIdx].y]
-        )
-      if (tentativeG < (gScore.get(neiIdx) ?? Infinity)) {
-        cameFrom.set(neiIdx, current)
-        gScore.set(neiIdx, tentativeG)
-        fScore.set(neiIdx, tentativeG + heuristic(neiIdx))
-        openSet.add(neiIdx)
-      }
-    })
-  }
-  return null // no path
-}
-
-const getTradeRoutes = (): number[][] => {
-  if (tradeRoutesCache) return tradeRoutesCache
-
-  const largeNations = window.galaxy.nations.filter(n => n.systems.length >= 25)
-  const systems = window.galaxy.systems
-
-  // Build points array of capitals
-  const points = largeNations.map(n => {
-    const cap = systems[n.capital]
-    return { x: cap.x, y: cap.y, nationIdx: n.idx }
-  })
-
-  // Create Delaunay triangulation
-  const delaunay = Delaunay.from(
-    points,
-    p => p.x,
-    p => p.y
-  )
-  const { triangles } = delaunay
-
-  // Build edge set according to Urquhart graph
-  const edgeKeys = new Set<string>()
-  const addEdge = (i: number, j: number) => {
-    const a = points[i].nationIdx
-    const b = points[j].nationIdx
-    if (a === b) return
-    const key = [a, b].sort((x, y) => x - y).join('-')
-    edgeKeys.add(key)
-  }
-
-  for (let t = 0; t < triangles.length; t += 3) {
-    const ai = triangles[t]
-    const bi = triangles[t + 1]
-    const ci = triangles[t + 2]
-
-    const edges = [
-      [ai, bi],
-      [bi, ci],
-      [ci, ai]
-    ] as [number, number][]
-
-    // compute lengths
-    const lengths = edges.map(([i, j]) =>
-      MATH.distance([points[i].x, points[i].y], [points[j].x, points[j].y])
-    )
-
-    // find index of longest edge
-    const longestIdx = lengths.indexOf(Math.max(...lengths))
-
-    // add the other two edges
-    edges.forEach((e, idx) => {
-      if (idx !== longestIdx) addEdge(e[0], e[1])
-    })
-  }
-
-  const routes: number[][] = []
-
-  edgeKeys.forEach(key => {
-    const [aIdxStr, bIdxStr] = key.split('-')
-    const aIdx = Number(aIdxStr)
-    const bIdx = Number(bIdxStr)
-
-    const path = shortestPath(
-      window.galaxy.nations[aIdx].capital,
-      window.galaxy.nations[bIdx].capital
-    )
-    if (path && path.length > 1) {
-      routes.push(path)
-    }
-  })
-
-  tradeRoutesCache = routes
-  return routes
-}
-
-// Pre-render static background (core, nebulae, outer rim) once
-let backgroundCanvas: HTMLCanvasElement | null = null
-const getBackgroundCanvas = (): HTMLCanvasElement => {
-  if (backgroundCanvas) return backgroundCanvas
-  backgroundCanvas = document.createElement('canvas')
-  backgroundCanvas.width = CONSTANTS.W
-  backgroundCanvas.height = CONSTANTS.H
-  const bctx = backgroundCanvas.getContext('2d')!
-
+// Draw static background (core, nebulae, outer rim) directly on context
+const drawBackground = (ctx: CanvasRenderingContext2D) => {
   const centerX = CONSTANTS.W * 0.5
   const centerY = CONSTANTS.H * 0.5
 
   // Galactic Core
-  const coreGradient = bctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 200)
+  const coreGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 200)
   coreGradient.addColorStop(0, 'rgba(255, 255, 224, 1)')
   coreGradient.addColorStop(0.2, 'rgba(255, 255, 200, 0.8)')
   coreGradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
-  bctx.fillStyle = coreGradient
-  bctx.fillRect(0, 0, CONSTANTS.W, CONSTANTS.H)
+  ctx.fillStyle = coreGradient
+  ctx.fillRect(0, 0, CONSTANTS.W, CONSTANTS.H)
 
   // Inner rim
   CANVAS.circle({
-    ctx: bctx,
+    ctx,
     x: centerX,
     y: centerY,
     radius: 75,
@@ -196,7 +128,7 @@ const getBackgroundCanvas = (): HTMLCanvasElement => {
   })
 
   // Nebulae
-  const nebulaGradient1 = bctx.createRadialGradient(
+  const nebulaGradient1 = ctx.createRadialGradient(
     centerX - 150,
     centerY - 100,
     50,
@@ -206,10 +138,10 @@ const getBackgroundCanvas = (): HTMLCanvasElement => {
   )
   nebulaGradient1.addColorStop(0, 'rgba(100, 100, 180, 0.15)')
   nebulaGradient1.addColorStop(1, 'rgba(100, 100, 180, 0)')
-  bctx.fillStyle = nebulaGradient1
-  bctx.fillRect(0, 0, CONSTANTS.W, CONSTANTS.H)
+  ctx.fillStyle = nebulaGradient1
+  ctx.fillRect(0, 0, CONSTANTS.W, CONSTANTS.H)
 
-  const nebulaGradient2 = bctx.createRadialGradient(
+  const nebulaGradient2 = ctx.createRadialGradient(
     centerX + 200,
     centerY + 150,
     50,
@@ -219,26 +151,40 @@ const getBackgroundCanvas = (): HTMLCanvasElement => {
   )
   nebulaGradient2.addColorStop(0, 'rgba(180, 100, 100, 0.15)')
   nebulaGradient2.addColorStop(1, 'rgba(180, 100, 100, 0)')
-  bctx.fillStyle = nebulaGradient2
-  bctx.fillRect(0, 0, CONSTANTS.W, CONSTANTS.H)
+  ctx.fillStyle = nebulaGradient2
+  ctx.fillRect(0, 0, CONSTANTS.W, CONSTANTS.H)
 
   // Outer rim
   CANVAS.circle({
-    ctx: bctx,
+    ctx,
     x: centerX,
     y: centerY,
     radius: 335,
     fill: 'transparent',
     border: { color: 'rgba(255, 255, 255, 0.2)', width: 1 }
   })
+}
 
-  return backgroundCanvas
+const _heraldry: Record<number, HTMLCanvasElement> = {}
+
+const drawHeraldry = (nation: Nation) => {
+  if (!_heraldry[nation.idx]) {
+    const tempCanvas = document.createElement('canvas')
+    const initialSize = 100
+    tempCanvas.width = initialSize
+    tempCanvas.height = initialSize
+    const tempCtx = tempCanvas.getContext('2d')!
+    const config = HERALDRY.config(nation)
+    jdenticon.drawIcon(tempCtx, nation.name, initialSize, config)
+    _heraldry[nation.idx] = tempCanvas
+  }
+  return _heraldry[nation.idx]
 }
 
 export const GALAXY_MAP = {
   paint: ({ ctx, selected, solarSystem, mapMode }: PaintGalaxyParams) => {
-    // Draw pre-rendered galaxy background (auto-scaled with current transform)
-    ctx.drawImage(getBackgroundCanvas(), 0, 0, CONSTANTS.W, CONSTANTS.H)
+    // Draw galaxy background directly on context
+    drawBackground(ctx)
 
     ctx.save()
     ctx.beginPath()
@@ -247,6 +193,7 @@ export const GALAXY_MAP = {
 
     // solar system cells
     const systems = GALAXY.worlds()
+    const currentScale = ctx.getTransform().a
     systems.forEach(system => {
       const nation = SOLAR_SYSTEM.nation(system)
       const opacity = 0.25
@@ -255,12 +202,14 @@ export const GALAXY_MAP = {
       const orbits = SOLAR_SYSTEM.orbits(system).filter(
         o => o.tag !== 'orbit' || o.type !== 'asteroid belt'
       )
-      const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere)))
+      const biosphere = Math.max(...orbits.map(o => (o.tag === 'star' ? 0 : o.biosphere.code)))
       const population = Math.max(
         ...orbits.map(o => (o.tag === 'star' ? 0 : o.population?.code ?? 0))
       )
-      const habitability = Math.max(...orbits.map(o => (o.tag === 'star' ? -10 : o.habitability)))
-      ctx.fillStyle =
+      const habitability = Math.max(
+        ...orbits.map(o => (o.tag === 'star' ? -10 : o.habitability.score))
+      )
+      const baseColor =
         mapMode === 'habitability'
           ? METRICS.habitability.color(habitability)
           : mapMode === 'biosphere'
@@ -272,6 +221,8 @@ export const GALAXY_MAP = {
           : mapMode === 'government'
           ? METRICS.government.colors[nation.government]
           : nation.flag.color.replace('%)', `%, ${opacity})`)
+
+      ctx.fillStyle = baseColor
       let path = cellPathCache.get(system.idx)
       if (!path) {
         path = new Path2D(window.galaxy.diagram.renderCell(system.idx))
@@ -317,6 +268,33 @@ export const GALAXY_MAP = {
           ctx.restore()
         })
       })
+      // Draw war zones with thin red borders and conflict indicators
+      ctx.save()
+      window.galaxy.systems.forEach(system => {
+        const isUnderAttack = NATION.isSystemUnderAttack(system.idx)
+        if (isUnderAttack && mapMode === 'nations') {
+          const path = cellPathCache.get(system.idx)
+          if (path) {
+            // Static red border
+            ctx.save()
+            ctx.strokeStyle = 'rgba(255, 50, 50, 0.4)'
+            ctx.lineWidth = 1.25
+            ctx.stroke(path)
+            ctx.restore()
+
+            // Add conflict icon in center of system
+            drawMDIIcon({
+              ctx,
+              x: system.x - 0.5,
+              y: system.y + 1.25,
+              size: 1,
+              path: mdiSwordCross,
+              color: 'rgba(255, 50, 50, 0.9)'
+            })
+          }
+        }
+      })
+      ctx.restore()
     }
     if (mapMode === 'nations' || mapMode === 'government') {
       // hyper-lanes
@@ -333,7 +311,7 @@ export const GALAXY_MAP = {
       })
       // trade routes – highlighted links between neighboring large nations
       const lineGen = d3Line().curve(curveCatmullRom.alpha(0.5))
-      const routes = getTradeRoutes()
+      const routes = window.galaxy.routes
       const drawnEdges = new Set<string>()
       const drawSegment = (segmentIndices: number[]) => {
         const coords = segmentIndices.map(idx => [
@@ -369,7 +347,6 @@ export const GALAXY_MAP = {
     }
     ctx.restore()
     // stars & system names
-    const currentScale = ctx.getTransform().a
     const drawSystemNames = currentScale > 8 // skip tiny text when zoomed out
     systems.forEach(system => {
       // Determine all stars in the system (primary + companions)
@@ -417,6 +394,7 @@ export const GALAXY_MAP = {
           text: system.name,
           size: 0.7
         })
+        // drawSystemResources({ ctx, system })
       }
       if (focused) {
         // Expand the highlight radius so the entire star cluster fits inside.
@@ -433,26 +411,23 @@ export const GALAXY_MAP = {
     })
     // nation names & heraldry – fade out as the user zooms in
     const zoomLevel = ctx.getTransform().a // uniform scale applied earlier
-    const nameOpacity = scaleLinear().domain([5, 20]).range([1, 0]).clamp(true)(zoomLevel)
+    const textSizeScale = scaleLinear().domain([1, 150]).range([1.2, 8]).clamp(true)
+    const offsetScale = scaleLinear().domain([1, 150]).range([2, 9]).clamp(true)
+
+    const iconSizeScale = scaleLinear().domain([1, 150]).range([3, 14]).clamp(true)
 
     window.galaxy.nations.forEach(nation => {
       const origin = window.galaxy.systems[nation.capital]
       // Scale heraldry and label sizes based on number of systems (1-150)
       const systemsCount = nation.systems.length
-      const iconSizeScale = scaleLinear().domain([1, 150]).range([3, 14]).clamp(true)
-      const textSizeScale = scaleLinear().domain([1, 150]).range([1.2, 8]).clamp(true)
-      const offsetScale = scaleLinear().domain([1, 150]).range([2, 9]).clamp(true)
-
-      const iconSize = iconSizeScale(systemsCount)
       const textSize = textSizeScale(systemsCount)
       const textOffsetY = offsetScale(systemsCount)
 
       ctx.save()
-      if (nameOpacity < 0.05) {
+      if (zoomLevel > 15) {
         ctx.restore()
         return
       }
-      ctx.globalAlpha = nameOpacity
 
       // Text label for the nation
       CANVAS.text({
@@ -465,76 +440,28 @@ export const GALAXY_MAP = {
       })
 
       // Build or retrieve a pre-composited shield + identicon canvas
-      // -------------------------------------------------------------
-      // We want both elements to share the same alpha fade, so we render them
-      // together once, cache the result, and then draw that single bitmap with
-      // `ctx.globalAlpha = nameOpacity`.
-
-      // (1) Make sure we have the identicon for this nation
-      let iconCanvas = identiconCache.get(nation.idx)
-      if (!iconCanvas) {
-        iconCanvas = document.createElement('canvas')
-        const initialSize = 100
-        iconCanvas.width = initialSize
-        iconCanvas.height = initialSize
-        const tempCtx = iconCanvas.getContext('2d')!
-        const iconConfig = HERALDRY.config(nation)
-        jdenticon.drawIcon(tempCtx, nation.name, initialSize, iconConfig)
-        identiconCache.set(nation.idx, iconCanvas)
-      }
-
-      // (2) Retrieve/Create composite canvas
-      let compositeCanvas = heraldryCompositeCache.get(nation.idx)
-      const compW = iconSize * (1 + 0.16)
-      const compH = iconSize * (1 + 0.66)
-
-      // Render composite at higher pixel density to keep it crisp when
-      // browser down-scales (avoids blurry appearance at high zoom levels)
-      const PIXEL_SCALE = 16 // tweak higher for even sharper edges
-
-      const compPxW = compW * PIXEL_SCALE
-      const compPxH = compH * PIXEL_SCALE
-
-      if (!compositeCanvas) {
-        compositeCanvas = document.createElement('canvas')
-        compositeCanvas.width = compPxW
-        compositeCanvas.height = compPxH
-
-        const cctx = compositeCanvas.getContext('2d')!
-
-        // Draw shield – scale all dimensions by PIXEL_SCALE
-        const cfg = HERALDRY.config(nation)
-        const backColor = cfg?.backColor ?? '#ffffff'
-        HERALDRY.draw({
-          ctx: cctx,
-          x: 0,
-          y: 0,
-          h: compPxH,
-          w: compPxW,
-          borderWidth: 0.2 * PIXEL_SCALE,
-          backColor,
-          style: nation.flag.style
-        })
-
-        // Draw identicon centred – multiply offsets by PIXEL_SCALE too
-        cctx.drawImage(
-          iconCanvas,
-          0.08 * iconSize * PIXEL_SCALE,
-          0.17 * iconSize * PIXEL_SCALE,
-          iconSize * PIXEL_SCALE,
-          iconSize * PIXEL_SCALE
-        )
-
-        heraldryCompositeCache.set(nation.idx, compositeCanvas)
-      }
-
-      // (3) Draw the composited image onto the main canvas
+      const tempCanvas = drawHeraldry(nation)
+      const config = HERALDRY.config(nation)
+      const iconSize = iconSizeScale(systemsCount)
+      const backColor = config?.backColor ?? '#ffffff'
+      const shieldSize = iconSize * 1.5
+      HERALDRY.draw({
+        ctx,
+        x: origin.x - iconSize * 0.6,
+        y: origin.y + iconSize,
+        h: shieldSize,
+        w: shieldSize * 0.75,
+        borderWidth: iconSize / 20,
+        backColor,
+        style: nation.flag.style
+      })
+      // Copy the identicon from the temporary canvas to the main canvas at the new size
       ctx.drawImage(
-        compositeCanvas,
-        origin.x - 0.41 * iconSize,
-        origin.y + 1.16 * iconSize,
-        compW,
-        compH
+        tempCanvas,
+        origin.x - iconSize * 0.54,
+        origin.y + iconSize * 1.1,
+        iconSize,
+        iconSize
       )
 
       ctx.restore()

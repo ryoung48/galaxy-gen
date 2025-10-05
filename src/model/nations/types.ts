@@ -20,4 +20,8 @@ export type Nation = {
     | 'autocracy'
     | 'theocracy'
     | 'hivemind'
+  wars?: {
+    attacker: number // nation index of the aggressor
+    defender: number // nation index of the defender (this nation)
+  }[]
 }

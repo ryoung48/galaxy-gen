@@ -34,7 +34,7 @@ export const Heraldry: React.FC<IdenticonProps> = ({ value, size, config, style 
     ctx.translate(size * 0.16, size * 0.18)
     jdenticon.drawIcon(ctx, value, size, { backColor: '#ffffff', ...config })
     ctx.restore()
-  }, [value, size, shieldSize, backColor, config])
+  }, [value, size, shieldSize, backColor, config, style])
 
   return (
     <canvas

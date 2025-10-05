@@ -13,6 +13,7 @@ export type SolarSystem = {
   lanes: number[]
   nation: number
   homeworld?: boolean
+  tradeRoute?: boolean
 }
 
 export type SolarSystemSpawnParams = {
