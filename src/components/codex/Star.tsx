@@ -21,6 +21,7 @@ import { Star } from '../../model/system/stars/types'
 import { STAR } from '../../model/system/stars'
 import { MATH } from '../../model/utilities/math'
 import { CONSTANTS } from '../../model/constants'
+import { SOLAR_SYSTEM } from '../../model/system'
 
 // Custom simple circle path (filled) for planet/moon icon
 const mdiSphere = 'M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2Z'
@@ -56,6 +57,7 @@ const StarView = (props: { star: Star }) => {
       : `${star.age.toFixed(2)} billion years`
   const brownDwarf = STAR.isBrownDwarf(star.spectralClass)
   const postStellar = star.postStellar
+  const system = window.galaxy.systems[star.system]
   return (
     <CodexPage
       title={STAR.name(star)}
@@ -71,7 +73,8 @@ const StarView = (props: { star: Star }) => {
             text={`Star (${star.spectralClass}${postStellar ? '' : star.subtype}${
               brownDwarf || postStellar ? '' : `-${star.luminosityClass}`
             }), ${TEXT.decorate({
-              link: window.galaxy.systems[star.system],
+              link: system,
+              label: SOLAR_SYSTEM.name(system),
               color: COLORS.subtitle
             })}`}
           />

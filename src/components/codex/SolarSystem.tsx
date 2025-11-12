@@ -10,7 +10,7 @@ const SolarSystemView = (props: { system: SolarSystem }) => {
   const system = props.system
   return (
     <CodexPage
-      title={system.name}
+      title={SOLAR_SYSTEM.name(system)}
       subtitle={
         <StyledText
           text={`Solar System (#${system.idx ?? ''}), ${TEXT.decorate({
@@ -28,7 +28,7 @@ const SolarSystemView = (props: { system: SolarSystem }) => {
                 text={system.lanes
                   .map(i => {
                     const neighbor = window.galaxy.systems[i]
-                    return TEXT.decorate({ link: neighbor })
+                    return TEXT.decorate({ link: neighbor, label: SOLAR_SYSTEM.name(neighbor) })
                   })
                   .join(', ')}
               ></StyledText>

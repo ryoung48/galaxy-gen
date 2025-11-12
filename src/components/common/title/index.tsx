@@ -6,7 +6,8 @@ import { COLORS } from '../../../theme/colors'
 
 const classes = {
   title: css`
-    font-size: 30px;
+    font-size: 45px;
+    font-family: 'Jedar';
   `,
   subtitle: css`
     font-size: 12px;

@@ -1,7 +1,7 @@
 import { css } from '@emotion/css'
 import { VIEW } from '../../context'
 import { CSSProperties } from 'react'
-import { LazyTippy } from './LazyTippy'
+import { Tooltip } from '@mui/material'
 import { COLORS } from '../../theme/colors'
 
 const linkStyles = css`
@@ -65,9 +65,9 @@ export function StyledText(props: { text: string; color?: string }) {
           return (
             <span key={j}>
               {tooltip ? (
-                <LazyTippy arrow={false} animation='scale' content={tooltip}>
+                <Tooltip title={tooltip} placement='top' arrow>
                   {link}
-                </LazyTippy>
+                </Tooltip>
               ) : (
                 link
               )}

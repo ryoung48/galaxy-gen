@@ -28,7 +28,8 @@ export const TEXT = {
       new Intl.NumberFormat(local, { style: 'percent', minimumFractionDigits: precision }).format(
         value
       ),
-    compact: (value: number) => new Intl.NumberFormat(local, { notation: 'compact' }).format(value),
+    compact: (value: number, options: Intl.NumberFormatOptions = {}) =>
+      new Intl.NumberFormat(local, { notation: 'compact', ...options }).format(value),
     long: (value: number) => new Intl.NumberFormat(local).format(value),
     list: (list: string[], ending: string) =>
       list.join(', ').replace(/, ([^,]*)$/, `${list.length > 2 ? ',' : ''} ${ending} $1`),

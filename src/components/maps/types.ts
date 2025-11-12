@@ -5,3 +5,5 @@ export type MapModes =
   | 'habitability'
   | 'population'
   | 'government'
+  | 'wtn'
+  | 'resources'

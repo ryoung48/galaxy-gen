@@ -46,7 +46,7 @@ const exoticVowels = (ending: PhonemeCatalog) => {
   return window.dice.choice([
     umlauts,
     acutes,
-    ending === PhonemeCatalog.MIDDLE_CONSONANT ? welsh : macrons
+    welsh
   ])
 }
 
@@ -136,7 +136,7 @@ export const buildBasicVowels = (params: { ending: PhonemeCatalog }) => {
   const required = ['a']
   if (params.ending === PhonemeCatalog.MIDDLE_VOWEL) required.push(window.dice.choice(['o', 'u']))
   const optional = ['e', i, 'o', 'u', 'a'].filter(v => !required.includes(v))
-  let vowels = window.dice.sample(optional, vowelCount - required.length).concat(required)
+  const vowels = window.dice.sample(optional, vowelCount - required.length).concat(required)
   return vowels
 }
 export const buildComplexVowels = (params: {

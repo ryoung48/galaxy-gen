@@ -1,6 +1,4 @@
 import { WeightedDistribution } from '../utilities/dice/types'
-
-/* eslint-disable no-unused-vars */
 export const enum PhonemeCatalog {
   START_CONSONANT = 'B',
   MIDDLE_CONSONANT = 'C',

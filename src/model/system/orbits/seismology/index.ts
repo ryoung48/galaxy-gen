@@ -26,7 +26,9 @@ const meltCheck = (total: number, heating: number, orbit: Orbit, star: Star, par
       orbit.size,
       orbit.deviation,
       hydrosphere,
-      orbit.type
+      orbit.gravity,
+      orbit.type,
+      star
     )
   } else if (orbit.type === 'rockball' && total > 20) {
     orbit.type = 'geo-cyclic'
@@ -43,7 +45,9 @@ const meltCheck = (total: number, heating: number, orbit: Orbit, star: Star, par
       orbit.size,
       orbit.deviation,
       hydrosphere,
-      orbit.type
+      orbit.gravity,
+      orbit.type,
+      star
     )
   } else if (
     (orbit.type === 'geo-cyclic' || orbit.type === 'geo-tidal' || orbit.type === 'hebean') &&
@@ -63,7 +67,9 @@ const meltCheck = (total: number, heating: number, orbit: Orbit, star: Star, par
       orbit.size,
       orbit.deviation,
       hydrosphere,
-      orbit.type
+      orbit.gravity,
+      orbit.type,
+      star
     )
   } else if ((orbit.type === 'geo-tidal' || orbit.type === 'hebean') && heating < 1) {
     orbit.type = 'geo-cyclic'
@@ -80,7 +86,9 @@ const meltCheck = (total: number, heating: number, orbit: Orbit, star: Star, par
       orbit.size,
       orbit.deviation,
       hydrosphere,
-      orbit.type
+      orbit.gravity,
+      orbit.type,
+      star
     )
   }
 }

@@ -5,6 +5,7 @@ export type Stat =
   | 'orbits'
   | 'biosphere'
   | 'relations'
+  | 'matrix'
   | 'hydrosphere'
   | 'atmosphere'
   | 'habitability'

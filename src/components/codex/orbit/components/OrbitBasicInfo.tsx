@@ -9,7 +9,11 @@ import {
   mdiEarth,
   mdiWaves,
   mdiPulse,
-  mdiCalendarClock
+  mdiCalendarClock,
+  mdiDiameterVariant,
+  mdiWeight,
+  mdiArrowCollapseVertical,
+  mdiMinus
 } from '@mdi/js'
 import type { Orbit } from '../../../../model/system/orbits/types'
 import { TEXT } from '../../../../model/utilities/text'
@@ -25,15 +29,43 @@ import { SEISMOLOGY } from '../../../../model/system/orbits/seismology'
 const tooltipStyles = { cursor: 'pointer', borderBottom: '1px dotted black' }
 
 const formatters = {
-  rotation: new Intl.NumberFormat('en-US', {
-    notation: 'compact',
+  rotation: {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }),
-  seismology: new Intl.NumberFormat('en-US', {
-    notation: 'compact',
+  },
+  seismology: {
     maximumFractionDigits: 2
-  })
+  }
+}
+
+const getSeismologyIcon = (description: string): string => {
+  switch (description) {
+    case 'extreme':
+      return mdiPulse
+    case 'active':
+      return mdiPulse
+    case 'low':
+      return mdiPulse
+    case 'dead':
+      return mdiMinus
+    default:
+      return mdiPulse
+  }
+}
+
+const getSeismologyColor = (description: string): string => {
+  switch (description) {
+    case 'extreme':
+      return '#d32f2f' // red
+    case 'active':
+      return '#f57c00' // orange
+    case 'low':
+      return '#757575' // blue
+    case 'dead':
+      return '#757575' // gray
+    default:
+      return 'black'
+  }
 }
 
 export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
@@ -103,7 +135,7 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
             </Tooltip>
           </span>
         ) : (
-          `${MATH.orbits.fromAU(orbit.au).toFixed(3)} (${orbit.au.toFixed(3)} AU)`
+          `${MATH.orbits.fromAU(orbit.au).toFixed(3)} (${TEXT.formatters.compact(orbit.au)} AU)`
         )}
       </Grid>
       <Grid item xs={12}>
@@ -125,7 +157,8 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
           color='black'
           style={{ verticalAlign: 'middle', marginRight: 4 }}
         />
-        <b>Rotation: </b> {formatters.rotation.format(orbit.rotation.value)} hours (
+        <b>Rotation: </b> {TEXT.formatters.compact(orbit.rotation.value, formatters.rotation)} hours
+        (
         <Tooltip title={rotationTooltip} placement='right' arrow>
           <span style={tooltipStyles}>{orbit.direction}</span>
         </Tooltip>
@@ -140,7 +173,9 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
         />
         <b>Local Calendar: </b>
         {`${TEXT.formatters.compact(calendarYear)} days/year, ${
-          isFinite(calendarDay) ? formatters.rotation.format(calendarDay) : 'Infinite'
+          isFinite(calendarDay)
+            ? TEXT.formatters.compact(calendarDay, formatters.rotation)
+            : 'Infinite'
         } hours/day`}
       </Grid>
       <Grid item xs={12}>
@@ -174,14 +209,39 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
           <span style={tooltipStyles}>{TEXT.toHex(orbit.size)}</span>
         </Tooltip>
         ){' '}
+        <Icon
+          path={mdiDiameterVariant}
+          size={0.55}
+          color='black'
+          style={{ verticalAlign: 'middle', marginRight: 2 }}
+        />
         <Tooltip
           title={TEXT.formatters.compact(orbit.diameter * CONSTANTS.ED) + ' km'}
           placement='top'
           arrow
         >
-          <span style={tooltipStyles}>{orbit.diameter.toFixed(2)}</span>
-        </Tooltip>
-        ⊕ (D), {orbit.mass.toFixed(3)}⊕ (M), {orbit.gravity.toFixed(2)} (G)
+          <span style={tooltipStyles}>{orbit.diameter.toFixed(2)}⊕</span>
+        </Tooltip>{' '}
+        •{' '}
+        <span>
+          <Icon
+            path={mdiWeight}
+            size={0.55}
+            color='black'
+            style={{ verticalAlign: 'middle', marginRight: 2 }}
+          />
+          {orbit.mass.toFixed(3)}⊕
+        </span>{' '}
+        •{' '}
+        <span>
+          <Icon
+            path={mdiArrowCollapseVertical}
+            size={0.55}
+            color='black'
+            style={{ verticalAlign: 'middle', marginRight: 2 }}
+          />
+          {orbit.gravity.toFixed(2)} g
+        </span>
       </Grid>
       {/* <Grid item xs={12}>
         <Icon
@@ -222,7 +282,9 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
                         flexShrink: 0
                       }}
                     />
-                    <span>{`${formatters.seismology.format(s.value)} m: ${s.label}`}</span>
+                    <span>{`${TEXT.formatters.compact(s.value, formatters.seismology)} m: ${
+                      s.label
+                    }`}</span>
                   </Box>
                 ))}
               </Box>
@@ -231,16 +293,23 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
           placement='right'
           arrow
         >
-          <span style={tooltipStyles}>{formatters.seismology.format(totalTides)} m</span>
+          <span style={tooltipStyles}>
+            {TEXT.formatters.compact(totalTides, formatters.seismology)} m
+          </span>
         </Tooltip>
       </Grid>
       <Grid item xs={12}>
-        <Icon
-          path={mdiPulse}
-          size={0.7}
-          color='black'
-          style={{ verticalAlign: 'middle', marginRight: 4 }}
-        />
+        {(() => {
+          const description = SEISMOLOGY.describe(orbit.seismology.total)
+          return (
+            <Icon
+              path={getSeismologyIcon(description)}
+              size={0.7}
+              color={getSeismologyColor(description)}
+              style={{ verticalAlign: 'middle', marginRight: 4 }}
+            />
+          )
+        })()}
         <b>Seismology: </b>
         <Tooltip
           title={
@@ -258,7 +327,10 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
                       flexShrink: 0
                     }}
                   />
-                  <span>Residual: {formatters.seismology.format(orbit.seismology.residual)}</span>
+                  <span>
+                    Residual:{' '}
+                    {TEXT.formatters.compact(orbit.seismology.residual, formatters.seismology)}
+                  </span>
                 </Box>
                 <Box component='li' sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                   <Box
@@ -272,7 +344,8 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
                     }}
                   />
                   <span>
-                    Tidal Stress: {formatters.seismology.format(orbit.seismology.tides.stress)}
+                    Tidal Stress:{' '}
+                    {TEXT.formatters.compact(orbit.seismology.tides.stress, formatters.seismology)}
                   </span>
                 </Box>
                 <Box component='li' sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
@@ -287,7 +360,8 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
                     }}
                   />
                   <span>
-                    Tidal Heating: {formatters.seismology.format(orbit.seismology.tides.heating)}
+                    Tidal Heating:{' '}
+                    {TEXT.formatters.compact(orbit.seismology.tides.heating, formatters.seismology)}
                   </span>
                 </Box>
               </Box>
@@ -298,7 +372,7 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
         >
           <span>
             <span style={tooltipStyles}>
-              {formatters.seismology.format(orbit.seismology.total)}
+              {TEXT.formatters.compact(orbit.seismology.total, formatters.seismology)}
             </span>{' '}
             ({SEISMOLOGY.describe(orbit.seismology.total)})
           </span>

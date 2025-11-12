@@ -1,4 +1,3 @@
-import { TEXT } from '../../../utilities/text'
 import { Star } from '../../stars/types'
 
 const geo = [
@@ -53,7 +52,11 @@ export const HYDROSPHERE = {
     const entry = geo.find(g => g.code === code)!
     // substitution terms
     const terms =
-      base === 'ocean'
+      hydro < 2
+        ? { bodies: 'seas', body: 'sea', small: 'lake', world: 'world continent' } :
+      hydro > 8
+        ? { bodies: 'islands', body: 'island', small: 'isles', world: 'world ocean' }
+        : base === 'ocean'
         ? { bodies: 'continents', body: 'continent', small: 'islands', world: 'world ocean' }
         : { bodies: 'oceans', body: 'ocean', small: 'seas', world: 'world continent' }
 
@@ -63,7 +66,7 @@ export const HYDROSPHERE = {
       .replace(/\{body\}/g, terms.body)
       .replace(/\{small\}/g, terms.small)
 
-    return `${TEXT.capitalize(terms.world)}, ${desc}`
+    return { dist: entry.dist, desc }
   },
   proto: (star: Star, size: number, hydrosphere: number) => {
     if (size < 2) return hydrosphere

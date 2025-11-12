@@ -8,7 +8,6 @@ import { PaintGalaxyParams } from './types'
 import { ORBIT } from '../../../model/system/orbits'
 import { METRICS } from '../legend/metrics'
 import { MATH } from '../../../model/utilities/math'
-import { TEXT } from '../../../model/utilities/text'
 // import { drawTagIconWithText } from './tags'
 
 // Helper function to draw resource icons and values
@@ -77,7 +76,7 @@ export const SYSTEM_MAP = {
               : zone === 'epistellar'
               ? 'orange'
               : 'lightgray',
-          width: mod * 0.05
+          width: mod * 0.1
         }
       })
     })
@@ -96,6 +95,10 @@ export const SYSTEM_MAP = {
               ? METRICS.biosphere.color(0)
               : mapMode === 'population'
               ? METRICS.population.color(0)
+              : mapMode === 'wtn'
+              ? METRICS.wtn.color(0)
+              : mapMode === 'resources'
+              ? METRICS.resources.color(0)
               : STAR.color(star)
         })
       } else {
@@ -151,6 +154,10 @@ export const SYSTEM_MAP = {
                   ? METRICS.biosphere.color(orbit.biosphere.code)
                   : mapMode === 'population'
                   ? METRICS.population.color(orbit.population?.code ?? 0)
+                  : mapMode === 'wtn'
+                  ? METRICS.wtn.color(orbit.wtn?.score ?? 0)
+                  : mapMode === 'resources'
+                  ? METRICS.resources.color(orbit.resources?.score ?? 0)
                   : ORBIT.colors(orbit)
             })
           })
@@ -209,6 +216,10 @@ export const SYSTEM_MAP = {
                 ? METRICS.biosphere.color(orbit.biosphere.code)
                 : mapMode === 'population'
                 ? METRICS.population.color(orbit.population?.code ?? 0)
+                : mapMode === 'wtn'
+                ? METRICS.wtn.color(orbit.wtn?.score ?? 0)
+                : mapMode === 'resources'
+                ? METRICS.resources.color(orbit.resources?.score ?? 0)
                 : ORBIT.colors(orbit),
             orbit,
             seed: solarSystem.seed + orbit.idx
@@ -260,19 +271,6 @@ export const SYSTEM_MAP = {
     })
     objects.forEach(object => {
       const center = CANVAS.coordinates(object)
-      if (object.tag === 'star' || object.type !== 'asteroid belt') {
-        const distance =
-          object.tag === 'star' || !object.moon
-            ? `${TEXT.formatters.compact(object.au)} AU`
-            : `${TEXT.formatters.compact(object.moon.pd)} PD`
-        CANVAS.text({
-          ctx,
-          x: center.x,
-          y: center.y - (object.r + 0.5) * mod,
-          text: distance,
-          size: 0.015
-        })
-      }
       if (object.tag === 'star') {
         const star = object
         CANVAS.text({

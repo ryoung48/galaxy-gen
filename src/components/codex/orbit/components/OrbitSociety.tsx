@@ -1,16 +1,51 @@
 import { Grid, Tooltip } from '@mui/material'
 import Icon from '@mdi/react'
-import { mdiAccountGroup, mdiCog, mdiBank, mdiGavel } from '@mdi/js'
+import {
+  mdiAccountGroup,
+  mdiCog,
+  mdiBank,
+  mdiGavel,
+  mdiMapMarkerRadius,
+  mdiCityVariantOutline,
+  mdiOfficeBuilding
+} from '@mdi/js'
 import type { Orbit } from '../../../../model/system/orbits/types'
 import { TEXT } from '../../../../model/utilities/text'
 import { METRICS } from '../../../maps/legend/metrics'
 import { describeTechnology, formatters } from './OrbitUtils'
 import { Fragment } from 'react'
 import { ORBIT } from '../../../../model/system/orbits'
-import { TechnologyTooltip } from './OrbitTooltips'
+import { TechnologyTooltip, PopulationConcentrationTooltip, CitiesTooltip } from './OrbitTooltips'
+import { LANGUAGE } from '../../../../model/languages'
+
+const tooltipStyles = { cursor: 'pointer', borderBottom: '1px dotted black' }
+
+const describePCR = (code: number): string => {
+  const descriptions: Record<number, string> = {
+    0: 'Extremely Dispersed',
+    1: 'Highly Dispersed',
+    2: 'Moderately Dispersed',
+    3: 'Partially Dispersed',
+    4: 'Slightly Dispersed',
+    5: 'Slightly Concentrated',
+    6: 'Partially Concentrated',
+    7: 'Moderately Concentrated',
+    8: 'Highly Concentrated',
+    9: 'Extremely Concentrated'
+  }
+  return descriptions[Math.min(9, Math.max(0, code))] ?? 'Unknown'
+}
 
 export default function OrbitSociety({ orbit }: { orbit: Orbit }) {
   if (!orbit.population) return null
+
+  orbit.cities?.pops
+    .filter(pop => !pop.name)
+    .forEach(pop => {
+      const system = window.galaxy.systems[orbit.system]
+      const nation = window.galaxy.nations[system.nation]
+      pop.name = LANGUAGE.word.unique({ key: 'orbit', lang: nation.language })
+    })
 
   return (
     <Fragment>
@@ -23,7 +58,64 @@ export default function OrbitSociety({ orbit }: { orbit: Orbit }) {
         />
         <b>Population: </b> ({TEXT.toHex(orbit.population.code)}){' '}
         {formatters.population.format(orbit.population.size)}
+        {orbit.pcr && (
+          <>
+            {' '}
+            •{' '}
+            <Icon
+              path={mdiMapMarkerRadius}
+              size={0.55}
+              color='black'
+              style={{ verticalAlign: 'middle', marginRight: 2 }}
+            />
+            <Tooltip
+              title={
+                <PopulationConcentrationTooltip
+                  trace={orbit.pcr.trace}
+                  finalValue={orbit.pcr.code}
+                />
+              }
+              placement='top'
+              arrow
+            >
+              <span style={tooltipStyles}>{describePCR(orbit.pcr.code).toLowerCase()}</span>
+            </Tooltip>
+          </>
+        )}
       </Grid>
+      {orbit.urbanization && orbit.cities && (
+        <Grid item xs={12}>
+          <Icon
+            path={mdiOfficeBuilding}
+            size={0.7}
+            color='black'
+            style={{ verticalAlign: 'middle', marginRight: 4 }}
+          />
+          <b>Urbanization: </b>(
+          {`${((orbit.cities.total / orbit.population.size) * 100).toFixed(0)}%`}) •{' '}
+          <Icon
+            path={mdiCityVariantOutline}
+            size={0.55}
+            color='black'
+            style={{ verticalAlign: 'middle', marginRight: 2 }}
+          />
+          {orbit.cities.count > 0 ? (
+            <Tooltip
+              title={
+                <CitiesTooltip pops={orbit.cities.pops ?? []} total={orbit.cities.total ?? 0} />
+              }
+              placement='right'
+              arrow
+            >
+              <span style={tooltipStyles}>
+                {orbit.cities.count} major {orbit.cities.count === 1 ? 'city' : 'cities'}
+              </span>
+            </Tooltip>
+          ) : (
+            '0 major cities'
+          )}
+        </Grid>
+      )}
       {orbit.technology !== undefined && (
         <Grid item xs={12}>
           <Icon
@@ -43,9 +135,7 @@ export default function OrbitSociety({ orbit }: { orbit: Orbit }) {
             placement='right'
             arrow
           >
-            <span style={{ cursor: 'pointer', borderBottom: '1px dotted black' }}>
-              {TEXT.toHex(orbit.technology.score)}
-            </span>
+            <span style={tooltipStyles}>{TEXT.toHex(orbit.technology.score)}</span>
           </Tooltip>
           ) {describeTechnology(orbit.technology.score)}
         </Grid>

@@ -8,7 +8,6 @@ export type Atmosphere = {
     | 'standard'
     | 'dense'
     | 'very dense'
-    | 'extremely dense'
     | 'unusual'
     | 'hydrogen'
     | 'helium'
@@ -21,5 +20,5 @@ export type Atmosphere = {
     | 'high oxygen'
     | 'particulates'
     | 'sulphur compounds'
-  unusual?: 'ellipsoid' | 'layered' | 'steam' | 'storms' | 'tides' | 'seasonal' | 'biologic'
+  unusual?: 'ellipsoid' | 'layered' | 'steam' | 'storms' | 'tides' | 'seasonal' | 'biologic' | 'high radiation' | 'extremely dense'
 }

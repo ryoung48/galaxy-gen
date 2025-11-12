@@ -1,6 +1,6 @@
 import { scaleLinear } from 'd3'
 import { MATH } from '../../utilities/math'
-import { Orbit, OrbitSpawnParams, PopulateOrbitParams, OrbitTypeDetails } from './types'
+import { Orbit, OrbitSpawnParams, OrbitTypeDetails } from './types'
 import { LANGUAGE } from '../../languages'
 import { ORBIT_CLASSIFICATION } from './classification'
 import { ORBIT_GROUPS } from './groups'
@@ -17,6 +17,9 @@ import { TEXT } from '../../utilities/text'
 import { SURFACE_TIDES } from './tides'
 import { SEISMOLOGY } from './seismology'
 import { ROTATION } from './rotation'
+import { PopulateOrbitParams } from './population/types'
+import { POPULATION } from './population'
+import { ECONOMY } from './economy'
 
 const populations: Record<string, string> = {
   '0': 'Uninhabited',
@@ -121,42 +124,13 @@ export const ORBIT = {
     maxTech = 15,
     capital = false,
     mainworld = false
-  }: PopulateOrbitParams) => {
+  }: PopulateOrbitParams & {
+    maxTech?: number
+  }) => {
     orbit.mainworld = mainworld
-    let populationCode = window.dice.roll(2, 6) - 2
-    if (orbit.habitability.score <= 0) populationCode -= 2
-    else if (orbit.habitability.score <= 2) populationCode -= 1
-    else if (orbit.habitability.score <= 4) populationCode -= 0
-    else if (orbit.habitability.score <= 6) populationCode += 0
-    else if (orbit.habitability.score <= 8) populationCode += 1
-    else populationCode += 2
-    populationCode = Math.min(Math.max(populationCode, maxPop), 8)
+    POPULATION.base({ orbit, maxPop, capital, mainworld })
+    const populationCode = orbit.population?.code ?? 0
     const natives = orbit.biosphere.code === 10
-    if (natives) {
-      const popRoll = window.dice.roll(1, 6)
-      if (popRoll > 1) populationCode = window.dice.roll(1, 6) + 4
-      else populationCode = window.dice.roll(1, 5) + 1
-    }
-    if (capital) populationCode = window.dice.choice([9, 9, 10])
-    if (mainworld) populationCode = Math.max(populationCode, 1)
-    const ranges = [
-      { min: 0, max: 0 },
-      { min: 1, max: 99 },
-      { min: 100, max: 999 },
-      { min: 1_000, max: 9_999 },
-      { min: 10_000, max: 99_999 },
-      { min: 100_000, max: 999_999 },
-      { min: 1_000_000, max: 9_999_999 },
-      { min: 10_000_000, max: 99_999_999 },
-      { min: 100_000_000, max: 999_999_999 },
-      { min: 1_000_000_000, max: 4_999_999_999 },
-      { min: 5_000_000_000, max: 9_999_999_999 }
-    ]
-    const { min, max } = ranges[populationCode]
-    orbit.population = {
-      code: populationCode,
-      size: window.dice.randint(min, max)
-    }
     const failedOutpost = populationCode === 0
     // government
     orbit.government = failedOutpost
@@ -232,7 +206,7 @@ export const ORBIT = {
       orbit.technology.score = minTech
     }
 
-    if (!natives && orbit.technology.score < minTech - 2) {
+    if (!natives && orbit.technology.score < minTech - 2 && orbit.population) {
       orbit.technology.trace.push({
         value: -orbit.technology.score,
         description: 'colony collapse from tech shortfall'
@@ -243,6 +217,17 @@ export const ORBIT = {
       orbit.government = 0
       orbit.law = 0
       orbit.starport = 'X'
+    }
+
+    if ((orbit.population?.code ?? 0) > 0) {
+      orbit.pcr = POPULATION.concentration(orbit)
+      orbit.urbanization = POPULATION.urbanization(orbit)
+      const cities = POPULATION.cities.count(orbit)
+      orbit.cities = { count: cities.count, total: cities.pop, pops: [] }
+      orbit.cities.pops = POPULATION.cities
+        .pops(orbit)
+        .map(count => ({ count, unusual: POPULATION.cities.unusual(orbit) }))
+      ECONOMY.compute(orbit)
     }
   },
   spawn: ({
@@ -346,7 +331,9 @@ export const ORBIT = {
       size,
       deviation,
       hydrosphere,
+      physique.gravity,
       type,
+      star,
       primary
     )
     const r = scaleLinear([-1, 0, 5, 10, 14, 15], [0, 1, 3, 6, 8, 10])(size)
@@ -389,7 +376,7 @@ export const ORBIT = {
       biosphere: { code: 0, trace: [] },
       chemistry,
       habitability: { score: -100, trace: [] },
-      resources: 0,
+      resources: { score: 0, trace: [] },
       technology: { score: 0, trace: [] },
       orbits: [],
       r,
@@ -399,15 +386,14 @@ export const ORBIT = {
     ROTATION.get({ orbit, star })
     window.galaxy.orbits.push(orbit)
     if (asteroidBelt) orbit.belt = ASTEROID_BELT.spawn({ star, au })
-    orbit.resources = window.dice.roll(2, 6) // DESIRABILITY.resources(orbit, parent)
     if (parent && moon) {
       const lunar = MOONS.period({ parent, pd: moon.pd, mass: physique.mass })
       orbit.moon = { range: moon.range, pd: moon.pd, period: lunar }
     }
     if (selected === 'jovian' && !moon)
       orbit.rings = window.dice.weightedChoice([
-        { v: 'none', w: 2 },
-        { v: 'minor', w: 0 },
+        { v: 'none', w: 6 },
+        { v: 'minor', w: 2 },
         { v: 'complex', w: 1 }
       ])
 
@@ -466,12 +452,14 @@ export const ORBIT = {
       orbit.temperature = TEMPERATURE.finalize({ orbit, star })
       BIOSPHERE.get({ orbit, star, impactZone, primary })
       DESIRABILITY.habitability({ orbit })
+      orbit.resources = DESIRABILITY.resources(orbit, parent)
       orbit.orbits.forEach(moon => {
         moon.calendar = ROTATION.calendar(moon)
         moon.seismology = SEISMOLOGY.total({ orbit: moon, parent: orbit, star })
         moon.temperature = TEMPERATURE.finalize({ orbit: moon, star, parent: orbit })
         BIOSPHERE.get({ orbit: moon, star, impactZone })
         DESIRABILITY.habitability({ orbit: moon, parent: orbit })
+        moon.resources = DESIRABILITY.resources(moon, orbit)
       })
     }
     if (asteroidBelt) orbit.fullR = 10

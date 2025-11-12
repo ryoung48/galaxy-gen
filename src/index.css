@@ -1,11 +1,24 @@
 @import url('https://fonts.googleapis.com/css?family=Michroma');
+@font-face {
+  font-family: 'Jedar';
+  src: url('./theme/fonts/Jedar.otf') format('opentype');
+}
 
 body {
   width: 100%;
   height: 100%;
   margin: 0;
+  padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #9ca1ad;
+  background-color: #ffffff;
   font-family: Michroma;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }

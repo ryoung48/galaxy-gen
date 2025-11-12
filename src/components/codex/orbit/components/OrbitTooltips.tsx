@@ -5,6 +5,7 @@ import { getValueColor, getTemperatureDeltaColor } from './OrbitUtils'
 import { Orbit } from '../../../../model/system/orbits/types'
 import { TEXT } from '../../../../model/utilities/text'
 import { MATH } from '../../../../model/utilities/math'
+import { formatters } from './OrbitUtils'
 
 type OrbitTooltipItem = {
   label: ReactNode
@@ -227,6 +228,148 @@ export const BiosphereTooltip = ({
   )
 }
 
+export const BiomassTooltip = ({
+  trace,
+  finalValue
+}: {
+  trace: Orbit['biosphere']['trace']
+  finalValue: number
+}) => {
+  const sortedAdjustments = [...trace].sort((a, b) => b.value - a.value)
+
+  return (
+    <OrbitTooltipBase
+      title='Biomass Factors'
+      sections={[
+        {
+          items: sortedAdjustments.map((adj, idx) => ({
+            key: idx,
+            color: getValueColor(adj.value),
+            label: `${adj.value > 0 ? '+' : ''}${adj.value}: ${adj.description}`
+          })),
+          emptyMessage: 'No adjustments applied'
+        },
+        {
+          showDivider: true,
+          items: [
+            {
+              color: METRICS.biosphere.color(finalValue),
+              label: `Final Biomass: ${finalValue}`
+            }
+          ]
+        }
+      ]}
+    />
+  )
+}
+
+export const ComplexityTooltip = ({
+  trace,
+  finalValue
+}: {
+  trace: Orbit['biosphere']['trace']
+  finalValue: number
+}) => {
+  const sortedAdjustments = [...trace].sort((a, b) => b.value - a.value)
+
+  return (
+    <OrbitTooltipBase
+      title='Complexity Factors'
+      sections={[
+        {
+          items: sortedAdjustments.map((adj, idx) => ({
+            key: idx,
+            color: getValueColor(adj.value),
+            label: `${adj.value > 0 ? '+' : ''}${adj.value}: ${adj.description}`
+          })),
+          emptyMessage: 'No adjustments applied'
+        },
+        {
+          showDivider: true,
+          items: [
+            {
+              color: METRICS.biosphere.color(finalValue),
+              label: `Final Complexity: ${finalValue}`
+            }
+          ]
+        }
+      ]}
+    />
+  )
+}
+
+export const CompatibilityTooltip = ({
+  trace,
+  finalValue
+}: {
+  trace: Orbit['biosphere']['trace']
+  finalValue: number
+}) => {
+  const sortedAdjustments = [...trace].sort((a, b) => b.value - a.value)
+
+  return (
+    <OrbitTooltipBase
+      title='Compatibility Factors'
+      sections={[
+        {
+          items: sortedAdjustments.map((adj, idx) => ({
+            key: idx,
+            color: getValueColor(adj.value),
+            label: `${adj.value > 0 ? '+' : ''}${adj.value}: ${adj.description}`
+          })),
+          emptyMessage: 'No adjustments applied'
+        },
+        {
+          showDivider: true,
+          items: [
+            {
+              color: METRICS.biosphere.color(finalValue),
+              label: `Final Compatibility: ${finalValue}`
+            }
+          ]
+        }
+      ]}
+    />
+  )
+}
+
+export const PopulationConcentrationTooltip = ({
+  trace,
+  finalValue
+}: {
+  trace: NonNullable<Orbit['pcr']>['trace']
+  finalValue: number
+}) => {
+  const entries = [...trace]
+
+  return (
+    <OrbitTooltipBase
+      title='Population Concentration'
+      sections={[
+        {
+          items: entries
+            .sort((a, b) => b.value - a.value)
+            .map((entry, idx) => ({
+              key: idx,
+              color: getValueColor(entry.value),
+              label: `${entry.value > 0 ? '+' : ''}${entry.value}: ${entry.description}`
+            })),
+          emptyMessage: 'No modifiers applied'
+        },
+        {
+          showDivider: true,
+          items: [
+            {
+              color: getValueColor(finalValue),
+              label: `Final PCR: ${finalValue}`
+            }
+          ]
+        }
+      ]}
+    />
+  )
+}
+
 export const TemperatureTooltip = ({
   trace,
   finalValue,
@@ -276,6 +419,39 @@ export const TemperatureTooltip = ({
       ]}
     />
   )
+}
+
+export const CitiesTooltip = ({ pops, total }: { pops: Required<Orbit>['cities']['pops']; total: number }) => {
+  const items = pops
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6)
+    .map((value, index) => ({
+      key: index,
+      value,
+      label: `${value.name}: ${formatters.population.format(Math.round(value.count))}${value.unusual ? ` (${value.unusual.toLowerCase()})` : ''}`
+    }))
+
+  const sections = [
+    {
+      items: items.map(item => ({
+        key: item.key,
+        color: getValueColor(item.value.count),
+        label: item.label
+      })),
+      emptyMessage: 'No major cities recorded'
+    },
+    {
+      showDivider: true,
+      items: [
+        {
+          color: '#222',
+          label: `Total: ${formatters.population.format(Math.round(total))}`
+        }
+      ]
+    }
+  ]
+
+  return <OrbitTooltipBase title='Major City Populations' sections={sections} />
 }
 
 export const TemperatureRangeTooltip = ({

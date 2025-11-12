@@ -53,7 +53,9 @@ const classify = (orbit: Orbit, star: Star) => {
     orbit.size,
     orbit.deviation,
     hydrosphere,
-    orbit.type
+    orbit.gravity,
+    orbit.type,
+    star
   )
 }
 
@@ -134,7 +136,7 @@ export const ROTATION = {
         else if (pd > 60) collector.add(-6, pdNote)
 
         const siblingMoons = planet.orbits.filter(m => m !== moon && m.size > 0).length
-        if (siblingMoons > 0) collector.add(-2 * siblingMoons, `Other moons (${siblingMoons})`)
+        if (siblingMoons > 0) collector.add(-2 * siblingMoons, `sibling moons (${siblingMoons})`)
 
         return collector.result()
       }
@@ -142,7 +144,7 @@ export const ROTATION = {
     moon: {
       planet: ({ moon, planet }: TidalLockParams): DmBreakdown => {
         const collector = createCollector()
-        collector.add(2, 'Planet modifier')
+        collector.add(6, 'Planet modifier')
 
         const pd = moon.moon?.pd ?? 0
         const pdNote = `Moon orbit (PD ${pd.toFixed(0)})`
@@ -159,12 +161,12 @@ export const ROTATION = {
       }
     },
     effect: ({ orbit, dm, broke, period, homeworld }: TidalLockEffectParams) => {
-      if (dm < -10) return
       const roll = window.dice.roll(2, 6) + dm
 
       orbit.rotation.roll = roll
 
       if (roll <= 4) {
+        pushTraceEntries(orbit, [{ value: roll - dm, description: 'Base roll (2d6)' }])
         return
       } else if (roll === 5) {
         orbit.rotation.value *= 1.5

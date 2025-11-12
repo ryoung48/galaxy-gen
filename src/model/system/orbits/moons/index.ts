@@ -21,7 +21,7 @@ export const MOONS = {
     const roll = window.dice.roll(2, 4) - 2
     let size: number = 0
     if (roll <= 0 || orbit.group === 'asteroid belt') size = 0
-    else if (roll <= 4) size = Math.min(window.dice.roll(1, 5) - 1, Math.max(orbit.size - 2, 0))
+    else if (roll <= 5) size = Math.min(window.dice.roll(1, 5) - 1, Math.max(orbit.size - 2, 0))
     else {
       if (orbit.group !== 'jovian') {
         size = orbit.size - 1 - window.dice.roll(1, 6)
@@ -35,7 +35,7 @@ export const MOONS = {
         if (roll2 <= 2) size = window.dice.roll(1, 6)
         else if (roll2 <= 4) size = window.dice.roll(2, 6) - 2
         else size = window.dice.roll(2, 6) + 4
-        if (size === 16 && orbit.size === 18 && window.dice.roll(2, 6) >= 11) size = 17
+        if (size === 16 && orbit.size === 18 && window.dice.roll(2, 6) >= 10) size = 17
       }
     }
     return Math.max(0, size)

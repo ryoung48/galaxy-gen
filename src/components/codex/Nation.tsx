@@ -4,6 +4,7 @@ import { TEXT } from '../../model/utilities/text'
 import { CodexPage } from '../common/CodexPage'
 import { StyledText } from '../common/StyledText'
 import { Nation } from '../../model/nations/types'
+import { SOLAR_SYSTEM } from '../../model/system'
 
 const NationView = (props: { nation: Nation }) => {
   const nation = props.nation
@@ -23,7 +24,7 @@ const NationView = (props: { nation: Nation }) => {
             <span>
               <b>Systems ({systems.length}): </b>{' '}
               <StyledText
-                text={systems.map(system => TEXT.decorate({ link: system })).join(', ')}
+                text={systems.map(system => TEXT.decorate({ link: system, label: SOLAR_SYSTEM.name(system) })).join(', ')}
               ></StyledText>
             </span>
           </Grid>

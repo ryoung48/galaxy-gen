@@ -55,7 +55,14 @@ export interface Orbit {
   composition: { type: 'rocky' | 'ice' | 'metallic' | 'gas'; description?: string }
   atmosphere: Atmosphere
   hydrosphere: { code: number; distribution: number }
-  biosphere: { code: number; affix?: 'remnants' | 'bio-engineered'; trace: Trace }
+  biosphere: {
+    code: number
+    label?: 'remnants' | 'engineered' | 'miscible' | 'immiscible' | 'hybrid'
+    trace: Trace
+    mass?: { code: number; trace: Trace }
+    complexity?: { code: number; trace: Trace }
+    diversity?: number
+  }
   chemistry?: 'water' | 'ammonia' | 'methane' | 'sulfur' | 'chlorine'
   temperature: {
     mean: number
@@ -83,17 +90,31 @@ export interface Orbit {
   tides: { effect: number; type: 'star' | 'planet' | 'moon'; idx: number }[]
   seismology: { residual: number; total: number; tides: { stress: number; heating: number } }
   habitability: { score: number; trace: Trace }
-  resources: number
+  resources: { score: number; trace: Trace }
+  ru?: { score: number; trace: Trace }
   population?: { code: number; size: number }
+  pcr?: { code: number; trace: Trace }
+  urbanization?: { band: number; pct: number; trace: Trace }
+  cities?: {
+    count: number
+    total: number
+    pops: { count: number; unusual?: string; name?: string }[]
+  }
   government?: number
   law?: number
   starport?: 'X' | 'E' | 'D' | 'C' | 'B' | 'A'
   technology: { score: number; trace: Trace }
+  importance?: { score: number; trace: Trace }
+  labor?: number
+  infrastructure?: { score: number; trace: Trace }
+  efficiency?: { score: number; trace: Trace }
+  gwp?: { total: number; perCapita: number; trace: Trace }
+  wtn?: { score: number; trace: Trace }
+  inequality?: { score: number; trace: Trace }
   orbits: Orbit[]
   rings?: 'none' | 'minor' | 'complex'
   mainworld?: boolean
   tags: { tag: OrbitTag; value: number }[]
-  codes?: string[]
   // display
   r: number
   fullR?: number
@@ -168,12 +189,4 @@ export interface EccentricityParams {
   moon?: Omit<MoonOrbit, 'period'>
   proto?: boolean
   primordial?: boolean
-}
-
-export type PopulateOrbitParams = {
-  orbit: Orbit
-  maxPop?: number
-  maxTech?: number
-  capital?: boolean
-  mainworld?: boolean
 }

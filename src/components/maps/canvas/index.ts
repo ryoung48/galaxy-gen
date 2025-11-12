@@ -413,7 +413,7 @@ export const CANVAS = {
   },
   text: ({ ctx, x, y, text, color, size, align }: DrawTextParams) => {
     ctx.textAlign = align ?? 'center'
-    ctx.font = `${size}px Michroma`
+    ctx.font = `${size}px Jedar`
     ctx.fillStyle = color ?? 'black'
     ctx.fillText(text, x, y)
   },
@@ -424,7 +424,7 @@ export const CANVAS = {
   },
   init: (node: Element) => {
     const selection = select(node)
-    zoomRef.scaleTo(selection, 1.5)
-    zoomRef.translateTo(selection, node.clientWidth * 0.44, node.clientHeight * 0.95)
+    zoomRef.scaleTo(selection, 1)
+    zoomRef.translateTo(selection, node.clientWidth * 0.43, node.clientHeight * 0.9)
   }
 }

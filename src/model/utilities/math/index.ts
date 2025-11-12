@@ -1,6 +1,7 @@
 import { AxialTiltParams, CartesianCoords, EccentricityParams, Point } from './types'
 import { WeightedDistribution } from '../dice/types'
 import { scaleLinear } from 'd3'
+import { TEXT } from '../text'
 
 // Data points for orbit-to-AU mapping
 const orbitAUMapping = [
@@ -26,6 +27,10 @@ const orbitAUMapping = [
   { orbit: 19, au: 39500 },
   { orbit: 20, au: 78700 }
 ]
+
+const formatters = {
+  time: { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+}
 
 export const MATH = {
   angles: {
@@ -179,7 +184,7 @@ export const MATH = {
 
       if (inputYears >= yearsInCentury) {
         const centuries = inputYears / yearsInCentury
-        return `${centuries.toFixed(2)} centuries`
+        return `${TEXT.formatters.compact(centuries, formatters.time)} centuries`
       } else if (inputYears >= yearsInDecade) {
         const decades = inputYears / yearsInDecade
         return `${decades.toFixed(2)} decades`

@@ -1,4 +1,4 @@
-import { interpolateBrBG, scaleLinear } from 'd3'
+import { scaleLinear, interpolatePuOr } from 'd3'
 import {
   mdiSnowflake,
   mdiWeatherSunny,
@@ -49,13 +49,13 @@ export function describeHabitability(rating: number): string {
 
 export function getResourceDescription(value: number): string {
   if (value <= 2) return 'No economically extractable resources'
-  if (value >= 3 && value <= 5)
+  if (value > 2 && value <= 5)
     return 'Marginal at best; avoided by most corporations and prospectors'
-  if (value >= 6 && value <= 8)
+  if (value > 5 && value <= 8)
     return 'Worthwhile with considerable effort; prospectors or specialty firms may be able to turn a profit on worlds ignored by major corporations'
-  if (value >= 9 && value <= 10)
+  if (value > 8 && value <= 10)
     return 'Priority targets for both corporations and individual prospectors'
-  if (value >= 11)
+  if (value > 10)
     return 'Liable to experience a resource ‘rush’ when first opened up for exploitation'
   return 'Unknown resource value'
 }
@@ -102,9 +102,9 @@ const temperatureDeltaColorScale = scaleLinear<string>()
 export const getTemperatureDeltaColor = (deltaCelsius: number): string =>
   temperatureDeltaColorScale(deltaCelsius)
 
-// Resources color gradient (low to high value)
-const resourceScale = scaleLinear().domain([2, 12]).range([0, 1]).clamp(true)
-export const getResourceColor = (value: number): string => interpolateBrBG(resourceScale(value))
+// Resources color gradient (low to high value) - purple to orange
+const resourceScale = scaleLinear().domain([2, 12]).range([1, 0]).clamp(true)
+export const getResourceColor = (value: number): string => interpolatePuOr(resourceScale(value))
 
 // Choose mdi path based on climate description
 export const getClimateIconPath = (climate: string) => {

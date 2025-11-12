@@ -11,7 +11,7 @@ export const SURFACE_TIDES = {
     return effect
   },
   moon: ({ moon, planet }: MoonSurfaceTidesParams) => {
-    if (planet.lock?.type === 'moon') return 0
+    if (planet.lock?.type === 'moon' && planet.lock?.idx === moon.idx) return 0
     const distance = ((moon.moon?.pd ?? 0) * planet.diameter * CONSTANTS.ED) / 1e6
     const effect = (moon.mass * planet.size) / (3.2 * distance ** 3)
     return effect

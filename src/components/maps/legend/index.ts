@@ -70,6 +70,10 @@ export const LEGEND = {
         ? METRICS.population.legend()
         : mode === 'government'
         ? METRICS.government.legend()
+        : mode === 'wtn'
+        ? METRICS.wtn.legend()
+        : mode === 'resources'
+        ? METRICS.resources.legend()
         : []
     drawLegend({
       ctx,

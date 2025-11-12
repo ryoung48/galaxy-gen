@@ -145,8 +145,7 @@ const spawn = (origin: number) => {
       { v: 'oligarchy', w: 0.2 },
       { v: 'republic', w: 0.2 },
       { v: 'autocracy', w: 0.2 },
-      { v: 'theocracy', w: 0.1 },
-      { v: 'hivemind', w: 0.1 }
+      { v: 'theocracy', w: 0.1 }
     ])
   }
   window.galaxy.nations.push(nation)
@@ -249,19 +248,17 @@ export const NATION = {
 
     // Generate stars, names and populate all systems now that borders are finalised
     systems.forEach(system => {
-      const nation = SOLAR_SYSTEM.nation(system)
       system.star = STAR.spawn({ system: system.idx, homeworld: system.homeworld })
-      system.name = LANGUAGE.word.unique({ lang: nation.language, key: 'solar system' })
     })
 
     // Populate every system with settlements/resources
-    window.galaxy.routes = getTradeRoutes()
     NATION.setWars()
     window.galaxy.nations.forEach(nation => {
       nation.systems
         .map(idx => window.galaxy.systems[idx])
         .forEach(system => SOLAR_SYSTEM.populate(system))
     })
+    window.galaxy.routes = getTradeRoutes()
     window.galaxy.orbits.forEach(orbit => {
       ORBIT_TAGS.spawn(orbit)
     })

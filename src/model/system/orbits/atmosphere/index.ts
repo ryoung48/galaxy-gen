@@ -8,7 +8,9 @@ export const ATMOSPHERE = {
     size: number,
     deviation: number,
     hydrosphere: number,
+    gravity: number,
     type: Orbit['type'],
+    star: Star,
     primary?: boolean
   ): Atmosphere => {
     const nonhabitable = deviation < -1.5 || deviation > 1.5
@@ -97,7 +99,8 @@ export const ATMOSPHERE = {
             subtype === 'unusual'
               ? window.dice.weightedChoice([
                   { v: 'ellipsoid', w: 1 },
-                  { v: 'layered', w: 1 },
+                  { v: 'layered', w: gravity > 1.2 ? 1 : 0 },
+                  { v: 'high radiation', w: 1 },
                   { v: 'steam', w: panthalassic || hydrosphere < 5 ? 0 : 1 },
                   { v: 'storms', w: 1 },
                   { v: 'tides', w: hydrosphere < 5 ? 0 : 1 },
@@ -111,14 +114,14 @@ export const ATMOSPHERE = {
       ...atmosphere,
       bar: ATMOSPHERE.bar(atmosphere, type === 'panthalassic')
     }
-    ATMOSPHERE.taint(completed)
+    ATMOSPHERE.taint(completed, star)
     return completed
   },
-  taint: (atmosphere: Atmosphere) => {
+  taint: (atmosphere: Atmosphere, star: Star) => {
     const { type, subtype, tainted } = atmosphere
     if (tainted) {
       const breathable = type === 'breathable'
-      const lifeless = type === 'vacuum' || type === 'trace' || type === 'gas'
+      const lifeless = type === 'vacuum' || type === 'trace' || type === 'gas' || star.age < 0.1
       const extreme = !['thin', 'standard', 'dense'].includes(subtype ?? '')
       const low = breathable && subtype === 'thin'
       const high = breathable && subtype === 'dense'
@@ -145,7 +148,7 @@ export const ATMOSPHERE = {
         : window.dice.uniform(0.7, 1.49)
     } else if (atmosphere.subtype === 'dense') return window.dice.uniform(1.5, 2.49)
     else if (atmosphere.subtype === 'very dense') return window.dice.uniform(2.5, 10)
-    else if (atmosphere.subtype === 'extremely dense') return window.dice.uniform(10, 100)
+    else if (atmosphere.unusual === 'extremely dense') return window.dice.uniform(10, 100)
     else if (atmosphere.type === 'gas' && atmosphere.subtype === 'helium')
       return window.dice.uniform(100, 1000)
     else if (atmosphere.type === 'gas' && atmosphere.subtype === 'hydrogen')
@@ -179,5 +182,26 @@ export const ATMOSPHERE = {
     if (atmosphere >= 2 && atmosphere <= (star.proto ? 5 : 7)) return 10
     if (atmosphere >= (star.proto ? 6 : 8) && atmosphere <= 11) return 12
     return Math.min(Math.max(0, atmosphere), 14)
+  },
+  survivalGear: (code: number): string => {
+    if (code === 0) return 'Vacc Suit Required' // Vacuum
+    if (code === 1) return 'Vacc Suit Required' // Trace
+    if (code === 2) return 'Respirator & Filter Required' // Very Thin, Tainted
+    if (code === 3) return 'Respirator Required' // Very Thin
+    if (code === 4) return 'Filter Required' // Thin, Tainted
+    if (code === 5) return 'None' // Thin
+    if (code === 6) return 'None' // Standard
+    if (code === 7) return 'Filter Required' // Standard, Tainted
+    if (code === 8) return 'None' // Dense
+    if (code === 9) return 'Filter Required' // Dense, Tainted
+    if (code === 10) return 'Air Supply Required' // Exotic
+    if (code === 11) return 'Vacc Suit Required' // Corrosive
+    if (code === 12) return 'Vacc Suit Required' // Insidious
+    if (code === 13) return 'Varies by altitude' // Very Dense
+    if (code === 14) return 'Varies by altitude' // Low
+    if (code === 15) return 'Varies' // Unusual
+    if (code === 16) return 'HEV Suit Required' // Gas, Helium
+    if (code === 17) return 'Not Survivable' // Gas, Hydrogen
+    return 'Unknown' // fallback
   }
 }

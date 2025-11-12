@@ -209,6 +209,12 @@ export const GALAXY_MAP = {
       const habitability = Math.max(
         ...orbits.map(o => (o.tag === 'star' ? -10 : o.habitability.score))
       )
+      const wtn = Math.max(
+        ...orbits.map(o => (o.tag === 'star' ? 0 : o.wtn?.score ?? 0))
+      )
+      const resources = Math.max(
+        ...orbits.map(o => (o.tag === 'star' ? 0 : o.resources?.score ?? 0))
+      )
       const baseColor =
         mapMode === 'habitability'
           ? METRICS.habitability.color(habitability)
@@ -220,6 +226,10 @@ export const GALAXY_MAP = {
           ? METRICS.population.color(population)
           : mapMode === 'government'
           ? METRICS.government.colors[nation.government]
+          : mapMode === 'wtn'
+          ? METRICS.wtn.color(wtn)
+          : mapMode === 'resources'
+          ? METRICS.resources.color(resources)
           : nation.flag.color.replace('%)', `%, ${opacity})`)
 
       ctx.fillStyle = baseColor
@@ -296,7 +306,7 @@ export const GALAXY_MAP = {
       })
       ctx.restore()
     }
-    if (mapMode === 'nations' || mapMode === 'government') {
+    if (mapMode === 'nations' || mapMode === 'wtn') {
       // hyper-lanes
       window.galaxy?.mst.forEach(([p1, p2]) => {
         CANVAS.line({
@@ -391,7 +401,7 @@ export const GALAXY_MAP = {
           ctx,
           x: system.x,
           y: system.y - 1.8,
-          text: system.name,
+          text: SOLAR_SYSTEM.name(system),
           size: 0.7
         })
         // drawSystemResources({ ctx, system })

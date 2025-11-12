@@ -1,10 +1,9 @@
-import { ASTEROID_BELT } from '../asteroids'
 import { TEMPERATURE } from '../temperature'
 import { Orbit } from '../types'
 import { HabitabilityParams } from './types'
 
 export const DESIRABILITY = {
-  get: (orbit: Orbit) => orbit.resources + Math.max(orbit.habitability.score, 0) * 5,
+  get: (orbit: Orbit) => orbit.habitability.score > 0 ? orbit.habitability.score : orbit.resources.score * 0.1,
   habitability: ({ orbit }: HabitabilityParams) => {
     const { size, atmosphere, temperature, gravity } = orbit
     const hydrosphere = orbit.hydrosphere.code
@@ -185,21 +184,72 @@ export const DESIRABILITY = {
 
     orbit.habitability = { score: habitability, trace: adjustments }
   },
-  resources: (orbit: Orbit, parent?: Orbit) => {
-    if (orbit.belt) {
-      return ASTEROID_BELT.resources(orbit.belt)
-    } else if (parent?.belt) {
-      return window.dice.roll(2, 6)
+  resources: (
+    orbit: Orbit,
+    parent?: Orbit
+  ): { score: number; trace: { value: number; description: string }[] } => {
+    const trace: { value: number; description: string }[] = []
+
+
+    // Asteroid in belt
+    if (parent?.type === 'asteroid belt') {
+      const roll = window.dice.roll(2, 4)
+      return {
+        score: roll,
+        trace: [{ value: roll, description: 'asteroid roll (2d4)' }]
+      }
     }
-    let roll = window.dice.roll(2, 6) - 7 + Math.min(orbit.size, 15)
-    if (orbit.density > 1.12) roll += 2
-    else if (orbit.density < 0.5) roll -= 2
 
-    if (orbit.biosphere.code >= 13) roll += 4
-    else if (orbit.biosphere.code >= 10) roll += 2
-    else if (orbit.biosphere.code >= 8) roll += 1
+    // Base calculation: 2d6 - 7 + size (capped at 15)
+    const baseRoll = window.dice.roll(2, 6) - 7
+    const sizeValue = Math.min(orbit.size, 15)
+    let roll = baseRoll + sizeValue
 
-    return Math.min(Math.max(roll, 2), 12)
+    trace.push({ value: baseRoll, description: 'base roll (2d6-7)' })
+    trace.push({ value: sizeValue, description: `size ${orbit.size}` })
+
+    // Density modifiers
+    if (orbit.density > 1.12) {
+      roll += 2
+      trace.push({ value: 2, description: 'high density' })
+    } else if (orbit.density < 0.5) {
+      roll -= 2
+      trace.push({ value: -2, description: 'low density' })
+    }
+
+    // Biosphere modifiers
+    if (orbit.biosphere.code >= 8 && orbit.biosphere.label !== 'remnants') {
+      roll += 1
+      trace.push({ value: 1, description: 'complex biosphere' })
+    }
+    if (orbit.biosphere.label === 'engineered') {
+      roll += 2
+      trace.push({ value: 2, description: 'engineered biosphere' })
+    }
+    if (orbit.biosphere.label === 'miscible') {
+      roll += 1
+      trace.push({ value: 1, description: 'miscible biosphere' })
+    }
+    if (orbit.biosphere.label === 'immiscible') {
+      roll -= 1
+      trace.push({ value: -1, description: 'immiscible biosphere' })
+    }
+
+    const hab =
+      Math.floor((10 - Math.max(-10, orbit.habitability.score)) * 0.5)
+    trace.push({ value: -hab, description: 'habitability penalty' })
+    roll -= hab
+
+    const score = Math.min(Math.max(roll, 2), 12)
+
+    // Add clamping info if needed
+    if (roll < 2) {
+      trace.push({ value: 2 - roll, description: 'minimum resources (2)' })
+    } else if (roll > 12) {
+      trace.push({ value: 12 - roll, description: 'maximum resources (12)' })
+    }
+
+    return { score, trace }
   }
 }
 

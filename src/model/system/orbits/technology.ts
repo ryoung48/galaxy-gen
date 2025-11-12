@@ -96,7 +96,7 @@ export const TECHNOLOGY = {
     }
     return { score: clamped, trace }
   },
-  minimum: ({ atmosphere, habitability }: Orbit) => {
+  minimum: ({ atmosphere, habitability, hydrosphere }: Orbit) => {
     let min = 0
     // atmosphere
     if (atmosphere.code <= 1 || atmosphere.code === 10) min = Math.max(min, 8)
@@ -108,6 +108,9 @@ export const TECHNOLOGY = {
     else if (atmosphere.code === 11) min = Math.max(min, 9)
     else if (atmosphere.code === 12) min = Math.max(min, 10)
     else if (atmosphere.code >= 16) min = Math.max(min, 14)
+
+    if (hydrosphere.code === 12) min = Math.max(min, 14)
+
     // habitability
     if (habitability.score <= 0) min = Math.max(min, 10)
     else if (habitability.score <= 2) min = Math.max(min, 6)

@@ -4,6 +4,7 @@ import {
   interpolateOranges,
   interpolatePurples,
   interpolateSpectral,
+  interpolatePuOr,
   range,
   scaleLinear
 } from 'd3'
@@ -85,5 +86,27 @@ export const METRICS = {
         text: k
       }))
     ]
+  },
+  wtn: {
+    scale: scaleLinear([0, 15], [0, 1]),
+    color: (heat: number) => interpolateOranges(METRICS.wtn.scale(heat)),
+    legend: () =>
+      range(0, 16)
+        .reverse()
+        .map(wtn => ({
+          color: METRICS.wtn.color(wtn),
+          text: wtn.toString()
+        }))
+  },
+  resources: {
+    scale: scaleLinear([2, 12], [1, 0]),
+    color: (heat: number) => interpolatePuOr(METRICS.resources.scale(heat)),
+    legend: () =>
+      range(2, 13)
+        .reverse()
+        .map(resources => ({
+          color: METRICS.resources.color(resources),
+          text: resources.toString()
+        }))
   }
 }

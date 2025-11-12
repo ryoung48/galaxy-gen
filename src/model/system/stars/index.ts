@@ -357,7 +357,7 @@ export const STAR = {
         if (!parent && window.dice.roll(2, 6) >= companionOdds) {
           companions.push({
             type: 'star',
-            deviation: window.dice.uniform(-4.5, -4),
+            deviation: window.dice.uniform(-6, -5),
             zone: 'distant',
             attributes: starClass(star)
           })
@@ -380,7 +380,7 @@ export const STAR = {
             : star.zone === 'outer' || brownDwarf || deadStar
             ? 1
             : 3
-        const inner = Math.min(maxInner, window.dice.randint(1, mClass || brownDwarf ? 4 : 5))
+        const inner = Math.min(maxInner, window.dice.randint(1, mClass || brownDwarf ? 2 : 3))
         const maxOuter =
           outerCompanion || star.zone === 'inner' || noPlanets
             ? 0
@@ -399,16 +399,13 @@ export const STAR = {
           homeworld?: boolean
         }[] = [
           ...window.dice
-            .sample([2.25, 1.75], epistellar)
+            .sample([2.25, 1.75, 1.25], epistellar)
             .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'epistellar' as const })),
           ...window.dice
-            .sample(
-              homeworld ? [1.25, 0.75, -0.75, -1.25] : [1.25, 0.75, 0, -0.75, -1.25],
-              homeworld ? inner - 1 : inner
-            )
+            .sample(homeworld ? [0.75, -0.75] : [0.75, 0, -0.75], homeworld ? inner - 1 : inner)
             .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'inner' as const })),
           ...window.dice
-            .sample([-1.75, -2.25, -2.75, -3.25, -3.75, -4, -4.25, -4.5], outer)
+            .sample([-1.25, -1.75, -2.25, -2.75, -3.25, -3.75, -4, -4.25, -4.5], outer)
             .map(d => ({ type: 'satellite' as const, deviation: d, zone: 'outer' as const }))
         ]
         if (homeworld)
@@ -436,9 +433,6 @@ export const STAR = {
         let distance = star.r + 10
         let impactZone =
           star.luminosityClass === 'III' || whiteDwarf ? window.dice.randint(1, 3) : 0
-        if (system === 752) {
-          console.log()
-        }
         orbitals.forEach(template => {
           const deviation = window.dice.uniform(
             template.deviation - 0.25,

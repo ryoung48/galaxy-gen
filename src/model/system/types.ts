@@ -4,9 +4,9 @@ export type SolarSystem = {
   idx: number
   tag: 'system'
   seed: string
-  name: string
   x: number
   y: number
+  coordinate: string
   star: Star
   edge: boolean
   n: number[]
