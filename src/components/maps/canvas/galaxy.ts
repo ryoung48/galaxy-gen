@@ -230,7 +230,7 @@ export const GALAXY_MAP = {
           ? METRICS.wtn.color(wtn)
           : mapMode === 'resources'
           ? METRICS.resources.color(resources)
-          : nation.flag.color.replace('%)', `%, ${opacity})`)
+          : nation?.flag.color.replace('%)', `%, ${opacity})`)
 
       ctx.fillStyle = baseColor
       let path = cellPathCache.get(system.idx)

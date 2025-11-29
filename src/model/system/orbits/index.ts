@@ -153,14 +153,14 @@ export const ORBIT = {
       starportRoll >= 11
         ? 'A'
         : starportRoll >= 9
-        ? 'B'
-        : starportRoll >= 7
-        ? 'C'
-        : starportRoll >= 5
-        ? 'D'
-        : starportRoll >= 3
-        ? 'E'
-        : 'X'
+          ? 'B'
+          : starportRoll >= 7
+            ? 'C'
+            : starportRoll >= 5
+              ? 'D'
+              : starportRoll >= 3
+                ? 'E'
+                : 'X'
     // technology
     orbit.technology = TECHNOLOGY.calculate(orbit)
 
@@ -252,20 +252,20 @@ export const ORBIT = {
       group ??
       (_homeworld || _primary
         ? window.dice.weightedChoice([
-            { v: 'terrestrial', w: 6 },
-            { v: 'helian', w: _homeworld ? 0 : 1 },
-            { v: 'jovian', w: _homeworld ? 0 : postStellar ? 0.5 : 3 }
-          ])
+          { v: 'terrestrial', w: 6 },
+          { v: 'helian', w: _homeworld ? 0 : 1 },
+          { v: 'jovian', w: _homeworld ? 0 : postStellar ? 0.5 : 3 }
+        ])
         : window.dice.weightedChoice<Orbit['group']>([
-            {
-              v: 'asteroid belt',
-              w: star.proto ? 6 : star.primordial || postStellar ? 4 : zone === 'inner' ? 1 : 2
-            },
-            { v: 'dwarf', w: 2 },
-            { v: 'terrestrial', w: zone === 'inner' ? 3 : 2 },
-            { v: 'helian', w: 1 },
-            { v: 'jovian', w: zone === 'outer' || postStellar ? 2 : 0.5 }
-          ]))
+          {
+            v: 'asteroid belt',
+            w: star.proto ? 6 : star.primordial || postStellar ? 4 : zone === 'inner' ? 1 : 2
+          },
+          { v: 'dwarf', w: 2 },
+          { v: 'terrestrial', w: zone === 'inner' ? 3 : 2 },
+          { v: 'helian', w: 1 },
+          { v: 'jovian', w: zone === 'outer' || postStellar ? 2 : 0.5 }
+        ]))
     if (star.age < 0.002 && selected !== 'jovian') selected = 'asteroid belt'
     else if (star.age < 0.005 && (selected === 'terrestrial' || selected === 'helian'))
       selected = 'dwarf'
@@ -277,12 +277,12 @@ export const ORBIT = {
     const type = homeworld
       ? 'tectonic'
       : primary
-      ? selected === 'terrestrial'
-        ? window.dice.choice<Orbit['type']>(['tectonic', 'arid', 'oceanic'])
-        : selected === 'dwarf'
-        ? window.dice.choice<Orbit['type']>(['geo-tidal'])
-        : window.dice.choice<Orbit['type']>(['helian', 'helian', 'panthalassic'])
-      : ORBIT_GROUPS[selected].type({ zone, impactZone, parent, star, deviation })
+        ? selected === 'terrestrial'
+          ? window.dice.choice<Orbit['type']>(['tectonic', 'arid', 'oceanic'])
+          : selected === 'dwarf'
+            ? window.dice.choice<Orbit['type']>(['geo-tidal'])
+            : window.dice.choice<Orbit['type']>(['helian', 'helian', 'panthalassic'])
+        : ORBIT_GROUPS[selected].type({ zone, impactZone, parent, star, deviation })
     const detail = homeworld
       ? garden()
       : ORBIT_CLASSIFICATION[type].roll({ star, zone, primary, parent, deviation, sizeOverride })
@@ -305,12 +305,12 @@ export const ORBIT = {
     let eccentricity = asteroidBelt
       ? 0
       : MATH.orbits.eccentricity({
-          asteroidMember: parent?.group === 'asteroid belt',
-          moon: moon?.range,
-          proto: star.proto,
-          primordial: star.primordial,
-          size
-        })
+        asteroidMember: parent?.group === 'asteroid belt',
+        moon: moon?.range,
+        proto: star.proto,
+        primordial: star.primordial,
+        size
+      })
     if (detail.eccentric) eccentricity = Math.max(eccentricity, window.dice.uniform(0.01, 0.05))
     // axial tilt
     const tilt = MATH.tilt.compute({ homeworld })
@@ -380,8 +380,7 @@ export const ORBIT = {
       technology: { score: 0, trace: [] },
       orbits: [],
       r,
-      parent: parent ? { type: 'orbit', idx: parent.idx } : { type: 'star', idx: star.idx },
-      tags: []
+      parent: parent ? { type: 'orbit', idx: parent.idx } : { type: 'star', idx: star.idx }
     }
     ROTATION.get({ orbit, star })
     window.galaxy.orbits.push(orbit)
@@ -390,11 +389,11 @@ export const ORBIT = {
       const lunar = MOONS.period({ parent, pd: moon.pd, mass: physique.mass })
       orbit.moon = { range: moon.range, pd: moon.pd, period: lunar }
     }
-    if (selected === 'jovian' && !moon)
+    if ((selected === 'jovian' || window.dice.random > 0.95) && !moon && group !== 'asteroid belt' && group !== 'dwarf')
       orbit.rings = window.dice.weightedChoice([
         { v: 'none', w: 6 },
         { v: 'minor', w: 2 },
-        { v: 'complex', w: 1 }
+        { v: 'complex', w: selected === 'jovian' ? 1 : 0 }
       ])
 
     const hillSphere =
@@ -421,12 +420,12 @@ export const ORBIT = {
             satellite === 'asteroid belt'
               ? satellite
               : size > 15
-              ? 'jovian'
-              : size > 10
-              ? 'helian'
-              : size > 4
-              ? 'terrestrial'
-              : 'dwarf',
+                ? 'jovian'
+                : size > 10
+                  ? 'helian'
+                  : size > 4
+                    ? 'terrestrial'
+                    : 'dwarf',
           size,
           star,
           impactZone,

@@ -200,6 +200,35 @@ interface Star {
   brightness: number
 }
 
+interface Connection {
+  i: number
+  j: number
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  opacity: number
+  lineWidth: number
+}
+
+// Check if two line segments intersect
+function doLinesIntersect(
+  x1: number, y1: number, x2: number, y2: number,
+  x3: number, y3: number, x4: number, y4: number
+): boolean {
+  const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+
+  // Lines are parallel
+  if (Math.abs(denom) < 0.0001) return false
+
+  const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom
+  const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom
+
+  // Check if intersection point is on both line segments
+  // Use 0.01 instead of 0 to allow lines that share endpoints
+  return ua > 0.01 && ua < 0.99 && ub > 0.01 && ub < 0.99
+}
+
 export function Landing() {
   const [seed, setSeed] = useState(DICE.id())
   const [loading, setLoading] = useState(false)
@@ -308,7 +337,9 @@ export function Landing() {
         }
       })
 
-      // Draw connections with depth-based opacity
+      // Build list of potential connections sorted by distance (shortest first)
+      const potentialConnections: Array<Connection & { distance: number }> = []
+
       for (let i = 0; i < stars.length; i++) {
         const star1 = stars[i]
         const x1 = star1.x
@@ -327,16 +358,55 @@ export function Landing() {
             const avgDepth = (star1.depth + star2.depth) / 2
             const opacity = (1 - distance / maxDistance) * avgDepth * 0.35
 
-            ctx.strokeStyle = COLORS.accent
-            ctx.lineWidth = 1 + avgDepth * 0.4
-            ctx.globalAlpha = opacity
-            ctx.beginPath()
-            ctx.moveTo(x1, y1)
-            ctx.lineTo(x2, y2)
-            ctx.stroke()
+            potentialConnections.push({
+              i,
+              j,
+              x1,
+              y1,
+              x2,
+              y2,
+              opacity,
+              lineWidth: 1 + avgDepth * 0.4,
+              distance
+            })
           }
         }
       }
+
+      // Sort by distance to prioritize shorter connections
+      potentialConnections.sort((a, b) => a.distance - b.distance)
+
+      // Filter out connections that would intersect with already accepted ones
+      const validConnections: Connection[] = []
+
+      for (const connection of potentialConnections) {
+        let hasIntersection = false
+
+        for (const existingConnection of validConnections) {
+          if (doLinesIntersect(
+            connection.x1, connection.y1, connection.x2, connection.y2,
+            existingConnection.x1, existingConnection.y1, existingConnection.x2, existingConnection.y2
+          )) {
+            hasIntersection = true
+            break
+          }
+        }
+
+        if (!hasIntersection) {
+          validConnections.push(connection)
+        }
+      }
+
+      // Draw valid connections
+      validConnections.forEach(connection => {
+        ctx.strokeStyle = COLORS.accent
+        ctx.lineWidth = connection.lineWidth
+        ctx.globalAlpha = connection.opacity
+        ctx.beginPath()
+        ctx.moveTo(connection.x1, connection.y1)
+        ctx.lineTo(connection.x2, connection.y2)
+        ctx.stroke()
+      })
 
       // Draw stars with twinkling effect
       stars.forEach(star => {

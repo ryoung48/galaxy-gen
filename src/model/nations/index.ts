@@ -8,7 +8,6 @@ import { GALAXY } from '../galaxy'
 import { MATH } from '../utilities/math'
 import { STAR } from '../system/stars'
 import { getTradeRoutes } from '../galaxy/trade'
-import { ORBIT_TAGS } from '../system/orbits/tags'
 
 const distribute = <Item>(params: {
   items: Item[]
@@ -259,9 +258,6 @@ export const NATION = {
         .forEach(system => SOLAR_SYSTEM.populate(system))
     })
     window.galaxy.routes = getTradeRoutes()
-    window.galaxy.orbits.forEach(orbit => {
-      ORBIT_TAGS.spawn(orbit)
-    })
   },
   systems: (nation: Nation) => nation.systems.map(idx => window.galaxy.systems[idx]),
   isSystemUnderAttack: (systemIdx: number) => {

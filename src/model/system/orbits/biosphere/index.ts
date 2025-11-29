@@ -141,9 +141,16 @@ export const BIOSPHERE = {
 
     if (star.age < 0.1 || type === 'asteroid belt') value = 0
 
+    const oxygenHazard = atmosphere.hazard === 'low oxygen' || atmosphere.hazard === 'high oxygen'
+
     if (value <= 0 && atmosphere.hazard === 'biologic') {
+      const change =  1 - value
       value = 1
-      adjustments.push({ value: 1, description: 'biologic hazard' })
+      adjustments.push({ value: change, description: 'biologic hazard' })
+    } else if (value <= 0 && (oxygenHazard)) {
+      const change =  1 - value
+      value = 1
+      adjustments.push({ value: change, description: 'oxygen hazard' })
     }
 
     const oxygen =

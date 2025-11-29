@@ -8,8 +8,6 @@ import { useReducer, useState } from 'react'
 import { VIEW, ViewContext } from './context'
 import { Landing } from './components/Landing'
 import sciFiTheme from './theme'
-import { Header } from './components/Header'
-import { Footer } from './components/Footer'
 import { StatisticsView } from './components/statistics'
 
 const classes = {
@@ -42,18 +40,14 @@ function App() {
   const [stats, toggleStats] = useState(false)
 
   const isLanding = !state.id
-  const isFullscreen = true // Always fullscreen for landing, map, and stats
-
   return (
     <ThemeProvider theme={sciFiTheme}>
       <ViewContext.Provider value={{ state, dispatch }}>
         <Box className={classes.appContainer}>
-          {!isFullscreen && <Header stats={stats} toggleStats={toggleStats}></Header>}
-
           <Container
             maxWidth={false}
             sx={{ padding: 0, margin: 0 }}
-            className={`${classes.mainContent} ${isFullscreen ? classes.fullscreenContent : ''}`}
+            className={`${classes.mainContent} ${classes.fullscreenContent}`}
           >
             {isLanding ? (
               <Landing></Landing>
@@ -65,8 +59,6 @@ function App() {
               </Grid>
             )}
           </Container>
-
-          {!isFullscreen && <Footer></Footer>}
         </Box>
       </ViewContext.Provider>
     </ThemeProvider>

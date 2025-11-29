@@ -2,7 +2,6 @@ import { Star } from '../stars/types'
 import { AsteroidBelt } from './asteroids/types'
 import { Atmosphere } from './atmosphere/types'
 import { MoonOrbit } from './moons/types'
-import { OrbitTag } from './tags/types'
 
 type DwarfType =
   | 'rockball'
@@ -114,7 +113,6 @@ export interface Orbit {
   orbits: Orbit[]
   rings?: 'none' | 'minor' | 'complex'
   mainworld?: boolean
-  tags: { tag: OrbitTag; value: number }[]
   // display
   r: number
   fullR?: number

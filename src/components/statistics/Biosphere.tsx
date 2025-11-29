@@ -6,7 +6,7 @@ import { TEXT } from '../../model/utilities/text'
 export const BiosphereDistribution = () => {
   // Get max habitability for each system
   const bioFreq = window.galaxy.orbits
-    .filter(orbit => orbit.biosphere.code > 0)
+    .filter(orbit => orbit.type !== 'asteroid belt' && orbit.biosphere.code > 0)
     .reduce((dict: Record<number, number>, orbit) => {
       const coded = orbit.biosphere.code
       if (!dict[coded]) dict[coded] = 0

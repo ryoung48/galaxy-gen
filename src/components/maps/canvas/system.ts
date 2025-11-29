@@ -72,10 +72,10 @@ export const SYSTEM_MAP = {
             zone === 'outer'
               ? 'lightblue'
               : zone === 'inner'
-              ? 'yellow'
-              : zone === 'epistellar'
-              ? 'orange'
-              : 'lightgray',
+                ? 'yellow'
+                : zone === 'epistellar'
+                  ? 'orange'
+                  : 'lightgray',
           width: mod * 0.1
         }
       })
@@ -92,14 +92,14 @@ export const SYSTEM_MAP = {
             mapMode === 'habitability'
               ? METRICS.habitability.color(-10)
               : mapMode === 'biosphere'
-              ? METRICS.biosphere.color(0)
-              : mapMode === 'population'
-              ? METRICS.population.color(0)
-              : mapMode === 'wtn'
-              ? METRICS.wtn.color(0)
-              : mapMode === 'resources'
-              ? METRICS.resources.color(0)
-              : STAR.color(star)
+                ? METRICS.biosphere.color(0)
+                : mapMode === 'population'
+                  ? METRICS.population.color(0)
+                  : mapMode === 'wtn'
+                    ? METRICS.wtn.color(0)
+                    : mapMode === 'resources'
+                      ? METRICS.resources.color(0)
+                      : STAR.color(star)
         })
       } else {
         if (object.type === 'asteroid belt') {
@@ -151,19 +151,19 @@ export const SYSTEM_MAP = {
                 mapMode === 'habitability'
                   ? METRICS.habitability.color(orbit.habitability.score)
                   : mapMode === 'biosphere'
-                  ? METRICS.biosphere.color(orbit.biosphere.code)
-                  : mapMode === 'population'
-                  ? METRICS.population.color(orbit.population?.code ?? 0)
-                  : mapMode === 'wtn'
-                  ? METRICS.wtn.color(orbit.wtn?.score ?? 0)
-                  : mapMode === 'resources'
-                  ? METRICS.resources.color(orbit.resources?.score ?? 0)
-                  : ORBIT.colors(orbit)
+                    ? METRICS.biosphere.color(orbit.biosphere.code)
+                    : mapMode === 'population'
+                      ? METRICS.population.color(orbit.population?.code ?? 0)
+                      : mapMode === 'wtn'
+                        ? METRICS.wtn.color(orbit.wtn?.score ?? 0)
+                        : mapMode === 'resources'
+                          ? METRICS.resources.color(orbit.resources?.score ?? 0)
+                          : ORBIT.colors(orbit)
             })
           })
         } else {
           // Draw back portion of rings for gas giants
-          if (orbit.type === 'jovian' && (orbit.rings === 'complex' || orbit.rings === 'minor')) {
+          if ((orbit.rings === 'complex' || orbit.rings === 'minor')) {
             const ringRadius = orbit.r * mod * 1.8
             const ringWidth = orbit.rings === 'minor' ? orbit.r * mod * 0.1 : orbit.r * mod * 0.3
             const tiltAngle = (orbit.tilt * Math.PI) / 180
@@ -213,19 +213,19 @@ export const SYSTEM_MAP = {
               mapMode === 'habitability'
                 ? METRICS.habitability.color(orbit.habitability.score)
                 : mapMode === 'biosphere'
-                ? METRICS.biosphere.color(orbit.biosphere.code)
-                : mapMode === 'population'
-                ? METRICS.population.color(orbit.population?.code ?? 0)
-                : mapMode === 'wtn'
-                ? METRICS.wtn.color(orbit.wtn?.score ?? 0)
-                : mapMode === 'resources'
-                ? METRICS.resources.color(orbit.resources?.score ?? 0)
-                : ORBIT.colors(orbit),
+                  ? METRICS.biosphere.color(orbit.biosphere.code)
+                  : mapMode === 'population'
+                    ? METRICS.population.color(orbit.population?.code ?? 0)
+                    : mapMode === 'wtn'
+                      ? METRICS.wtn.color(orbit.wtn?.score ?? 0)
+                      : mapMode === 'resources'
+                        ? METRICS.resources.color(orbit.resources?.score ?? 0)
+                        : ORBIT.colors(orbit),
             orbit,
             seed: solarSystem.seed + orbit.idx
           })
           // Draw front portion of rings for gas giants
-          if (orbit.type === 'jovian' && (orbit.rings === 'complex' || orbit.rings === 'minor')) {
+          if (orbit.rings === 'complex' || orbit.rings === 'minor') {
             const ringRadius = orbit.r * mod * 1.8
             const ringWidth = orbit.rings === 'minor' ? orbit.r * mod * 0.1 : orbit.r * mod * 0.3
             const tiltAngle = (orbit.tilt * Math.PI) / 180

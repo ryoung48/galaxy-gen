@@ -1,13 +1,33 @@
+import { useState, useMemo } from 'react'
 import { ResponsivePie } from '@nivo/pie'
 import { PieChartProps } from './types'
 import { FONT } from '../../../theme/fonts'
 import { TEXT } from '../../../model/utilities/text'
 
 export const CustomPieChart = ({ data, total }: PieChartProps) => {
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
+
+  const visibleData = useMemo(() => {
+    return data.filter(item => !hiddenIds.has(item.id))
+  }, [data, hiddenIds])
+
+  const handleLegendClick = (datum: { id: string | number }) => {
+    const id = String(datum.id)
+    setHiddenIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
   return (
     <div style={{ height: 800, width: '100%' }}>
       <ResponsivePie
-        data={data}
+        data={visibleData}
         theme={{
           text: {
             fontFamily: FONT.content
@@ -48,7 +68,14 @@ export const CustomPieChart = ({ data, total }: PieChartProps) => {
             itemDirection: 'left-to-right',
             itemOpacity: 1,
             symbolSize: 12,
-            symbolShape: 'circle'
+            symbolShape: 'circle',
+            data: data.map(item => ({
+              id: item.id,
+              label: item.label,
+              color: item.color,
+              hidden: hiddenIds.has(item.id)
+            })),
+            onClick: handleLegendClick
           }
         ]}
       />
