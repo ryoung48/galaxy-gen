@@ -19,6 +19,18 @@ import { COLORS } from '../../../theme/colors'
 // @ts-ignore
 let zoomRef: ZoomBehavior<Element, unknown> = null
 
+const IMAGES: Record<string, HTMLImageElement> = {}
+
+const getTexture = (name: string) => {
+  if (typeof window === 'undefined') return null
+  if (!IMAGES[name]) {
+    const img = new Image()
+    img.src = `/textures/${name}.jpg`
+    IMAGES[name] = img
+  }
+  return IMAGES[name].complete ? IMAGES[name] : null
+}
+
 export const CANVAS = {
   circle: ({ ctx, x, y, radius, fill, border }: DrawCircleParams) => {
     const width = border?.width ?? 0
@@ -238,36 +250,43 @@ export const CANVAS = {
             ctx.restore()
           } else {
             // Add noise-based texture for all other planets
-            const noiseScale = radius * 0.1
-            const noiseIntensity =
-              orbit.type === 'meltball'
-                ? 0.5
-                : orbit.type === 'tectonic'
-                ? 0.35
-                : orbit.type === 'geo-cyclic' || orbit.type === 'hebean'
-                ? 0.25
-                : 0.15
+            const moltenTexture = orbit.type === 'meltball' ? getTexture('molten') : null
 
-            for (let i = 0; i < 120; i++) {
-              const angle = (((seedNum + i * 137) % 360) * Math.PI) / 180
-              const distance = (((seedNum + i * 73) % 100) / 100) * radius * 0.9
-              const noiseX = x + Math.cos(angle) * distance
-              const noiseY = y + Math.sin(angle) * distance
-              const noiseSize = noiseScale * (0.3 + ((seedNum + i * 91) % 70) / 100)
+            if (moltenTexture) {
+              ctx.globalAlpha = 0.8
+              ctx.drawImage(moltenTexture, x - radius, y - radius, radius * 2, radius * 2)
+            } else {
+              const noiseScale = radius * 0.1
+              const noiseIntensity =
+                orbit.type === 'meltball'
+                  ? 0.5
+                  : orbit.type === 'tectonic'
+                    ? 0.35
+                    : orbit.type === 'geo-cyclic' || orbit.type === 'hebean'
+                      ? 0.25
+                      : 0.15
 
-              // Vary the noise intensity based on position
-              const distanceFromCenter = Math.sqrt((noiseX - x) ** 2 + (noiseY - y) ** 2) / radius
-              const alpha = noiseIntensity * (1 - distanceFromCenter * 0.5)
+              for (let i = 0; i < 120; i++) {
+                const angle = (((seedNum + i * 137) % 360) * Math.PI) / 180
+                const distance = (((seedNum + i * 73) % 100) / 100) * radius * 0.9
+                const noiseX = x + Math.cos(angle) * distance
+                const noiseY = y + Math.sin(angle) * distance
+                const noiseSize = noiseScale * (0.3 + ((seedNum + i * 91) % 70) / 100)
 
-              ctx.globalAlpha = alpha * (0.5 + ((seedNum + i * 59) % 50) / 100)
+                // Vary the noise intensity based on position
+                const distanceFromCenter = Math.sqrt((noiseX - x) ** 2 + (noiseY - y) ** 2) / radius
+                const alpha = noiseIntensity * (1 - distanceFromCenter * 0.5)
 
-              // Alternate between lighter and darker noise
-              const isLight = (seedNum + i * 43) % 3 > 0
-              ctx.fillStyle = isLight ? COLORS.lighten(fill, 20) : COLORS.darken(fill, 25)
+                ctx.globalAlpha = alpha * (0.5 + ((seedNum + i * 59) % 50) / 100)
 
-              ctx.beginPath()
-              ctx.arc(noiseX, noiseY, noiseSize, 0, Math.PI * 2)
-              ctx.fill()
+                // Alternate between lighter and darker noise
+                const isLight = (seedNum + i * 43) % 3 > 0
+                ctx.fillStyle = isLight ? COLORS.lighten(fill, 20) : COLORS.darken(fill, 25)
+
+                ctx.beginPath()
+                ctx.arc(noiseX, noiseY, noiseSize, 0, Math.PI * 2)
+                ctx.fill()
+              }
             }
           }
           break
@@ -295,9 +314,9 @@ export const CANVAS = {
         const fullHex =
           hex.length === 3
             ? hex
-                .split('')
-                .map(ch => ch + ch)
-                .join('')
+              .split('')
+              .map(ch => ch + ch)
+              .join('')
             : hex
         if (fullHex.length !== 6) return color
         const alphaHex = Math.round(clamp(alpha * 255))

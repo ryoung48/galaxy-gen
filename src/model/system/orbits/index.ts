@@ -17,6 +17,8 @@ import { TEXT } from '../../utilities/text'
 import { SURFACE_TIDES } from './tides'
 import { SEISMOLOGY } from './seismology'
 import { ROTATION } from './rotation'
+import { VISIBILITY } from './visibility'
+export { VISIBILITY }
 import { PopulateOrbitParams } from './population/types'
 import { POPULATION } from './population'
 import { ECONOMY } from './economy'

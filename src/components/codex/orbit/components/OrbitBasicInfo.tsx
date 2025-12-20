@@ -13,7 +13,8 @@ import {
   mdiDiameterVariant,
   mdiWeight,
   mdiArrowCollapseVertical,
-  mdiMinus
+  mdiMinus,
+  mdiEye
 } from '@mdi/js'
 import type { Orbit } from '../../../../model/system/orbits/types'
 import { TEXT } from '../../../../model/utilities/text'
@@ -25,6 +26,7 @@ import { ORBIT } from '../../../../model/system/orbits'
 import { STAR } from '../../../../model/system/stars'
 import { CONSTANTS } from '../../../../model/constants'
 import { SEISMOLOGY } from '../../../../model/system/orbits/seismology'
+import { VISIBILITY } from '../../../../model/system/orbits/visibility'
 
 const tooltipStyles = { cursor: 'pointer', borderBottom: '1px dotted black' }
 
@@ -137,6 +139,55 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
         ) : (
           `${MATH.orbits.fromAU(orbit.au).toFixed(3)} (${TEXT.formatters.compact(orbit.au)} AU)`
         )}
+        <Tooltip
+          title={
+            <Box sx={{ p: 1, maxWidth: 400 }}>
+              <Box sx={{ fontWeight: 'bold', mb: 1 }}>Observer View</Box>
+              <Box component='ul' sx={{ m: 0, pl: 0, listStyle: 'none' }}>
+                {VISIBILITY.getAll(orbit)
+                  .filter(obj => obj.degrees >= 0.01)
+                  .slice(0, 10)
+                  .map((obj, i) => {
+                    const label =
+                      obj.tag === 'star'
+                        ? 'star'
+                        : window.galaxy.orbits[obj.idx]?.moon
+                          ? 'moon'
+                          : 'planet'
+                    return (
+                      <Box
+                        component='li'
+                        key={i}
+                        sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, gap: 2 }}
+                      >
+                        <span>
+                          <span style={{ fontWeight: obj.tag === 'star' ? 'bold' : 'normal' }}>
+                            {obj.name}
+                          </span>
+                          <span style={{ fontSize: '0.85em', marginLeft: 4 }}>
+                            ({label})
+                          </span>
+                        </span>
+                      <span style={{ whiteSpace: 'nowrap' }}>
+                        {obj.degrees.toFixed(2)}° • mag {obj.magnitude.toFixed(1)}
+                      </span>
+                    </Box>
+                    )
+                  })}
+              </Box>
+              <Box sx={{ mt: 1, fontSize: '0.85em', color: '#aaa' }}>
+                <div>Terra ref: Sol 0.5° mag -27</div>
+                <div>Terra ref: Luna 0.5° mag -13</div>
+              </Box>
+            </Box>
+          }
+          placement='right'
+          arrow
+        >
+          <span style={{ cursor: 'pointer', marginLeft: 8 }}>
+            <Icon path={mdiEye} size={0.6} color='#1976d2' style={{ verticalAlign: 'middle' }} />
+          </span>
+        </Tooltip>
       </Grid>
       <Grid item xs={12}>
         <Icon
@@ -243,6 +294,7 @@ export default function OrbitBasicInfo({ orbit }: { orbit: Orbit }) {
           {orbit.gravity.toFixed(2)} g
         </span>
       </Grid>
+
       {/* <Grid item xs={12}>
         <Icon
           path={mdiTerrain}
