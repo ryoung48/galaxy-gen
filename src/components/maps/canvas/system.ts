@@ -57,6 +57,9 @@ export const SYSTEM_MAP = {
     if (!solarSystem) return
     const mod = CONSTANTS.SOLAR_SYSTEM_MOD
     const objects = SOLAR_SYSTEM.orbits(solarSystem)
+    // Get the primary star's position for shadow calculations
+    const starCoords = CANVAS.coordinates(solarSystem.star)
+
     objects.forEach(object => {
       const radius = object.distance
       const parent = object.tag === 'star' ? STAR.parent(object) : ORBIT.parent(object)
@@ -204,6 +207,13 @@ export const SYSTEM_MAP = {
 
             ctx.restore()
           }
+          // Find the parent star for this orbit
+          let parentStar = ORBIT.parent(orbit)
+          while (parentStar && parentStar.tag !== 'star') {
+            parentStar = ORBIT.parent(parentStar)
+          }
+          const parentStarCoords = parentStar ? CANVAS.coordinates(parentStar) : starCoords
+
           CANVAS.texturedSphere({
             ctx,
             x: center.x,
@@ -222,7 +232,8 @@ export const SYSTEM_MAP = {
                         ? METRICS.resources.color(orbit.resources?.score ?? 0)
                         : ORBIT.colors(orbit),
             orbit,
-            seed: solarSystem.seed + orbit.idx
+            seed: solarSystem.seed + orbit.idx,
+            starPosition: parentStarCoords
           })
           // Draw front portion of rings for gas giants
           if (orbit.rings === 'complex' || orbit.rings === 'minor') {

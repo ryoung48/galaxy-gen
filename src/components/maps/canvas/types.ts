@@ -37,6 +37,7 @@ export type PaintGalaxyParams = {
   selected: ViewState['selected']
   solarSystem?: SolarSystem
   mapMode: MapModes
+  animationTime?: number
 }
 
 export type DrawCurveParams = DrawLineParams & {

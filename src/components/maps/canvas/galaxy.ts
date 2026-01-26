@@ -181,6 +181,34 @@ const drawHeraldry = (nation: Nation) => {
   return _heraldry[nation.idx]
 }
 
+// Calculate visible bounds in world coordinates
+const getVisibleBounds = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
+  const transform = ctx.getTransform()
+  const inverted = transform.invertSelf()
+
+  // Transform canvas corners to world coordinates
+  const topLeft = new DOMPoint(0, 0).matrixTransform(inverted)
+  const bottomRight = new DOMPoint(canvas.width, canvas.height).matrixTransform(inverted)
+
+  // Add padding to catch objects partially in view
+  const padding = 20
+  return {
+    minX: topLeft.x - padding,
+    maxX: bottomRight.x + padding,
+    minY: topLeft.y - padding,
+    maxY: bottomRight.y + padding
+  }
+}
+
+// Check if a point is within bounds
+const isInBounds = (
+  x: number,
+  y: number,
+  bounds: { minX: number; maxX: number; minY: number; maxY: number }
+) => {
+  return x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY
+}
+
 export const GALAXY_MAP = {
   paint: ({ ctx, selected, solarSystem, mapMode }: PaintGalaxyParams) => {
     // Draw galaxy background directly on context
@@ -191,8 +219,16 @@ export const GALAXY_MAP = {
     ctx.arc(CONSTANTS.W * 0.5, CONSTANTS.H * 0.5, 335, 0, Math.PI * 2)
     ctx.clip()
 
-    // solar system cells
-    const systems = GALAXY.worlds()
+    // Calculate visible bounds for culling
+    const visibleBounds = getVisibleBounds(ctx, ctx.canvas)
+
+    // Filter systems to only those in view
+    const allSystems = GALAXY.worlds()
+    const systems = allSystems.filter(system =>
+      isInBounds(system.x, system.y, visibleBounds)
+    )
+    const visibleSystemIndices = new Set(systems.map(s => s.idx))
+
     const currentScale = ctx.getTransform().a
     systems.forEach(system => {
       const nation = SOLAR_SYSTEM.nation(system)
@@ -251,7 +287,11 @@ export const GALAXY_MAP = {
     const lineGenerator = d3Line()
     if (window.galaxy?.diagram && (mapMode === 'nations' || mapMode === 'government')) {
       if (!edgeMapCache) edgeMapCache = VORONOI.edgeMap(window.galaxy.diagram)
-      window.galaxy.nations.forEach(nation => {
+      // Filter nations to only those with visible systems
+      const visibleNations = window.galaxy.nations.filter(nation =>
+        nation.systems.some(sysIdx => visibleSystemIndices.has(sysIdx))
+      )
+      visibleNations.forEach(nation => {
         let paths = nationBoundaryCache.get(nation.idx)
         if (!paths) {
           const boundary = VORONOI.boundary({
@@ -280,7 +320,7 @@ export const GALAXY_MAP = {
       })
       // Draw war zones with thin red borders and conflict indicators
       ctx.save()
-      window.galaxy.systems.forEach(system => {
+      systems.forEach(system => {
         const isUnderAttack = NATION.isSystemUnderAttack(system.idx)
         if (isUnderAttack && mapMode === 'nations') {
           const path = cellPathCache.get(system.idx)
@@ -307,17 +347,22 @@ export const GALAXY_MAP = {
       ctx.restore()
     }
     if (mapMode === 'nations' || mapMode === 'wtn') {
-      // hyper-lanes
+      // hyper-lanes - only draw if at least one endpoint is visible
       window.galaxy?.mst.forEach(([p1, p2]) => {
-        CANVAS.line({
-          ctx,
-          x1: p1.x,
-          y1: p1.y,
-          x2: p2.x,
-          y2: p2.y,
-          width: 0.25,
-          color: 'rgba(255, 255, 255, 0.5)'
-        })
+        if (
+          isInBounds(p1.x, p1.y, visibleBounds) ||
+          isInBounds(p2.x, p2.y, visibleBounds)
+        ) {
+          CANVAS.line({
+            ctx,
+            x1: p1.x,
+            y1: p1.y,
+            x2: p2.x,
+            y2: p2.y,
+            width: 0.25,
+            color: 'rgba(255, 255, 255, 0.5)'
+          })
+        }
       })
       // trade routes – highlighted links between neighboring large nations
       const lineGen = d3Line().curve(curveCatmullRom.alpha(0.5))
@@ -337,7 +382,12 @@ export const GALAXY_MAP = {
         ctx.stroke(p2d)
       }
 
-      routes.forEach(pathIndices => {
+      // Filter routes to only those with at least one visible system
+      const filteredRoutes = routes.filter(pathIndices =>
+        pathIndices.some(idx => visibleSystemIndices.has(idx))
+      )
+
+      filteredRoutes.forEach(pathIndices => {
         let segment: number[] = [pathIndices[0]]
         for (let i = 0; i < pathIndices.length - 1; i++) {
           const a = pathIndices[i]
@@ -426,7 +476,13 @@ export const GALAXY_MAP = {
 
     const iconSizeScale = scaleLinear().domain([1, 150]).range([3, 14]).clamp(true)
 
-    window.galaxy.nations.forEach(nation => {
+    // Filter nations to only those with visible capital or systems
+    const visibleNationsForHeraldry = window.galaxy.nations.filter(nation => {
+      const origin = window.galaxy.systems[nation.capital]
+      return isInBounds(origin.x, origin.y, visibleBounds)
+    })
+
+    visibleNationsForHeraldry.forEach(nation => {
       const origin = window.galaxy.systems[nation.capital]
       // Scale heraldry and label sizes based on number of systems (1-150)
       const systemsCount = nation.systems.length

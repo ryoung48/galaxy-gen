@@ -109,14 +109,32 @@ export const CANVAS = {
     fill,
     border,
     seed,
-    orbit
-  }: DrawCircleParams & { seed?: string; orbit: Orbit }) => {
+    orbit,
+    rotationAngle = 0,
+    starPosition
+  }: DrawCircleParams & {
+    seed?: string
+    orbit: Orbit
+    rotationAngle?: number
+    starPosition?: { x: number; y: number }
+  }) => {
     const width = border?.width ?? 0
 
-    // Base gradient
+    // Base gradient - position light source based on star position
+    let lightOffsetX = -radius / 2
+    let lightOffsetY = -radius / 2
+
+    if (starPosition) {
+      // Calculate angle from planet to star
+      const angleToStar = Math.atan2(starPosition.y - y, starPosition.x - x)
+      // Position light source toward the star
+      lightOffsetX = Math.cos(angleToStar) * radius / 2
+      lightOffsetY = Math.sin(angleToStar) * radius / 2
+    }
+
     const gradient = ctx.createRadialGradient(
-      x - radius / 2,
-      y - radius / 2,
+      x + lightOffsetX,
+      y + lightOffsetY,
       radius / 4,
       x,
       y,
@@ -124,7 +142,7 @@ export const CANVAS = {
     )
     gradient.addColorStop(0, COLORS.lighten(fill, 20))
     gradient.addColorStop(0.5, fill)
-    gradient.addColorStop(1, COLORS.darken(fill, 60))
+    gradient.addColorStop(1, COLORS.darken(fill, 80))
 
     // Draw base sphere
     ctx.beginPath()
@@ -250,7 +268,7 @@ export const CANVAS = {
             ctx.restore()
           } else {
             // Add noise-based texture for all other planets
-            const moltenTexture = orbit.type === 'meltball' ? getTexture('molten') : null
+            const moltenTexture = null
 
             if (moltenTexture) {
               ctx.globalAlpha = 0.8

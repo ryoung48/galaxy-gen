@@ -144,7 +144,8 @@ const paint = (
   selected: ViewState['selected'],
   transform: { dx: number; dy: number; scale: number },
   mode: MapModes,
-  solarSystem?: SolarSystem
+  solarSystem?: SolarSystem,
+  animationTime?: number
 ) => {
   const local = transform.scale > 30
   const canvas = canvasRef.current!
