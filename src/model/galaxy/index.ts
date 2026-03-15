@@ -33,7 +33,7 @@ export const GALAXY = {
         y: site[1],
         idx: i,
         edge: dist > radius.max || dist < radius.min,
-        n: Array.from(diagram.neighbors(i))
+        n: Array.from<number>(diagram.neighbors(i))
       }
     })
     finalPoints.forEach(point => {
